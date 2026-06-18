@@ -1,0 +1,117 @@
+<template>
+  <div class="flex min-h-screen bg-[#080E1A] relative overflow-hidden font-sans">
+    <!-- Decorative Background Glows -->
+    <div class="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-radial from-[#0054ff]/10 to-transparent blur-3xl"></div>
+    <div class="absolute bottom-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-radial from-[#002266]/30 to-transparent blur-3xl"></div>
+    
+    <div class="m-auto w-full max-w-md p-6 z-10">
+      <div class="bg-white/95 backdrop-blur-xl border border-[var(--border)] rounded-2xl p-8 shadow-[0_20px_50px_rgba(0,34,102,0.15)] space-y-6 transition-all duration-300">
+        
+        <!-- Header / Branding -->
+        <div class="text-center space-y-2">
+          <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#EF5C23] to-[#FF8E53] text-white font-extrabold text-2xl shadow-lg shadow-[#EF5C23]/20 mb-2">
+            V
+          </div>
+          <h2 class="text-2xl font-bold text-[var(--foreground)] tracking-tight">เข้าสู่ระบบ Vendor Portal</h2>
+          <p class="text-xs text-[var(--muted-foreground)]">ระบบจัดซื้อจัดจ้างอิเล็กทรอนิกส์ SCGJWD e-Procurement</p>
+        </div>
+
+        <!-- Form Content -->
+        <form @submit.prevent="handleLogin" class="space-y-4">
+          <!-- Error Alert -->
+          <div 
+            v-if="errorMessage" 
+            class="p-3 bg-[var(--destructive-soft)] text-[var(--destructive-soft-foreground)] text-xs rounded-xl border border-[var(--destructive-soft-foreground)]/10"
+          >
+            {{ errorMessage }}
+          </div>
+
+          <UFormField label="อีเมลผู้ใช้งาน (Email)" name="email" required>
+            <UInput 
+              v-model="email" 
+              type="email" 
+              placeholder="vendor@company.com" 
+              size="md"
+              icon="i-heroicons-envelope-20-solid"
+              class="w-full mt-1"
+            />
+          </UFormField>
+
+          <UFormField label="รหัสผ่าน (Password)" name="password" required>
+            <UInput 
+              v-model="password" 
+              type="password" 
+              placeholder="••••••••" 
+              size="md"
+              icon="i-heroicons-lock-closed-20-solid"
+              class="w-full mt-1"
+            />
+          </UFormField>
+
+          <!-- Keep logged in & Forgot password -->
+          <div class="flex items-center justify-between text-xs pt-1">
+            <label class="flex items-center gap-2 text-[var(--muted-foreground)] cursor-pointer select-none">
+              <input type="checkbox" class="rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)] w-4 h-4 transition" />
+              <span>จดจำการใช้งาน</span>
+            </label>
+            <a href="#" class="text-[var(--primary)] hover:text-[#003BCC] transition font-medium">ลืมรหัสผ่าน?</a>
+          </div>
+
+          <UButton 
+            type="submit" 
+            block 
+            size="md"
+            :loading="isLoading"
+            class="mt-6 font-semibold h-11 bg-gradient-to-r from-[var(--primary)] to-[#0044DD] hover:from-[#0044DD] hover:to-[#0033BB] text-white rounded-xl shadow-md shadow-[#0054ff]/10 hover:shadow-lg transition-all duration-200 cursor-pointer"
+          >
+            เข้าสู่ระบบ (Sign In)
+          </UButton>
+        </form>
+
+        <!-- Divider -->
+        <div class="border-t border-[var(--border)] pt-4 text-center">
+          <p class="text-xs text-[var(--muted-foreground)]">
+            เป็นคู่ค้ารายใหม่? 
+            <NuxtLink to="/register" class="text-[var(--primary)] hover:underline font-semibold ml-1">
+              ลงทะเบียนออนไลน์ที่นี่
+            </NuxtLink>
+          </p>
+        </div>
+
+        <div class="text-center text-[10px] text-[var(--muted-foreground)] pt-2 border-t border-[var(--border)]/50">
+          ระบบความปลอดภัยเชื่อมต่อแบบมีมาตรการความปลอดภัยสูงสุดเพื่อป้องกันข้อมูลของคู่ค้า
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue';
+import { useVendorAuthStore } from '~/stores/auth';
+
+definePageMeta({
+  layout: false,
+});
+
+const authStore = useVendorAuthStore();
+const email = ref('vendor1@scgjwd.com'); // default mock vendor email
+const password = ref('password123');
+const isLoading = ref(false);
+const errorMessage = ref('');
+
+const handleLogin = async () => {
+  isLoading.value = true;
+  errorMessage.value = '';
+  try {
+    const success = await authStore.login(email.value, password.value);
+    if (success) {
+      navigateTo('/');
+    }
+  } catch (err: any) {
+    errorMessage.value = err.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือเชื่อมต่อเซิร์ฟเวอร์ไม่ได้';
+  } finally {
+    isLoading.value = false;
+  }
+};
+</script>

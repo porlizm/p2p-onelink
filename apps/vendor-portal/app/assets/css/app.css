@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap');
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+:root {
+  /* Design Tokens - Source of Truth */
+  --font-size: 14px;
+  --background: #F7F9FC;
+  --foreground: #002266;
+  --card: #FFFFFF;
+  --card-foreground: #002266;
+  --popover: #FFFFFF;
+  --popover-foreground: #002266;
+  --primary: #0054FF;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F4F8;
+  --secondary-foreground: #002266;
+  --muted: #F1F4F9;
+  --muted-foreground: #64748B;
+  --accent: #E0F2FE;
+  --accent-foreground: #002266;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(0, 34, 102, 0.08);
+  --input: transparent;
+  --input-background: #FFFFFF;
+  --switch-background: #E2E8F0;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #0054FF;
+  --chart-1: #0054FF;
+  --chart-2: #002266;
+  --chart-3: #EF5C23;
+  --chart-4: #34D399;
+  --chart-5: #F472B6;
+  --radius: 0.75rem;
+  
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #002266;
+  --sidebar-primary: #0054FF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F1F5F9;
+  --sidebar-accent-foreground: #002266;
+  --sidebar-border: rgba(0, 34, 102, 0.08);
+  --sidebar-ring: #0054FF;
+
+  /* Font Family - Addendum */
+  --font-sans: 'Inter', 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
+
+  /* Semantic Status Color - Addendum */
+  --success: #34D399;
+  --success-foreground: #FFFFFF;
+  --success-soft: #ECFDF5;
+  --success-soft-foreground: #047857;
+
+  --warning: #F59E0B;
+  --warning-foreground: #FFFFFF;
+  --warning-soft: #FFFBEB;
+  --warning-soft-foreground: #B45309;
+
+  --destructive-soft: #FEF2F2;
+  --destructive-soft-foreground: #B91C1C;
+
+  --urgent: #EF5C23;
+  --urgent-soft: #FFF1EC;
+  --urgent-soft-foreground: #C2410C;
+
+  /* Elevation - Addendum */
+  --shadow-sm: 0 1px 2px rgba(0, 34, 102, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0, 34, 102, 0.06), 0 2px 4px -2px rgba(0, 34, 102, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 34, 102, 0.08), 0 4px 6px -4px rgba(0, 34, 102, 0.04);
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

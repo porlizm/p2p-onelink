@@ -22,6 +22,9 @@ import { PaymentProposal } from '../entities/payment-proposal.entity';
 import { BankFile } from '../entities/bank-file.entity';
 import { PaymentRequest } from '../entities/payment-request.entity';
 import { IntegrationLog } from '../entities/integration-log.entity';
+import { ProcurementItemType } from '../entities/procurement-item-type.entity';
+import { AssetRentalLog } from '../entities/asset-rental-log.entity';
+import { LicenseSubscription } from '../entities/license-subscription.entity';
 
 // Static UUID helpers
 const uuid = (prefix: number, id: number) => {
@@ -37,6 +40,7 @@ async function bootstrap() {
 
   // Clear existing data in reverse order of dependencies
   const entities = [
+    AssetRentalLog, LicenseSubscription, ProcurementItemType,
     BankFile, PaymentRequest, PaymentProposal, Lane, IntegrationLog,
     DOARule, ItemPrice, Item, VendorDocument, VendorBankAccount,
     VendorAddress, VendorContact, Vendor, Permission, UserRole,
@@ -207,6 +211,25 @@ async function bootstrap() {
   );
   await vendorRepo.save(vendors);
 
+  // 7.5 Seed Procurement Item Types
+  console.log('Seeding Procurement Item Types...');
+  const itemTypeRepo = dataSource.getRepository(ProcurementItemType);
+  const itemTypes = [
+    { code: 'Goods', name: 'สินค้า / ครุภัณฑ์', desc: 'รายการประมูลซื้อสินค้า ครุภัณฑ์ทั่วไป มีการตรวจรับมอบของ (GR)', system: true },
+    { code: 'Service', name: 'งานบริการ', desc: 'งานจ้างบริการ งานปรับปรุงสถานที่ มีการตรวจรับงวดงานและจ่ายเงินตาม Milestone', system: true },
+    { code: 'Rental', name: 'การเช่าสินทรัพย์ (Rental)', desc: 'งานเช่าครุภัณฑ์ โน้ตบุ๊ค อุปกรณ์สำนักงาน มีการระบุ BU เจ้าของและผู้เช่า', system: true },
+    { code: 'License', name: 'สิทธิ์การใช้งาน (License)', desc: 'การสั่งซื้อซอฟต์แวร์สิทธิ์การใช้งาน เช่น Antivirus, Adobe มีวันหมดอายุและจำนวนสิทธิ์', system: true },
+  ].map((it, idx) =>
+    itemTypeRepo.create({
+      type_id: uuid(99, idx + 1),
+      type_code: it.code,
+      type_name: it.name,
+      description: it.desc,
+      is_system_default: it.system,
+    })
+  );
+  await itemTypeRepo.save(itemTypes);
+
   // 8. Seed Items
   console.log('Seeding Items...');
   const itemRepo = dataSource.getRepository(Item);
@@ -226,6 +249,9 @@ async function bootstrap() {
     { id: 13, code: 'ITM-00013', name: 'รองเท้าเซฟตี้หัวเหล็ก', type: 'Goods', cat: 4, uom: 'คู่', bu: 3 },
     { id: 14, code: 'ITM-00014', name: 'บริการทำความสะอาดสำนักงานรายเดือน', type: 'Service', cat: 5, uom: 'เดือน', bu: 1 },
     { id: 15, code: 'ITM-00015', name: 'บริการบำรุงรักษาเครื่องปรับอากาศรายปี', type: 'Service', cat: 5, uom: 'ปี', bu: 3 },
+    { id: 16, code: 'ITM-00016', name: 'บริการเช่าโน้ตบุ๊ค Core i5 (รายปี)', type: 'Rental', cat: 1, uom: 'เครื่อง/ปี', bu: 2 },
+    { id: 17, code: 'ITM-00017', name: 'Adobe Creative Cloud All Apps License (รายปี)', type: 'License', cat: 1, uom: 'สิทธิ์/ปี', bu: 2 },
+    { id: 18, code: 'ITM-00018', name: 'Antivirus Endpoint Protection (รายปี)', type: 'License', cat: 1, uom: 'สิทธิ์/ปี', bu: 2 },
   ].map((i) =>
     itemRepo.create({
       item_id: uuid(9, i.id),
@@ -262,6 +288,9 @@ async function bootstrap() {
     { id: 16, item: 13, ven: 4, val: 890, status: 'Active', from: '2026-01-01', to: '2026-12-31' },
     { id: 17, item: 14, ven: 6, val: 18000, status: 'Active', from: '2026-01-01', to: '2026-12-31' },
     { id: 18, item: 15, ven: 9, val: 28000, status: 'Expired', from: '2025-01-01', to: '2025-12-31' },
+    { id: 19, item: 16, ven: 1, val: 35000, status: 'Active', from: '2026-01-01', to: '2026-12-31' },
+    { id: 20, item: 17, ven: 2, val: 14500, status: 'Active', from: '2026-01-01', to: '2026-12-31' },
+    { id: 21, item: 18, ven: 2, val: 3800, status: 'Active', from: '2026-01-01', to: '2026-12-31' },
   ].map((p) =>
     priceRepo.create({
       price_id: uuid(10, p.id),

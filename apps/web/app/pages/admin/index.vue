@@ -55,6 +55,54 @@
           </div>
         </template>
       </UCard>
+
+      <!-- Card 3: Procurement Item Types -->
+      <UCard 
+        class="border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)] hover:border-emerald-500/40 transition bg-white rounded-xl cursor-pointer flex flex-col justify-between"
+        @click="navigateTo('/admin/item-types')"
+      >
+        <div class="space-y-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <UIcon name="i-heroicons-squares-plus" class="w-8 h-8" />
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">ประเภทและรูปแบบสินค้าประมูล (Bidding Formats)</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              จัดการรูปแบบสินค้าและบริการในการประมูล (Goods, Service, Rental, License) เพิ่มเติมประเภทการประมูลเช่าซื้อ หรือจ้างงานอื่นเพื่อรองรับการจัดหามัลติโมเดล
+            </p>
+          </div>
+        </div>
+        <template #footer>
+          <div class="flex items-center gap-1 text-emerald-600 font-bold text-xs">
+            <span>จัดการประเภทและรูปแบบสินค้าประมูล</span>
+            <UIcon name="i-heroicons-arrow-right" class="w-4 h-4" />
+          </div>
+        </template>
+      </UCard>
+
+      <!-- Card 4: Asset Rentals & License Subscriptions -->
+      <UCard 
+        class="border border-[var(--border)] shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow)] hover:border-amber-500/40 transition bg-white rounded-xl cursor-pointer flex flex-col justify-between"
+        @click="navigateTo('/admin/asset-rentals')"
+      >
+        <div class="space-y-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <UIcon name="i-heroicons-archive-box" class="w-8 h-8" />
+          </div>
+          <div>
+            <h3 class="font-bold text-slate-800 text-base">บันทึกการเช่าสินทรัพย์ & สิทธิ์ไลเซนส์ (Asset & Licenses)</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed">
+              ตรวจสอบประวัติการจองและเช่าครุภัณฑ์ข้ามหน่วยงาน (BU-to-BU Asset Logs) พร้อมบันทึกคีย์ ซอฟต์แวร์สิทธิ์ใช้งาน (Adobe, Antivirus) และกำหนดเตือนวันหมดอายุ
+            </p>
+          </div>
+        </div>
+        <template #footer>
+          <div class="flex items-center gap-1 text-amber-600 font-bold text-xs">
+            <span>ตรวจสอบการเช่า & ไลเซนส์</span>
+            <UIcon name="i-heroicons-arrow-right" class="w-4 h-4" />
+          </div>
+        </template>
+      </UCard>
     </div>
   </div>
 </template>

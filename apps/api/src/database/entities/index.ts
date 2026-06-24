@@ -46,4 +46,7 @@ export * from './vendor-evaluation.entity';
 export * from './purchase-contract.entity';
 export * from './vendor-catalog-submission.entity';
 export * from './budget-request.entity';
+export * from './procurement-item-type.entity';
+export * from './asset-rental-log.entity';
+export * from './license-subscription.entity';
 

@@ -11,6 +11,9 @@ import { CostCenter } from '../database/entities/cost-center.entity';
 import { Stock } from '../database/entities/stock.entity';
 import { Claim } from '../database/entities/claim.entity';
 import { ReturnNote } from '../database/entities/return-note.entity';
+import { Item } from '../database/entities/item.entity';
+import { AssetRentalLog } from '../database/entities/asset-rental-log.entity';
+import { LicenseSubscription } from '../database/entities/license-subscription.entity';
 import { CreateGrDto, CreateClaimDto } from './dto/gr.dto';
 import { GoodsReceiptStatus, PurchaseOrderStatus, ClaimStatus, ReturnNoteStatus } from '@p2p/shared';
 
@@ -132,6 +135,37 @@ export class GrService {
             });
           }
           await manager.getRepository(Stock).save(stock);
+
+          // Asset Rental & License Log Creation
+          const itemObj = await manager.getRepository(Item).findOne({ where: { item_id: poLine.item_id } });
+          if (itemObj) {
+            if (itemObj.item_type === 'Rental') {
+              const rentalLog = manager.getRepository(AssetRentalLog).create({
+                item_name: itemObj.item_name,
+                asset_tag: `AST-${Date.now().toString().slice(-6)}-${poLine.po_line_id.slice(-4)}`,
+                owner_bu_id: itemObj.owner_bu_id || '00000002-0000-0000-0000-000000000001', // default IT BU
+                rented_to_bu_id: '00000001-0000-0000-0000-000000000001', // default corporate BU
+                owner_name: 'ฝ่ายดูแลสินทรัพย์ IT',
+                renter_name: 'ผู้ใช้แผนกตรวจรับ',
+                po_id: po.po_id,
+                start_date: new Date(),
+                end_date: new Date(Date.now() + 86400000 * 365), // 1 year
+                status: 'Active',
+              });
+              await manager.getRepository(AssetRentalLog).save(rentalLog);
+            } else if (itemObj.item_type === 'License') {
+              const licenseSub = manager.getRepository(LicenseSubscription).create({
+                license_name: itemObj.item_name,
+                license_key: `KEY-${Math.random().toString(36).substring(2, 10).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                vendor_id: po.vendor_id,
+                seats_count: Math.round(qtyReceived),
+                po_id: po.po_id,
+                expiry_date: new Date(Date.now() + 86400000 * 365), // 1 year expiry
+                status: 'Active',
+              });
+              await manager.getRepository(LicenseSubscription).save(licenseSub);
+            }
+          }
         }
       }
 

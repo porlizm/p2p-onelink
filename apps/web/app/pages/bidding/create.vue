@@ -84,8 +84,9 @@
             <thead>
               <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)]">
                 <th class="p-3">ชื่อสินค้า / บริการ</th>
-                <th class="p-3 text-right" style="width: 120px;">จำนวน</th>
-                <th class="p-3" style="width: 120px;">หน่วยนับ</th>
+                <th class="p-3" style="width: 180px;">ประเภทรูปแบบ</th>
+                <th class="p-3 text-right" style="width: 100px;">จำนวน</th>
+                <th class="p-3" style="width: 110px;">หน่วยนับ</th>
                 <th class="p-3 text-center" style="width: 60px;"></th>
               </tr>
             </thead>
@@ -93,6 +94,14 @@
               <tr v-for="(item, idx) in items" :key="idx">
                 <td class="p-2">
                   <UInput v-model="item.item_name" placeholder="ระบุชื่อรายละเอียดสินค้า..." size="sm" />
+                </td>
+                <td class="p-2">
+                  <select 
+                    v-model="item.item_type" 
+                    class="w-full px-2 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] h-8"
+                  >
+                    <option v-for="t in itemTypes" :key="t.type_code" :value="t.type_code">{{ t.type_name }}</option>
+                  </select>
                 </td>
                 <td class="p-2">
                   <UInput v-model.number="item.quantity" type="number" min="0.01" size="sm" class="text-right" />
@@ -107,7 +116,7 @@
                 </td>
               </tr>
               <tr v-if="items.length === 0">
-                <td colspan="4" class="text-center py-6 text-xs text-[var(--muted-foreground)]">
+                <td colspan="5" class="text-center py-6 text-xs text-[var(--muted-foreground)]">
                   กรุณาเพิ่มอย่างน้อย 1 รายการ
                 </td>
               </tr>
@@ -185,14 +194,32 @@ const adjustWeights = (source: string) => {
     technicalWeight.value = Math.max(0, 100 - Number(commercialWeight.value || 0));
   }
 };
+const itemTypes = ref<any[]>([]);
 const items = ref<any[]>([
-  { item_name: 'โน้ตบุ๊คสำหรับงานสำนักงาน 14 นิ้ว', quantity: 30, uom: 'เครื่อง' }
+  { item_name: 'โน้ตบุ๊คสำหรับงานสำนักงาน 14 นิ้ว', item_type: 'Goods', quantity: 30, uom: 'เครื่อง' }
 ]);
 const vendors = ref<any[]>([]);
 const selectedVendors = ref<string[]>([]);
 
 const errorMsg = ref('');
 const isLoading = ref(false);
+
+const loadItemTypes = async () => {
+  try {
+    const res = await $fetch<any[]>('http://localhost:3001/api/catalog/item-types', {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    itemTypes.value = res;
+  } catch (err) {
+    console.warn('Backend offline, loading mock item types.');
+    itemTypes.value = [
+      { type_code: 'Goods', type_name: 'สินค้า / ครุภัณฑ์' },
+      { type_code: 'Service', type_name: 'งานบริการ' },
+      { type_code: 'Rental', type_name: 'การเช่าสินทรัพย์ (Rental)' },
+      { type_code: 'License', type_name: 'สิทธิ์การใช้งาน (License)' },
+    ];
+  }
+};
 
 const loadVendors = async () => {
   try {
@@ -216,7 +243,7 @@ const loadVendors = async () => {
 };
 
 const addItem = () => {
-  items.value.push({ item_name: '', quantity: 1, uom: 'ชิ้น' });
+  items.value.push({ item_name: '', item_type: itemTypes.value[0]?.type_code || 'Goods', quantity: 1, uom: 'ชิ้น' });
 };
 
 const removeItem = (idx: number) => {
@@ -264,5 +291,6 @@ const submitRFQ = async () => {
 
 onMounted(() => {
   loadVendors();
+  loadItemTypes();
 });
 </script>

@@ -90,6 +90,115 @@
 
       <!-- Financial & Documents Info (1/3 width) -->
       <div class="space-y-6">
+        <!-- AI Vendor Sentiment & Insights Card -->
+        <UCard class="border-2 border-indigo-600/30 shadow-md rounded-[var(--radius-lg)] overflow-hidden bg-gradient-to-b from-indigo-50/20 to-white">
+          <template #header>
+            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-[#0054FF] animate-pulse" />
+                <h3 class="font-extrabold text-sm text-[#002266] uppercase tracking-wider">AI Smart Vendor Insights</h3>
+              </div>
+              <span class="text-[9px] bg-[#0054FF] text-white px-2 py-0.5 rounded-full font-bold">LIVE AUDIT</span>
+            </div>
+          </template>
+
+          <div class="space-y-4 mt-3 text-xs">
+            <!-- Sentiment and Risk overview row -->
+            <div class="grid grid-cols-2 gap-3">
+              <!-- Sentiment card -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-all duration-200">
+                <span class="text-[10px] text-slate-400 font-semibold block uppercase">Sentiment Index</span>
+                <div class="flex items-end gap-1.5 mt-1.5">
+                  <span class="text-xl font-black text-slate-800">{{ aiInsights.sentimentScore }}%</span>
+                  <span class="text-[10px] font-bold text-green-600 pb-0.5">{{ aiInsights.sentiment }}</span>
+                </div>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div class="bg-green-500 h-1.5 rounded-full transition-all duration-500" :style="`width: ${aiInsights.sentimentScore}%`"></div>
+                </div>
+              </div>
+
+              <!-- Risk level card -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-all duration-200">
+                <span class="text-[10px] text-slate-400 font-semibold block uppercase">AI Risk Level</span>
+                <div class="flex items-end gap-1.5 mt-1.5">
+                  <span class="text-xl font-black text-slate-800">{{ aiInsights.riskScore }}%</span>
+                  <span class="text-[10px] font-bold pb-0.5" :class="aiInsights.riskLevel === 'Medium' ? 'text-orange-600' : 'text-green-600'">
+                    {{ aiInsights.riskLevel }}
+                  </span>
+                </div>
+                <div class="w-full bg-slate-200 h-1.5 rounded-full mt-2 overflow-hidden">
+                  <div class="h-1.5 rounded-full transition-all duration-500" :class="aiInsights.riskLevel === 'Medium' ? 'bg-orange-500' : 'bg-green-500'" :style="`width: ${aiInsights.riskScore}%`"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance stats calculated by AI -->
+            <div class="space-y-2 border-t pt-3 border-slate-100">
+              <div class="flex justify-between items-center text-[10px]">
+                <span class="text-slate-500">อัตราการส่งมอบตรงเวลา (On-Time Delivery):</span>
+                <span class="font-bold text-slate-800">{{ aiInsights.onTimeDelivery }}%</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px]">
+                <span class="text-slate-500">คะแนนประเมินคุณภาพสินค้า (Quality Score):</span>
+                <span class="font-bold text-slate-800">{{ aiInsights.qualityScore }}%</span>
+              </div>
+              <div class="flex justify-between items-center text-[10px]">
+                <span class="text-slate-500 font-medium">ดัชนีแนวโน้มราคา (Price Trend Index):</span>
+                <span class="font-bold text-[#0054FF]">{{ aiInsights.priceIndex }}</span>
+              </div>
+            </div>
+
+            <!-- Warning and Alerts from AI if any -->
+            <div v-if="aiInsights.warnings.length > 0" class="bg-red-50/80 border border-red-200 text-red-800 p-2.5 rounded-lg space-y-1">
+              <div class="font-bold flex items-center gap-1 text-[10px]">
+                <UIcon name="i-heroicons-exclamation-triangle" class="w-4 h-4 text-red-600" />
+                <span>AI Risk Warning Flags</span>
+              </div>
+              <ul class="list-disc list-inside text-[9px] text-red-700 pl-1 space-y-0.5">
+                <li v-for="w in aiInsights.warnings" :key="w">{{ w }}</li>
+              </ul>
+            </div>
+
+            <!-- AI Insight summary text -->
+            <div class="bg-indigo-50/50 border border-indigo-100/50 rounded-xl p-3 space-y-1.5">
+              <div class="font-bold text-indigo-900 flex items-center gap-1 text-[10px]">
+                <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-4 h-4 text-indigo-600" />
+                <span>คำแนะนำเชิงกลยุทธ์จาก AI</span>
+              </div>
+              <p class="text-[10px] text-slate-600 leading-relaxed font-medium">
+                {{ aiInsights.insight }}
+              </p>
+            </div>
+
+            <!-- Analyze action button -->
+            <div class="border-t pt-3 border-slate-100 flex justify-end">
+              <UButton
+                color="primary"
+                icon="i-heroicons-sparkles"
+                class="w-full text-xs font-bold text-white bg-[#0054FF] hover:bg-[#002266] justify-center cursor-pointer transition-all duration-200 shadow-sm"
+                :loading="isAnalyzing"
+                @click="triggerAiAnalysis"
+              >
+                {{ showDetailedReport ? 'วิเคราะห์ข้อมูลซ้ำด้วย AI' : 'วิเคราะห์ข้อมูลเชิงลึกด้วย AI' }}
+              </UButton>
+            </div>
+
+            <!-- Mock detail report display after trigger -->
+            <div v-if="showDetailedReport" class="border border-indigo-100 rounded-xl p-3 bg-indigo-50/30 animate-fadeIn space-y-2 mt-2">
+              <div class="font-bold text-slate-800 text-[10px] flex items-center gap-1 border-b border-indigo-100 pb-1.5">
+                <UIcon name="i-heroicons-document-magnifying-glass" class="w-4 h-4 text-indigo-600" />
+                <span>รายงานพฤติกรรมคู่ค้าและการวิเคราะห์ข่าวสาร (Market Scan)</span>
+              </div>
+              <div class="text-[9px] text-slate-500 space-y-1">
+                <div>• ค้นพบข้อมูล 42 รายการจาก Social Listening & ข่าวสารอุตสาหกรรมในรอบ 30 วัน</div>
+                <div>• ดัชนีความมั่นคงทางการเงิน (Altman Z-Score): <span class="font-semibold text-green-600">3.12 (Safe Zone)</span></div>
+                <div>• ความเสี่ยงด้านความจุการผลิต (Production Capacity Risk): <span class="font-semibold text-green-600">ต่ำมาก</span></div>
+              </div>
+            </div>
+
+          </div>
+        </UCard>
+
         <!-- Bank account -->
         <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
@@ -227,6 +336,57 @@ const vendor = ref<any>(null);
 const isSubmitting = ref(false);
 const showRejectComment = ref(false);
 const rejectReason = ref('');
+
+// AI Vendor Sentiment & Insights States
+const isAnalyzing = ref(false);
+const showDetailedReport = ref(false);
+
+const aiInsights = computed(() => {
+  const id = route.params.id as string;
+  const data: Record<string, any> = {
+    '00000000-0000-0000-0000-000000000607': {
+      sentiment: 'Positive',
+      sentimentScore: 82,
+      riskLevel: 'Low',
+      riskScore: 12,
+      onTimeDelivery: 98,
+      qualityScore: 95,
+      priceIndex: 'Stable',
+      warnings: [],
+      insight: 'คู่ค้ามีผลการดำเนินงานโดดเด่นในด้านเวลาส่งมอบและความเสถียรของราคา มีความเสี่ยงในการคลาดเคลื่อนต่ำมาก'
+    },
+    '00000000-0000-0000-0000-000000000601': {
+      sentiment: 'Excellent',
+      sentimentScore: 94,
+      riskLevel: 'Minimal',
+      riskScore: 5,
+      onTimeDelivery: 99.5,
+      qualityScore: 98,
+      priceIndex: 'Competitive',
+      warnings: [],
+      insight: 'จัดเป็นพันธมิตรระดับยุทธศาสตร์ (Strategic Partner) ข้อมูลตลาดและข่าวสารสะท้อนความพึงพอใจและการเงินอยู่ในเกณฑ์สูงสุด'
+    }
+  };
+  return data[id] || {
+    sentiment: 'Neutral',
+    sentimentScore: 65,
+    riskLevel: 'Medium',
+    riskScore: 42,
+    onTimeDelivery: 88,
+    qualityScore: 85,
+    priceIndex: 'Fluctuating',
+    warnings: ['พบประวัติส่งมอบล่าช้าสะสมในไตรมาสล่าสุด', 'พบสัญญาณการผันผวนของราคาวัตถุดิบต้นน้ำ'],
+    insight: 'ผลการส่งมอบเริ่มมีความล่าช้าสะสม แนะนำให้ผู้ซื้อพิจารณาสัญญาราคากลางระยะยาวเพื่อลดความเสี่ยงผันผวน'
+  };
+});
+
+const triggerAiAnalysis = () => {
+  isAnalyzing.value = true;
+  setTimeout(() => {
+    isAnalyzing.value = false;
+    showDetailedReport.value = true;
+  }, 1500);
+};
 
 const loadVendor = async () => {
   const id = route.params.id;

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Patch, Body, Param, Query, UseInterceptors, UploadedFile, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Body, Param, Query, UseInterceptors, UploadedFile, UseGuards, BadRequestException, Req } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -73,5 +73,56 @@ export class VendorController {
   @Patch(':id/status')
   async updateStatus(@Param('id') id: string, @Body() dto: UpdateVendorStatusDto) {
     return this.vendorService.updateStatus(id, dto);
+  }
+
+  // Secure: List vendor evaluations
+  @Get('evaluation/list')
+  async getEvaluations() {
+    return this.vendorService.getEvaluations();
+  }
+
+  // Secure: Create vendor evaluation
+  @Post('evaluation')
+  async createEvaluation(@Body() body: { vendor_id: string; year: number; scores: any }) {
+    return this.vendorService.createEvaluation(body);
+  }
+
+  // Secure: Approve vendor evaluation
+  @Post('evaluation/:id/approve')
+  async approveEvaluation(@Param('id') id: string, @Body('approver_id') approverId?: string) {
+    return this.vendorService.approveEvaluation(id, approverId);
+  }
+
+  // Update bank details (Vendor Portal call)
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/bank-account')
+  async updateBankAccount(
+    @Param('id') vendorId: string,
+    @Body() body: { bank_name: string; bank_branch: string; account_no: string; account_name: string },
+  ) {
+    return this.vendorService.updateBankAccount(vendorId, body);
+  }
+
+  // List all bank accounts pending verification
+  @UseGuards(JwtAuthGuard)
+  @Get('bank-accounts/pending')
+  async getPendingBankAccounts() {
+    return this.vendorService.getPendingBankAccounts();
+  }
+
+  // Buyer Verify bank details
+  @UseGuards(JwtAuthGuard)
+  @Post('bank-account/:accountId/verify-buyer')
+  async verifyBuyer(@Param('accountId') accountId: string, @Req() req: any) {
+    const username = req.user.username || 'Buyer';
+    return this.vendorService.verifyBankBuyer(accountId, username);
+  }
+
+  // Accountant Verify bank details
+  @UseGuards(JwtAuthGuard)
+  @Post('bank-account/:accountId/verify-accounting')
+  async verifyAccounting(@Param('accountId') accountId: string, @Req() req: any) {
+    const username = req.user.username || 'Accounting';
+    return this.vendorService.verifyBankAccounting(accountId, username);
   }
 }

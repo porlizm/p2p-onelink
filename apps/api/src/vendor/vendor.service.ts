@@ -9,12 +9,15 @@ import { VendorDocument } from '../database/entities/vendor-document.entity';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorStatusDto } from './dto/update-vendor-status.dto';
 import { VendorStatus } from '@p2p/shared';
+import { VendorEvaluation } from '../database/entities/vendor-evaluation.entity';
 
 @Injectable()
 export class VendorService {
   constructor(
     @InjectRepository(Vendor)
     private vendorRepository: Repository<Vendor>,
+    @InjectRepository(VendorEvaluation)
+    private evaluationRepository: Repository<VendorEvaluation>,
     private dataSource: DataSource,
   ) {}
 
@@ -139,5 +142,104 @@ export class VendorService {
     vendor.status = dto.status;
     // Audit log or history change logic could go here
     return this.vendorRepository.save(vendor);
+  }
+
+  async getEvaluations(): Promise<VendorEvaluation[]> {
+    return this.evaluationRepository.find({
+      relations: ['vendor', 'approver'],
+      order: { created_at: 'DESC' },
+    });
+  }
+
+  async createEvaluation(body: { vendor_id: string; year: number; scores: any }): Promise<VendorEvaluation> {
+    const vendor = await this.vendorRepository.findOne({ where: { vendor_id: body.vendor_id } });
+    if (!vendor) throw new NotFoundException('Vendor not found');
+
+    const evalRecord = this.evaluationRepository.create({
+      vendor_id: body.vendor_id,
+      year: body.year,
+      scores: body.scores || null,
+      status: 'PendingReview',
+    });
+    return this.evaluationRepository.save(evalRecord);
+  }
+
+  async approveEvaluation(id: string, approverId?: string): Promise<VendorEvaluation> {
+    const evalRecord = await this.evaluationRepository.findOne({ where: { evaluation_id: id } });
+    if (!evalRecord) throw new NotFoundException('Evaluation not found');
+
+    evalRecord.status = 'Approved';
+    evalRecord.approver_id = approverId || null;
+    const saved = await this.evaluationRepository.save(evalRecord);
+
+    const scores = evalRecord.scores || {};
+    const sum = Number(scores.technical || 0) + Number(scores.commercial || 0) + Number(scores.delivery || 0);
+    const count = 3;
+    const average = Math.round(sum / count);
+    const vendor = await this.vendorRepository.findOne({ where: { vendor_id: evalRecord.vendor_id } });
+    if (vendor) {
+      vendor.evaluation_score = average;
+      await this.vendorRepository.save(vendor);
+    }
+
+    return saved;
+  }
+
+  async updateBankAccount(
+    vendorId: string,
+    body: { bank_name: string; bank_branch: string; account_no: string; account_name: string },
+  ) {
+    const bankRepo = this.dataSource.getRepository(VendorBankAccount);
+    let bank = await bankRepo.findOne({ where: { vendor_id: vendorId, is_primary: true } });
+    
+    if (!bank) {
+      bank = await bankRepo.findOne({ where: { vendor_id: vendorId } });
+      if (!bank) {
+        bank = bankRepo.create({ vendor_id: vendorId, is_primary: true });
+      }
+    }
+
+    bank.bank_name = body.bank_name;
+    bank.bank_branch = body.bank_branch;
+    bank.account_no = body.account_no;
+    bank.account_name = body.account_name;
+    bank.verification_status = 'PendingVerification';
+    bank.verified_by_buyer = null;
+    bank.verified_by_accounting = null;
+    return await bankRepo.save(bank);
+  }
+
+  async getPendingBankAccounts() {
+    const bankRepo = this.dataSource.getRepository(VendorBankAccount);
+    return await bankRepo.find({
+      where: { verification_status: 'PendingVerification' },
+      relations: ['vendor'],
+    });
+  }
+
+  async verifyBankBuyer(accountId: string, username: string) {
+    const bankRepo = this.dataSource.getRepository(VendorBankAccount);
+    const bank = await bankRepo.findOne({ where: { bank_account_id: accountId } });
+    if (!bank) {
+      throw new NotFoundException('ไม่พบข้อมูลบัญชีธนาคาร');
+    }
+    bank.verified_by_buyer = username;
+    if (bank.verified_by_accounting) {
+      bank.verification_status = 'Active';
+    }
+    return await bankRepo.save(bank);
+  }
+
+  async verifyBankAccounting(accountId: string, username: string) {
+    const bankRepo = this.dataSource.getRepository(VendorBankAccount);
+    const bank = await bankRepo.findOne({ where: { bank_account_id: accountId } });
+    if (!bank) {
+      throw new NotFoundException('ไม่พบข้อมูลบัญชีธนาคาร');
+    }
+    bank.verified_by_accounting = username;
+    if (bank.verified_by_buyer) {
+      bank.verification_status = 'Active';
+    }
+    return await bankRepo.save(bank);
   }
 }

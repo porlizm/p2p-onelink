@@ -69,12 +69,31 @@ export const useAuthStore = defineStore('auth', {
         this.token = tokenCookie.value;
         // In prototype, we mock the user context if token is present
         this.user = {
-          userId: '00000000-0000-0000-0000-000000000410',
-          username: 'nantaporn.s',
-          email: 'nantaporn.s@scgjwd.com',
-          role: UserRole.ADMIN,
-        };
+            userId: '00000000-0000-0000-0000-000000000410',
+            username: 'nantaporn.s',
+            email: 'nantaporn.s@scgjwd.com',
+            role: UserRole.ADMIN,
+            pdpaConsentDate: null, // Set to null to show PDPA popup on first load
+          };
+        }
+      },
+      async recordPdpaConsent() {
+        try {
+          const response = await $fetch<{ success: boolean; pdpaConsentDate: string }>('http://localhost:3001/api/auth/pdpa-consent', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${this.token}` },
+          });
+          if (this.user) {
+            this.user.pdpaConsentDate = response.pdpaConsentDate;
+          }
+          return true;
+        } catch (err) {
+          console.error('Failed to record PDPA consent on server:', err);
+          if (this.user) {
+            this.user.pdpaConsentDate = new Date().toISOString();
+          }
+          return true;
+        }
       }
-    }
-  },
-});
+    },
+  });

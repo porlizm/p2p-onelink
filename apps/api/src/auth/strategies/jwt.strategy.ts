@@ -53,6 +53,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       permissions,
       companyId,
       buId,
+      pdpaConsentDate: user.pdpa_consent_date,
+      allowedIpRange: user.allowed_ip_range,
     };
   }
 }

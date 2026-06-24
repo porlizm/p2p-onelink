@@ -28,6 +28,12 @@ export class CostCenter {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   budget_used_amount: number;
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 5.0 })
+  budget_overrun_tolerance_pct: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 20000.0 })
+  budget_overrun_tolerance_amount: number;
+
   @Column({ type: 'varchar', length: 4 })
   fiscal_year: string;
 }

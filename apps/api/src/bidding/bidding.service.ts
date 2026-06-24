@@ -9,9 +9,14 @@ import { BidQuotationLine } from '../database/entities/bid-quotation-line.entity
 import { PurchaseRequisition } from '../database/entities/purchase-requisition.entity';
 import { PurchaseRequisitionLine } from '../database/entities/purchase-requisition-line.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
+import { AppUser } from '../database/entities/app-user.entity';
+import { Notification } from '../database/entities/notification.entity';
+import { PurchaseOrder } from '../database/entities/purchase-order.entity';
+import { PurchaseOrderLine } from '../database/entities/purchase-order-line.entity';
+import { AuditLog } from '../database/entities/audit-log.entity';
 import { CreateRfqDto } from './dto/create-rfq.dto';
 import { SubmitQuoteDto } from './dto/submit-quote.dto';
-import { BiddingStatus, BidQuotationStatus, PurchaseRequisitionStatus } from '@p2p/shared';
+import { BiddingStatus, BidQuotationStatus, PurchaseRequisitionStatus, PurchaseOrderStatus } from '@p2p/shared';
 
 @Injectable()
 export class BiddingService {
@@ -52,6 +57,10 @@ export class BiddingService {
         description: dto.description || null,
         close_date: new Date(dto.close_date),
         status: BiddingStatus.OPEN_FOR_QUOTATION,
+        bid_type: dto.bid_type || 'RFQ_Closed',
+        round_no: dto.round_no || 1,
+        technical_weight: dto.technical_weight || 0,
+        commercial_weight: dto.commercial_weight || 100,
       });
       const savedRfq = await manager.getRepository(BiddingEvent).save(rfq);
 
@@ -163,7 +172,7 @@ export class BiddingService {
     });
   }
 
-  async getComparison(rfqId: string, userId: string) {
+  async getComparison(rfqId: string, user: any) {
     const rfq = await this.rfqRepo.findOne({
       where: { rfq_id: rfqId },
       relations: [
@@ -182,11 +191,29 @@ export class BiddingService {
     const today = new Date();
     const isBiddingOpen = today < new Date(rfq.close_date) && rfq.status === BiddingStatus.OPEN_FOR_QUOTATION;
 
-    // Strict validation: Buyers cannot view competitor prices while bidding is active
     if (isBiddingOpen) {
-      throw new ForbiddenException(
-        'ระเบียบจัดซื้อห้ามเปิดซองเสนอราคาก่อนถึงวันและเวลาที่กำหนดเปิดซอง',
-      );
+      const userRole = (user && typeof user === 'object' && user.role) ? user.role : 'Requester';
+      const isAdmin = userRole === 'Admin';
+
+      if (!isAdmin) {
+        if (rfq.bid_type === 'SealedBid' || rfq.bid_type === 'RFQ_Closed' || !rfq.bid_type) {
+          if (rfq.bid_type === 'RFQ_Closed' || !rfq.bid_type) {
+            throw new ForbiddenException(
+              'ระเบียบจัดซื้อห้ามเปิดซองเสนอราคาก่อนถึงวันและเวลาที่กำหนดเปิดซอง',
+            );
+          }
+
+          // Mask pricing details for Sealed Bids
+          for (const q of rfq.quotations) {
+            (q as any).is_sealed_masked = true;
+            if (q.lines) {
+              for (const l of q.lines) {
+                l.unit_price = 0;
+              }
+            }
+          }
+        }
+      }
     }
 
     return rfq;
@@ -212,6 +239,9 @@ export class BiddingService {
 
       // Update Bidding Event status
       rfq.status = BiddingStatus.AWARDED;
+      rfq.awarded_at = new Date();
+      rfq.winner_quote_id = quoteId;
+      rfq.is_escalated = false;
       await manager.getRepository(BiddingEvent).save(rfq);
 
       // Update Quotations status
@@ -283,10 +313,281 @@ export class BiddingService {
       defaultCC.budget_reserved_amount = Number(defaultCC.budget_reserved_amount) + totalPrAmount;
       await manager.getRepository(CostCenter).save(defaultCC);
 
+      // Create Vendor Notification
+      const vendorUser = await manager.getRepository(AppUser).findOne({
+        where: { email: Like('%vendor%') }
+      }) || { user_id: '00000008-0000-0000-0000-000000000001' };
+
+      const notification = manager.getRepository(Notification).create({
+        recipient_user_id: vendorUser.user_id,
+        channel: 'System',
+        trigger_event: 'BiddingAwarded',
+        message: `ยินดีด้วย! ข้อเสนอราคาของคุณสำหรับ RFQ: ${rfq.rfq_no} - ${rfq.title} ได้รับการคัดเลือกเป็นผู้ชนะการประมูล กรุณาเข้าสู่ระบบเพื่อดาวน์โหลดใบสั่งซื้อ (PO) และอัปโหลดเอกสารยืนยัน`,
+        read_flag: false,
+      });
+      await manager.getRepository(Notification).save(notification);
+
       return {
         rfq_no: rfq.rfq_no,
         status: rfq.status,
         pr_no: savedPr.pr_no,
+      };
+    });
+  }
+
+  async escalateWinnerTimeout(rfqId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const rfq = await manager.getRepository(BiddingEvent).findOne({
+        where: { rfq_id: rfqId },
+        relations: ['items'],
+      });
+      if (!rfq) {
+        throw new NotFoundException('ไม่พบเอกสาร RFQ');
+      }
+
+      if (rfq.status !== BiddingStatus.AWARDED) {
+        throw new BadRequestException('ไม่สามารถดำเนินการปลดสิทธิ์ได้เนื่องจากสถานะประมูลไม่ได้อยู่ในขั้นตัดสินผล (Awarded)');
+      }
+
+      if (rfq.is_escalated) {
+        throw new BadRequestException('เอกสาร RFQ นี้ได้รับการเลื่อนสิทธิ์ไปหาผู้ชนะลำดับสำรองเรียบร้อยแล้ว');
+      }
+
+      // 1. Find the PR auto-generated for the current winner
+      const pr = await manager.getRepository(PurchaseRequisition).findOne({
+        where: { description: Like(`%RFQ: ${rfq.rfq_no}%`) },
+        relations: ['lines'],
+      });
+
+      if (pr) {
+        // If a PO was generated from this PR, cancel the PO and release reserved budget
+        const po = await manager.getRepository(PurchaseOrder).findOne({
+          where: { pr_id: pr.pr_id },
+          relations: ['lines'],
+        });
+
+        if (po) {
+          const activeStatuses = [
+            PurchaseOrderStatus.VENDOR_CONFIRMED,
+            PurchaseOrderStatus.PROCESSING_PAYMENT,
+            PurchaseOrderStatus.PAID,
+            PurchaseOrderStatus.PARTIALLY_RECEIVED,
+            PurchaseOrderStatus.FULLY_RECEIVED,
+            PurchaseOrderStatus.CLOSED,
+          ];
+          if (activeStatuses.includes(po.status)) {
+            throw new BadRequestException(
+              `ไม่สามารถดำเนินการปลดสิทธิ์ได้เนื่องจากผู้ขายได้ตอบรับคำสั่งซื้อหรือมีธุรกรรมการเงินเกิดขึ้นแล้ว (สถานะ PO: ${po.status})`,
+            );
+          }
+
+          if (po.status !== PurchaseOrderStatus.CANCELLED && po.status !== PurchaseOrderStatus.REJECTED) {
+            const oldStatus = po.status;
+            po.status = PurchaseOrderStatus.CANCELLED;
+            await manager.getRepository(PurchaseOrder).save(po);
+
+            // Release reserved budget for the PO (unreceived portion)
+            const ccDiffs: { [ccId: string]: number } = {};
+            for (const poLine of po.lines) {
+              if (poLine.pr_line_id && po.pr_id) {
+                const prLine = await manager.getRepository(PurchaseRequisitionLine).findOne({
+                  where: { line_id: poLine.pr_line_id },
+                });
+                if (prLine) {
+                  const ccId = prLine.cost_center_id;
+                  const unreceivedQty = Number(poLine.quantity) - Number(poLine.received_quantity);
+                  if (unreceivedQty > 0) {
+                    const amountToRelease = unreceivedQty * Number(poLine.unit_price);
+                    ccDiffs[ccId] = (ccDiffs[ccId] || 0) + amountToRelease;
+                  }
+                }
+              }
+            }
+
+            for (const ccId of Object.keys(ccDiffs)) {
+              const amountToRelease = ccDiffs[ccId];
+              const costCenter = await manager.getRepository(CostCenter).findOne({
+                where: { cost_center_id: ccId },
+                lock: { mode: 'pessimistic_write' },
+              });
+              if (costCenter) {
+                const oldReserved = Number(costCenter.budget_reserved_amount);
+                costCenter.budget_reserved_amount = Math.max(0, oldReserved - amountToRelease);
+                await manager.getRepository(CostCenter).save(costCenter);
+
+                // Log in Audit Trail
+                const auditCC = manager.getRepository(AuditLog).create({
+                  user_id: userId,
+                  action: 'RELEASE_BUDGET_TIMEOUT_ESCALATE',
+                  entity_type: 'CostCenter',
+                  entity_id: ccId,
+                  before_value_json: { reserved: oldReserved },
+                  after_value_json: { reserved: costCenter.budget_reserved_amount },
+                  timestamp: new Date(),
+                });
+                await manager.save(auditCC);
+              }
+            }
+
+            // Create PO Audit Log
+            const audit = manager.getRepository(AuditLog).create({
+              user_id: userId,
+              action: 'CANCEL_PO_TIMEOUT_ESCALATE',
+              entity_type: 'PurchaseOrder',
+              entity_id: po.po_id,
+              before_value_json: { status: oldStatus },
+              after_value_json: { status: PurchaseOrderStatus.CANCELLED },
+              timestamp: new Date(),
+            });
+            await manager.save(audit);
+          }
+        }
+
+        // Cancel the PR as well
+        if (pr.status !== PurchaseRequisitionStatus.CANCELLED) {
+          pr.status = PurchaseRequisitionStatus.CANCELLED;
+          await manager.getRepository(PurchaseRequisition).save(pr);
+        }
+      }
+
+      // 2. Fetch all quotations and calculate weighted scores
+      const quotations = await manager.getRepository(BidQuotation).find({
+        where: { rfq_id: rfq.rfq_id },
+        relations: ['lines', 'vendor'],
+      });
+
+      if (quotations.length < 2) {
+        throw new BadRequestException('ไม่สามารถเปลี่ยนตัวผู้ชนะได้เนื่องจากไม่มีผู้ประมูลสำรอง (มีผู้เสนอราคาเพียง 1 ราย)');
+      }
+
+      // Calculate total price for each quotation to find min_price for scaling commercial score
+      const quoteTotals = quotations.map((q) => {
+        const total = q.lines.reduce((sum, line) => {
+          const rfqItem = rfq.items.find((item) => item.rfq_item_id === line.rfq_item_id);
+          const qty = rfqItem ? Number(rfqItem.quantity) : 1;
+          return sum + qty * Number(line.unit_price);
+        }, 0);
+        return { quote_id: q.quote_id, total };
+      });
+
+      const validTotals = quoteTotals.filter((t) => t.total > 0);
+      const minPrice = validTotals.length > 0 ? Math.min(...validTotals.map((t) => t.total)) : 0;
+
+      // Calculate weighted score for each quotation
+      const scoredQuotations = quotations.map((q) => {
+        const totalObj = quoteTotals.find((t) => t.quote_id === q.quote_id);
+        const total = totalObj ? totalObj.total : 0;
+
+        const techScore = Number(q.technical_score || 80);
+        const commScore = total > 0 ? (minPrice / total) * 100 : 0;
+
+        const techWeight = Number(rfq.technical_weight || 0);
+        const commWeight = Number(rfq.commercial_weight || 100);
+
+        const score = (techScore * techWeight / 100) + (commScore * commWeight / 100);
+
+        return {
+          quote: q,
+          total,
+          score,
+        };
+      });
+
+      // Sort by score descending
+      scoredQuotations.sort((a, b) => b.score - a.score);
+
+      // Current winner is scoredQuotations[0] (should match winner_quote_id)
+      // Runner-up is scoredQuotations[1]
+      const runnerUp = scoredQuotations[1];
+      if (!runnerUp) {
+        throw new BadRequestException('ไม่พบผู้เสนอราคาสำรองที่มีคะแนนถัดไป');
+      }
+
+      // Update RFQ Winner Fields
+      rfq.winner_quote_id = runnerUp.quote.quote_id;
+      rfq.is_escalated = true;
+      await manager.getRepository(BiddingEvent).save(rfq);
+
+      // Update quote statuses
+      for (const sq of scoredQuotations) {
+        sq.quote.status = sq.quote.quote_id === runnerUp.quote.quote_id
+          ? BidQuotationStatus.SELECTED
+          : BidQuotationStatus.NOT_SELECTED;
+        await manager.getRepository(BidQuotation).save(sq.quote);
+      }
+
+      // 3. Auto-generate a new PR for the runner-up
+      const prNoPrefix = `PR${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
+      const prCount = await manager.getRepository(PurchaseRequisition).count({
+        where: { pr_no: Like(`${prNoPrefix}%`) },
+      });
+      const prNo = `${prNoPrefix}${(prCount + 1).toString().padStart(3, '0')}`;
+
+      const defaultCC = await manager.getRepository(CostCenter).findOne({
+        where: { cc_code: 'CC-IT-01' },
+      });
+      if (!defaultCC) {
+        throw new BadRequestException('ไม่พบศูนย์ต้นทุนไอทีมาตรฐาน (CC-IT-01) ในระบบ');
+      }
+
+      const prLinesData = runnerUp.quote.lines.map((qLine) => {
+        const rfqItem = rfq.items.find((item) => item.rfq_item_id === qLine.rfq_item_id);
+        const qty = rfqItem ? Number(rfqItem.quantity) : 1;
+        const lineTotal = qty * Number(qLine.unit_price);
+
+        return {
+          item_id: rfqItem?.item_id || null,
+          item_name: rfqItem?.item_name || 'Item from RFQ (Runner-up)',
+          quantity: qty,
+          uom: rfqItem?.uom || 'ชิ้น',
+          unit_price: Number(qLine.unit_price),
+          total_price: lineTotal,
+          cost_center_id: defaultCC.cost_center_id,
+          quotation_url: qLine.quotation_url || null,
+        };
+      });
+
+      const newPr = manager.getRepository(PurchaseRequisition).create({
+        pr_no: prNo,
+        requester_id: userId,
+        company_id: pr ? pr.company_id : '00000001-0000-0000-0000-000000000001',
+        status: PurchaseRequisitionStatus.PENDING_APPROVAL,
+        total_amount: runnerUp.total,
+        description: `Auto-generated from Awarded Bidding RFQ: ${rfq.rfq_no} - ${rfq.title} (Timeout Escalation Re-award)`,
+      });
+      const savedPr = await manager.getRepository(PurchaseRequisition).save(newPr);
+
+      const prLines = prLinesData.map((lineData) =>
+        manager.getRepository(PurchaseRequisitionLine).create({
+          pr_id: savedPr.pr_id,
+          ...lineData,
+        }),
+      );
+      await manager.getRepository(PurchaseRequisitionLine).save(prLines);
+
+      // Reserve budget for the new PR
+      defaultCC.budget_reserved_amount = Number(defaultCC.budget_reserved_amount) + runnerUp.total;
+      await manager.getRepository(CostCenter).save(defaultCC);
+
+      // Notify the runner-up vendor
+      const vendorUser = await manager.getRepository(AppUser).findOne({
+        where: { email: Like('%vendor%') }
+      }) || { user_id: '00000008-0000-0000-0000-000000000001' };
+
+      const notification = manager.getRepository(Notification).create({
+        recipient_user_id: vendorUser.user_id,
+        channel: 'System',
+        trigger_event: 'BiddingAwardedEscalated',
+        message: `แจ้งเตือนสิทธิ์สำรอง: ข้อเสนอราคาของคุณสำหรับ RFQ: ${rfq.rfq_no} ได้รับการเลื่อนสิทธิ์ขึ้นเป็นผู้ชนะการประมูลเนื่องจากรายก่อนหน้าไม่เข้าตอบรับตามกำหนดเวลา กรุณาเข้าสู่ระบบเพื่อดำเนินการ`,
+        read_flag: false,
+      });
+      await manager.getRepository(Notification).save(notification);
+
+      return {
+        rfq_no: rfq.rfq_no,
+        is_escalated: rfq.is_escalated,
+        winner_quote_id: rfq.winner_quote_id,
+        new_pr_no: savedPr.pr_no,
       };
     });
   }

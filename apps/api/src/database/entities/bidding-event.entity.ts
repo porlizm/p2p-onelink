@@ -25,6 +25,30 @@ export class BiddingEvent {
   })
   status: BiddingStatus;
 
+  @Column({ type: 'varchar', length: 50, default: 'RFQ_Closed' })
+  bid_type: string;
+
+  @Column({ type: 'int', default: 1 })
+  round_no: number;
+
+  @Column({ type: 'int', default: 0 })
+  technical_weight: number;
+
+  @Column({ type: 'int', default: 100 })
+  commercial_weight: number;
+
+  @Column({ type: 'int', default: 72 })
+  response_deadline_hrs: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  awarded_at: Date | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  winner_quote_id: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  is_escalated: boolean;
+
   @Column({ type: 'timestamp' })
   close_date: Date;
 

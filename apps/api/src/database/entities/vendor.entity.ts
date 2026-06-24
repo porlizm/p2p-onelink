@@ -37,6 +37,9 @@ export class Vendor {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
   evaluation_score: number;
 
+  @Column({ type: 'timestamp', nullable: true })
+  pdpa_consent_date: Date | null;
+
   @Column({ type: 'boolean', default: true })
   is_dedup_master: boolean;
 

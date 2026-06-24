@@ -6,6 +6,7 @@ import { PurchaseRequisitionLine } from '../database/entities/purchase-requisiti
 import { CostCenter } from '../database/entities/cost-center.entity';
 import { CreatePrDto } from './dto/create-pr.dto';
 import { PurchaseRequisitionStatus } from '@p2p/shared';
+import { AuditLog } from '../database/entities/audit-log.entity';
 
 @Injectable()
 export class PrService {
@@ -49,6 +50,7 @@ export class PrService {
 
       // 3. Check budget for each Cost Center
       let isOverBudget = false;
+      let withinTolerance = true;
       const costCenters: CostCenter[] = [];
 
       for (const ccId of Object.keys(ccTotals)) {
@@ -67,14 +69,48 @@ export class PrService {
 
         if (requestedAmount > remainingBudget) {
           isOverBudget = true;
+          const overrunAmount = requestedAmount - remainingBudget;
+          const tolerancePct = Number(costCenter.budget_overrun_tolerance_pct || 5.0);
+          const toleranceAmt = Number(costCenter.budget_overrun_tolerance_amount || 20000.0);
+          const pctLimit = remainingBudget > 0 ? (remainingBudget * (tolerancePct / 100)) : 0;
+
+          const isCcTolerance = overrunAmount <= toleranceAmt || (remainingBudget > 0 && overrunAmount <= pctLimit);
+          if (!isCcTolerance) {
+            withinTolerance = false;
+          }
         }
         costCenters.push(costCenter);
       }
 
-      // Determine PR status
-      const status = isOverBudget
-        ? PurchaseRequisitionStatus.BLOCKED_OVER_BUDGET
-        : PurchaseRequisitionStatus.PENDING_APPROVAL;
+      // Determine PR status & overrun flag
+      let status = PurchaseRequisitionStatus.PENDING_APPROVAL;
+      let isBudgetOverrun = false;
+
+      if (isOverBudget) {
+        if (withinTolerance) {
+          status = PurchaseRequisitionStatus.PENDING_APPROVAL;
+          isBudgetOverrun = true;
+        } else {
+          status = PurchaseRequisitionStatus.BLOCKED_OVER_BUDGET;
+          isBudgetOverrun = true;
+        }
+      }
+
+      // Determine approver role based on DOA and overrun escalation
+      let approverRole = 'Manager';
+      if (isBudgetOverrun && status === PurchaseRequisitionStatus.PENDING_APPROVAL) {
+        if (totalAmount <= 100000) {
+          approverRole = 'CFO';
+        } else {
+          approverRole = 'VP';
+        }
+      } else {
+        if (totalAmount <= 50000) {
+          approverRole = 'Manager';
+        } else {
+          approverRole = 'SeniorManager';
+        }
+      }
 
       // 4. Create and save PR Header
       const pr = manager.getRepository(PurchaseRequisition).create({
@@ -84,6 +120,8 @@ export class PrService {
         status,
         total_amount: totalAmount,
         description: createPrDto.description,
+        is_budget_overrun: isBudgetOverrun,
+        approver_role: approverRole,
       });
 
       const savedPr = await manager.getRepository(PurchaseRequisition).save(pr);
@@ -145,6 +183,176 @@ export class PrService {
 
   async getCostCenters() {
     return this.ccRepo.find();
+  }
+
+  async approvePR(prId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const pr = await manager.getRepository(PurchaseRequisition).findOne({
+        where: { pr_id: prId },
+        relations: ['lines'],
+      });
+
+      if (!pr) {
+        throw new NotFoundException('ไม่พบเอกสาร PR');
+      }
+
+      if (pr.status !== PurchaseRequisitionStatus.PENDING_APPROVAL) {
+        throw new BadRequestException(`ไม่สามารถอนุมัติได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status}`);
+      }
+
+      const beforeValue = { status: pr.status };
+      pr.status = PurchaseRequisitionStatus.APPROVED;
+      const saved = await manager.getRepository(PurchaseRequisition).save(pr);
+
+      // Create Audit Log
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: userId,
+        action: 'APPROVE_PR',
+        entity_type: 'PurchaseRequisition',
+        entity_id: prId,
+        before_value_json: beforeValue,
+        after_value_json: { status: pr.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
+  }
+
+  async rejectPR(prId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const pr = await manager.getRepository(PurchaseRequisition).findOne({
+        where: { pr_id: prId },
+        relations: ['lines'],
+      });
+
+      if (!pr) {
+        throw new NotFoundException('ไม่พบเอกสาร PR');
+      }
+
+      if (pr.status !== PurchaseRequisitionStatus.PENDING_APPROVAL) {
+        throw new BadRequestException(`ไม่สามารถปฏิเสธได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status}`);
+      }
+
+      const beforeValue = { status: pr.status };
+      pr.status = PurchaseRequisitionStatus.REJECTED;
+      const saved = await manager.getRepository(PurchaseRequisition).save(pr);
+
+      // Release reserved budget
+      const ccTotals: { [ccId: string]: number } = {};
+      for (const line of pr.lines) {
+        ccTotals[line.cost_center_id] = (ccTotals[line.cost_center_id] || 0) + Number(line.total_price);
+      }
+
+      for (const ccId of Object.keys(ccTotals)) {
+        const costCenter = await manager.getRepository(CostCenter).findOne({
+          where: { cost_center_id: ccId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (costCenter) {
+          const oldReserved = Number(costCenter.budget_reserved_amount);
+          const amountToRelease = ccTotals[ccId];
+          costCenter.budget_reserved_amount = Math.max(0, oldReserved - amountToRelease);
+          await manager.getRepository(CostCenter).save(costCenter);
+
+          // Log budget change in Audit Trail
+          const auditCC = manager.getRepository(AuditLog).create({
+            user_id: userId,
+            action: 'RELEASE_BUDGET_PR_REJECT',
+            entity_type: 'CostCenter',
+            entity_id: ccId,
+            before_value_json: { reserved: oldReserved },
+            after_value_json: { reserved: costCenter.budget_reserved_amount },
+            timestamp: new Date(),
+          });
+          await manager.save(auditCC);
+        }
+      }
+
+      // Create PR Audit Log
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: userId,
+        action: 'REJECT_PR',
+        entity_type: 'PurchaseRequisition',
+        entity_id: prId,
+        before_value_json: beforeValue,
+        after_value_json: { status: pr.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
+  }
+
+  async cancelPR(prId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const pr = await manager.getRepository(PurchaseRequisition).findOne({
+        where: { pr_id: prId },
+        relations: ['lines'],
+      });
+
+      if (!pr) {
+        throw new NotFoundException('ไม่พบเอกสาร PR');
+      }
+
+      if (
+        pr.status !== PurchaseRequisitionStatus.PENDING_APPROVAL &&
+        pr.status !== PurchaseRequisitionStatus.APPROVED
+      ) {
+        throw new BadRequestException(`ไม่สามารถยกเลิกได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status}`);
+      }
+
+      const beforeValue = { status: pr.status };
+      pr.status = PurchaseRequisitionStatus.CANCELLED;
+      const saved = await manager.getRepository(PurchaseRequisition).save(pr);
+
+      // Release reserved budget
+      const ccTotals: { [ccId: string]: number } = {};
+      for (const line of pr.lines) {
+        ccTotals[line.cost_center_id] = (ccTotals[line.cost_center_id] || 0) + Number(line.total_price);
+      }
+
+      for (const ccId of Object.keys(ccTotals)) {
+        const costCenter = await manager.getRepository(CostCenter).findOne({
+          where: { cost_center_id: ccId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (costCenter) {
+          const oldReserved = Number(costCenter.budget_reserved_amount);
+          const amountToRelease = ccTotals[ccId];
+          costCenter.budget_reserved_amount = Math.max(0, oldReserved - amountToRelease);
+          await manager.getRepository(CostCenter).save(costCenter);
+
+          // Log budget change in Audit Trail
+          const auditCC = manager.getRepository(AuditLog).create({
+            user_id: userId,
+            action: 'RELEASE_BUDGET_PR_CANCEL',
+            entity_type: 'CostCenter',
+            entity_id: ccId,
+            before_value_json: { reserved: oldReserved },
+            after_value_json: { reserved: costCenter.budget_reserved_amount },
+            timestamp: new Date(),
+          });
+          await manager.save(auditCC);
+        }
+      }
+
+      // Create PR Audit Log
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: userId,
+        action: 'CANCEL_PR',
+        entity_type: 'PurchaseRequisition',
+        entity_id: prId,
+        before_value_json: beforeValue,
+        after_value_json: { status: pr.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
   }
 }
 

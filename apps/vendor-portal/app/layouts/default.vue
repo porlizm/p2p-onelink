@@ -93,9 +93,11 @@ const handleLogout = () => {
 
 const navItems = [
   { title: 'แดชบอร์ด', path: '/', icon: 'i-heroicons-squares-2x2-20-solid' },
-  { title: 'เสนอราคา (Bidding)', path: '/bids', icon: 'i-heroicons-document-currency-bangladesh-20-solid' }, // i-heroicons-banknotes
+  { title: 'เสนอราคา (Bidding)', path: '/bids', icon: 'i-heroicons-document-currency-bangladesh-20-solid' },
   { title: 'ใบสั่งซื้อ (PO)', path: '/orders', icon: 'i-heroicons-shopping-bag-20-solid' },
   { title: 'ใบกำกับภาษี (Invoice)', path: '/invoices', icon: 'i-heroicons-document-text-20-solid' },
+  { title: 'สัญญา (Contracts)', path: '/contracts', icon: 'i-heroicons-document-duplicate-20-solid' },
+  { title: 'อัปโหลด Catalog', path: '/catalog/upload', icon: 'i-heroicons-cloud-arrow-up-20-solid' },
   { title: 'ข้อมูลบริษัท', path: '/profile', icon: 'i-heroicons-building-office-20-solid' },
 ];
 </script>

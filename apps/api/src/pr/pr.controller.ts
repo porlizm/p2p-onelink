@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Param, Body, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -32,6 +32,24 @@ export class PrController {
   async findOne(@Param('id') id: string, @Req() req: any) {
     const { userId } = req.user;
     return this.prService.getPRDetails(id, userId);
+  }
+
+  @Patch(':id/approve')
+  async approve(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.prService.approvePR(id, userId);
+  }
+
+  @Patch(':id/reject')
+  async reject(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.prService.rejectPR(id, userId);
+  }
+
+  @Patch(':id/cancel')
+  async cancel(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.prService.cancelPR(id, userId);
   }
 
   @Post('upload')

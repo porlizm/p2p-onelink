@@ -165,6 +165,77 @@
         </table>
       </div>
     </div>
+
+    <!-- AI Sourcing Assistant & Market Analytics -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+      <!-- Suggested Vendors -->
+      <UCard class="lg:col-span-2 border border-[var(--border)] shadow-[var(--shadow-sm)] bg-white rounded-xl">
+        <template #header>
+          <div class="flex items-center justify-between border-b pb-3">
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-indigo-600 animate-pulse" />
+              <h3 class="font-bold text-slate-800 text-sm">AI Sourcing Recommendation (ผู้ขายเสนอแนะโดยระบบ AI)</h3>
+            </div>
+            <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-600 text-[10px] font-bold">Scraped Live</span>
+          </div>
+        </template>
+
+        <div class="space-y-4 text-xs mt-2">
+          <p class="text-slate-500">
+            ระบบ AI ทำการสืบค้นข้อมูลคู่จัดซื้อรายใหม่จากฐานข้อมูลสารบัญบริการและ YellowPages สาธารณะ เพื่อเสนอแนะบริษัทที่ตรงกับประเภทความต้องการในระบบของคุณ:
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div v-for="vendor in aiScrapedVendors" :key="vendor.name" class="p-3 border border-indigo-100 bg-indigo-50/10 rounded-xl hover:border-indigo-200 transition space-y-2">
+              <div class="flex justify-between items-start">
+                <span class="font-bold text-slate-800 line-clamp-1 max-w-[120px]">{{ vendor.name }}</span>
+                <span class="px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700 text-[9px] font-black">{{ vendor.matchScore }} match</span>
+              </div>
+              <div class="text-[10px] text-slate-400 font-medium">{{ vendor.category }}</div>
+              <div class="text-[10px] text-indigo-700 font-bold bg-indigo-50 p-1.5 rounded">{{ vendor.highlight }}</div>
+              <div class="flex items-center justify-between text-[8px] text-slate-400 pt-1.5 border-t border-slate-100">
+                <span>แหล่ง: {{ vendor.source }}</span>
+                <UButton size="xs" color="primary" variant="link" class="p-0 font-bold text-[9px] text-[#0054FF]" @click="inviteVendor(vendor.name)">ชวนร่วมประมูล</UButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
+
+      <!-- Price Index Benchmark -->
+      <UCard class="lg:col-span-1 border border-[var(--border)] shadow-[var(--shadow-sm)] bg-white rounded-xl">
+        <template #header>
+          <div class="flex items-center gap-2 border-b pb-3">
+            <UIcon name="i-heroicons-chart-bar" class="w-5 h-5 text-[#0054FF]" />
+            <h3 class="font-bold text-slate-800 text-sm">AI Price Benchmarking (เปรียบเทียบตลาด)</h3>
+          </div>
+        </template>
+
+        <div class="space-y-3.5 text-xs mt-2">
+          <p class="text-slate-500 text-[10px] leading-relaxed">
+            วิเคราะห์แนวโน้มราคาตลาดจาก Social Listening และประกาศราคาวัสดุก่อสร้างกลางของราชการ เปรียบเทียบกับราคาสัญญากลางปัจจุบัน:
+          </p>
+
+          <div class="space-y-2.5">
+            <div v-for="trend in marketPriceTrends" :key="trend.item" class="flex items-center justify-between p-2 border border-slate-100 rounded-lg">
+              <div>
+                <span class="font-bold text-slate-800 block text-[11px]">{{ trend.item }}</span>
+                <span class="text-[9px] text-slate-400 font-mono">ราคากลางตลาด: {{ trend.benchmark }}</span>
+              </div>
+              <div class="text-right">
+                <span class="font-extrabold text-[#0054FF] block">{{ trend.ourAvg }} <span class="text-[8px] text-slate-400 font-normal">(สัญญา)</span></span>
+                <span 
+                  class="text-[9px] font-black"
+                  :class="trend.change.startsWith('+') ? 'text-red-500' : 'text-green-500'"
+                >
+                  {{ trend.change }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </UCard>
+    </div>
   </div>
 </template>
 
@@ -177,6 +248,22 @@ const authStore = useAuthStore();
 const search = ref('');
 const filterStatus = ref('ทั้งหมด');
 const rfqList = ref<any[]>([]);
+
+const aiScrapedVendors = ref([
+  { name: 'บริษัท ซีเมนต์เจริญรุ่งเรือง จำกัด', category: 'วัสดุก่อสร้าง / ปูนซีเมนต์', matchScore: '98%', source: 'YellowPages', highlight: 'ราคาส่งปูนปอร์ตแลนด์ต่ำกว่าตลาด 2.5%' },
+  { name: 'บริษัท เหล็กกล้าบูรพา โลหะการ จำกัด', category: 'งานเหล็กเส้น / เหล็กรูปพรรณ', matchScore: '94%', source: 'TIS Database', highlight: 'ได้รับการรับรอง มอก. ล่าสุด จัดส่งรวดเร็ว' },
+  { name: 'บริษัท สมาร์ท คอนสตรัคชั่น ซัพพลายส์ จำกัด', category: 'เครื่องมือและอุปกรณ์ช่าง', matchScore: '89%', source: 'Google Maps Business', highlight: 'บริการเช่าเครื่องมือขนาดใหญ่ในนิคมปทุมธานี' }
+]);
+
+const marketPriceTrends = ref([
+  { item: 'ปูนซีเมนต์ถุงปอร์ตแลนด์ (ตลาด)', change: '+1.2%', benchmark: '150 ฿', ourAvg: '145 ฿' },
+  { item: 'เหล็กเส้นกลม SR24 (ตลาด)', change: '-0.8%', benchmark: '218 ฿', ourAvg: '214 ฿' },
+  { item: 'น้ำมันดีเซลหมุนเร็ว B7 (ลิตร)', change: '+4.5%', benchmark: '33.5 ฿', ourAvg: '32.8 ฿' }
+]);
+
+const inviteVendor = (name: string) => {
+  alert(`ส่งจดหมายและเชิญคู่ค้า "${name}" เข้าร่วมโครงการ RFQ จัดซื้อผ่านอีเมลสำเร็จ!`);
+};
 
 const loadRfqs = async () => {
   try {

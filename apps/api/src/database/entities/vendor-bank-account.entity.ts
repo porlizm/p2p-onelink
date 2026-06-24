@@ -27,4 +27,13 @@ export class VendorBankAccount {
 
   @Column({ type: 'boolean', default: false })
   is_primary: boolean;
+
+  @Column({ type: 'varchar', length: 50, default: 'Active' }) // Active, PendingVerification
+  verification_status: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  verified_by_buyer: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  verified_by_accounting: string | null;
 }

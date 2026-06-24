@@ -53,6 +53,23 @@ export class PurchaseOrder {
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  payment_error_code: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  payment_error_message: string | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  payment_milestones: {
+    milestone_id: string;
+    title: string;
+    percentage: number;
+    amount: number;
+    status: 'Pending' | 'ProcessingPayment' | 'Paid' | 'Failed';
+    error_code?: string | null;
+    error_message?: string | null;
+  }[] | null;
+
   @OneToMany(() => PurchaseOrderLine, (line) => line.po, { cascade: true })
   lines: PurchaseOrderLine[];
 }

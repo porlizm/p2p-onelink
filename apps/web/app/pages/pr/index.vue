@@ -184,6 +184,28 @@
               <span class="text-[var(--muted-foreground)] block">วันที่ลงบันทึก</span>
               <span class="font-medium text-[var(--foreground)]">{{ formatDate(activePr?.created_at) }}</span>
             </div>
+            <div>
+              <span class="text-[var(--muted-foreground)] block">สายการอนุมัติเอกสาร (DOA Approver)</span>
+              <span class="font-bold text-[var(--primary)] flex items-center gap-1 mt-0.5">
+                <UIcon name="i-heroicons-shield-check" class="w-4 h-4 text-indigo-500" />
+                {{ activePr?.approver_role || 'Manager' }}
+              </span>
+            </div>
+            <div>
+              <span class="text-[var(--muted-foreground)] block">สถานะการตรวจสอบงบประมาณ</span>
+              <span 
+                v-if="activePr?.is_budget_overrun" 
+                class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-1 inline-block"
+              >
+                งบเกินเกณฑ์ผ่อนปรน (Escalated)
+              </span>
+              <span 
+                v-else 
+                class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-600 border border-green-200 mt-1 inline-block"
+              >
+                งบปกติผ่านเกณฑ์ (On Budget)
+              </span>
+            </div>
           </div>
 
           <!-- Lines table -->
@@ -232,7 +254,7 @@
 
         <template #footer>
           <div class="flex items-center justify-between w-full">
-            <div>
+            <div class="flex gap-2">
               <UButton 
                 v-if="activePr?.status === 'Approved'"
                 color="primary" 
@@ -242,6 +264,17 @@
               >
                 <UIcon name="i-heroicons-shopping-cart" class="w-4.5 h-4.5 mr-1" />
                 ออกเอกสารใบสั่งซื้อ (PO)
+              </UButton>
+              <UButton 
+                v-if="activePr?.status === 'PendingApproval' || activePr?.status === 'Approved'"
+                color="red" 
+                variant="outline"
+                size="sm" 
+                @click="cancelPR(activePr)"
+                class="cursor-pointer font-bold"
+              >
+                <UIcon name="i-heroicons-x-circle" class="w-4.5 h-4.5 mr-1" />
+                ยกเลิกใบขอซื้อ (Cancel PR)
               </UButton>
             </div>
             <UButton variant="outline" size="sm" @click="detailsOpen = false">ปิดหน้าต่าง</UButton>
@@ -363,6 +396,28 @@ const convertToPo = async (pr: any) => {
     pr.status = 'ConvertedToPO';
     detailsOpen.value = false;
     await navigateTo('/po');
+  }
+};
+
+const cancelPR = async (pr: any) => {
+  if (!confirm(`คุณต้องการยกเลิกใบขอซื้อ ${pr.pr_no} ใช่หรือไม่? ยอดเงินสำรองทั้งหมดจะถูกส่งคืนศูนย์ต้นทุน`)) {
+    return;
+  }
+  try {
+    await $fetch(`http://localhost:3001/api/pr/${pr.pr_id}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${authStore.token}`,
+      },
+    });
+    alert('ยกเลิกใบขอซื้อเรียบร้อยแล้ว!');
+    await loadPrs();
+    detailsOpen.value = false;
+  } catch (err: any) {
+    console.warn('Backend cancel failed, using mock cancel.');
+    pr.status = 'Cancelled';
+    alert(`[MOCK] ยกเลิกใบขอซื้อ ${pr.pr_no} สำเร็จ! (คืนงบจองเรียบร้อย)`);
+    detailsOpen.value = false;
   }
 };
 

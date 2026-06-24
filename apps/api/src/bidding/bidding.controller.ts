@@ -36,14 +36,19 @@ export class BiddingController {
 
   @Get('rfq/:id/comparison')
   async getComparison(@Param('id') id: string, @Req() req: any) {
-    const { userId } = req.user;
-    return this.biddingService.getComparison(id, userId);
+    return this.biddingService.getComparison(id, req.user);
   }
 
   @Post('rfq/:id/award/:quoteId')
   async awardBid(@Param('id') id: string, @Param('quoteId') quoteId: string, @Req() req: any) {
     const { userId, companyId } = req.user;
     return this.biddingService.awardBid(id, quoteId, userId, companyId);
+  }
+
+  @Post('rfq/:id/escalate')
+  async escalateWinnerTimeout(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.biddingService.escalateWinnerTimeout(id, userId);
   }
 
   @Post('quote')

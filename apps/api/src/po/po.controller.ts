@@ -60,4 +60,16 @@ export class PoController {
     const { userId } = req.user;
     return this.poService.revisePO(id, dto, userId);
   }
+
+  @Patch(':id/cancel')
+  async cancelPO(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.poService.cancelPO(id, userId);
+  }
+
+  @Patch(':id/reject')
+  async rejectPO(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.poService.rejectPO(id, userId);
+  }
 }

@@ -54,7 +54,7 @@
               <input type="checkbox" class="rounded border-[var(--border)] text-[var(--primary)] focus:ring-[var(--primary)] w-4 h-4 transition" />
               <span>จดจำการใช้งาน</span>
             </label>
-            <a href="#" class="text-[var(--primary)] hover:text-[#003BCC] transition font-medium">ลืมรหัสผ่าน?</a>
+            <NuxtLink to="/forgot-password" class="text-[var(--primary)] hover:text-[#003BCC] transition font-medium">ลืมรหัสผ่าน?</NuxtLink>
           </div>
 
           <UButton 

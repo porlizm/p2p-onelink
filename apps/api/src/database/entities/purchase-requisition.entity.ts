@@ -42,6 +42,18 @@ export class PurchaseRequisition {
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 
+  @Column({ type: 'int', default: 1 })
+  version_no: number;
+
+  @Column({ type: 'uuid', nullable: true })
+  parent_pr_id: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  is_budget_overrun: boolean;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  approver_role: string | null;
+
   @OneToMany(() => PurchaseRequisitionLine, (line) => line.pr, { cascade: true })
   lines: PurchaseRequisitionLine[];
 }

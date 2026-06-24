@@ -17,6 +17,11 @@ import { VendorDocument } from '../entities/vendor-document.entity';
 import { Item } from '../entities/item.entity';
 import { ItemPrice } from '../entities/item-price.entity';
 import { DOARule } from '../entities/doa-rule.entity';
+import { Lane } from '../entities/lane.entity';
+import { PaymentProposal } from '../entities/payment-proposal.entity';
+import { BankFile } from '../entities/bank-file.entity';
+import { PaymentRequest } from '../entities/payment-request.entity';
+import { IntegrationLog } from '../entities/integration-log.entity';
 
 // Static UUID helpers
 const uuid = (prefix: number, id: number) => {
@@ -32,6 +37,7 @@ async function bootstrap() {
 
   // Clear existing data in reverse order of dependencies
   const entities = [
+    BankFile, PaymentRequest, PaymentProposal, Lane, IntegrationLog,
     DOARule, ItemPrice, Item, VendorDocument, VendorBankAccount,
     VendorAddress, VendorContact, Vendor, Permission, UserRole,
     AppUser, Role, CostCenter, BusinessUnit, Company
@@ -335,6 +341,43 @@ async function bootstrap() {
     })
   );
   await doaRepo.save(doas);
+
+  // 13. Seed Lanes
+  console.log('Seeding Lanes...');
+  const laneRepo = dataSource.getRepository(Lane);
+  const lanes = [
+    { id: 1, name: 'จัดซื้อในประเทศ (General PO)', code: 'DOMESTIC_PO' },
+    { id: 2, name: 'งานบริการ / Non-PO', code: 'SERVICE_NONPO' },
+    { id: 3, name: 'จ่ายเร่งด่วน (Urgent)', code: 'URGENT' },
+  ].map((l) =>
+    laneRepo.create({
+      lane_id: uuid(14, l.id),
+      lane_name: l.name,
+      lane_code: l.code,
+    })
+  );
+  await laneRepo.save(lanes);
+
+  // 14. Seed Integration Logs
+  console.log('Seeding Integration Logs...');
+  const logRepo = dataSource.getRepository(IntegrationLog);
+  const mockLogs = [
+    { id: 1, target: 'SAP_B1', type: 'PurchaseRequisition', docId: uuid(9, 1), status: 'Success', retry: 0 },
+    { id: 2, target: 'SAP_B1', type: 'PurchaseOrder', docId: uuid(9, 2), status: 'Success', retry: 0 },
+    { id: 3, target: 'SAP_B1', type: 'GoodsReceipt', docId: uuid(9, 3), status: 'Failed', retry: 1 },
+    { id: 4, target: 'Bank_Gateway', type: 'PaymentRequest', docId: uuid(9, 4), status: 'Success', retry: 0 },
+    { id: 5, target: 'RD_TaxAPI', type: 'VendorVerification', docId: uuid(9, 5), status: 'Success', retry: 0 },
+  ].map((l) =>
+    logRepo.create({
+      log_id: uuid(15, l.id),
+      target_system: l.target,
+      doc_type: l.type,
+      doc_id: l.docId,
+      status: l.status,
+      retry_count: l.retry,
+    })
+  );
+  await logRepo.save(mockLogs);
 
   console.log('Database Seeding Completed Successfully!');
   await app.close();

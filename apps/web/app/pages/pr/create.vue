@@ -14,18 +14,53 @@
       </NuxtLink>
     </div>
 
-    <!-- Alert Modal / Banner for Over-budget -->
+    <!-- Alert Modal / Banner for Hard Blocked (Exceeds Tolerance) -->
     <div 
-      v-if="hasOverBudgetLines" 
-      class="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3"
+      v-if="hasHardBlockedLines" 
+      class="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start justify-between gap-3"
     >
-      <UIcon name="i-heroicons-exclamation-triangle-20-solid" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-      <div>
-        <h4 class="text-sm font-bold text-red-800">คำเตือน: งบประมาณไม่เพียงพอ</h4>
-        <p class="text-xs text-red-700 mt-1">
-          มีรายการขออนุมัติบางส่วนที่มียอดสูงกว่างบประมาณคงเหลือ หากยืนยันส่งเอกสาร ใบขอซื้อ (PR) นี้จะถูกบันทึกในสถานะ <span class="font-bold">BlockedOverBudget</span> ทันที เพื่อรอการพิจารณาเป็นกรณีพิเศษ
-        </p>
+      <div class="flex items-start gap-3">
+        <UIcon name="i-heroicons-exclamation-triangle-20-solid" class="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 class="text-sm font-bold text-red-800">คำเตือน: งบประมาณไม่เพียงพอและเกินเกณฑ์ผ่อนปรน</h4>
+          <p class="text-xs text-red-700 mt-1">
+            มีรายการจัดซื้อบางส่วนที่มียอดสูงกว่างบประมาณคงเหลือและเกินระดับ Tolerance ที่ยอมรับได้ของแผนกท่าน ระบบระงับการสร้าง PR กรุณายื่นคำขอเพิ่มงบประมาณ (Request Budget) หรือปรับแก้ไขรายการสั่งซื้อ
+          </p>
+        </div>
       </div>
+      <UButton 
+        @click="openRequestBudgetModal" 
+        color="red" 
+        size="xs"
+        class="font-bold flex-shrink-0 cursor-pointer bg-red-600 hover:bg-red-700 text-white animate-pulse"
+      >
+        ยื่นขอเพิ่มงบประมาณ (Request Budget)
+      </UButton>
+    </div>
+
+    <!-- Alert Modal / Banner for Overrun Within Tolerance -->
+    <div 
+      v-if="hasOverrunWithinTolerance && !hasHardBlockedLines" 
+      class="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start justify-between gap-3"
+    >
+      <div class="flex items-start gap-3">
+        <UIcon name="i-heroicons-exclamation-circle-20-solid" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+        <div>
+          <h4 class="text-sm font-bold text-amber-850">คำแนะนำ: งบประมาณจัดซื้อเกินวงเงินคงเหลือ (ในเกณฑ์อนุมัติพิเศษ)</h4>
+          <p class="text-xs text-amber-700 mt-1">
+            ยอดจัดซื้อรวมเกินกว่างบประมาณคงเหลือแต่ไม่เกินเกณฑ์ผ่อนปรน (Tolerance) ระบบจะอนุญาตให้สร้างคำขอ PR ได้ แต่จะถูกเปลี่ยนเส้นทางเพื่อขออนุมัติพิเศษจาก CFO หรือ VP เป็นกรณีพิเศษโดยอัตโนมัติ
+          </p>
+        </div>
+      </div>
+      <UButton 
+        @click="openRequestBudgetModal" 
+        color="amber" 
+        size="xs"
+        variant="outline"
+        class="font-bold flex-shrink-0 cursor-pointer"
+      >
+        ขอเพิ่มงบสำรอง (Optional Request)
+      </UButton>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -240,10 +275,12 @@
                   :class="[
                     budget.isSufficient 
                       ? 'bg-green-50 text-green-700 border border-green-200' 
-                      : 'bg-red-50 text-red-700 border border-red-200 animate-pulse'
+                      : budget.isWithinTolerance
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-red-50 text-red-700 border border-red-200 animate-pulse'
                   ]"
                 >
-                  {{ budget.isSufficient ? 'งบประมาณเพียงพอ' : 'งบประมาณไม่พอ' }}
+                  {{ budget.isSufficient ? 'งบประมาณเพียงพอ' : budget.isWithinTolerance ? 'งบเกินเกณฑ์ผ่อนปรน (CFO/VP)' : 'งบเกินกำหนดบล็อก' }}
                 </span>
               </div>
 
@@ -291,18 +328,74 @@
 
           <UButton 
             @click="submitPR"
-            color="primary"
+            :color="hasHardBlockedLines ? 'red' : hasOverrunWithinTolerance ? 'amber' : 'primary'"
             block
             size="md"
             :loading="isSubmitting"
-            :disabled="cartStore.items.length === 0 || hasUnfilledFields"
+            :disabled="cartStore.items.length === 0 || hasUnfilledFields || hasHardBlockedLines"
             class="font-semibold h-10 shadow-sm cursor-pointer"
           >
-            {{ hasOverBudgetLines ? 'ส่งใบขอซื้อใบขอตรวจสอบงบฯ' : 'ยืนยันสร้างใบขอซื้อ (PR)' }}
+            {{ hasHardBlockedLines ? 'งบประมาณเกินเกณฑ์ (ต้องขอเพิ่มงบฯ)' : hasOverrunWithinTolerance ? 'สร้างใบขอซื้อ (ส่งอนุมัติพิเศษ CFO/VP)' : 'ยืนยันสร้างใบขอซื้อ (PR)' }}
           </UButton>
         </div>
       </div>
     </div>
+
+    <!-- Request Budget Modal -->
+    <UModal v-model="showRequestBudgetModal" prevent-close>
+      <div class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+          <h3 class="font-bold text-slate-800 text-base">ยื่นขอเพิ่มงบประมาณ (Request Budget)</h3>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showRequestBudgetModal = false" />
+        </div>
+
+        <div class="space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">ศูนย์ต้นทุน (Cost Center) *</label>
+            <select 
+              v-model="requestCcId"
+              class="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none"
+            >
+              <option value="" disabled>-- เลือกศูนย์ต้นทุน --</option>
+              <option 
+                v-for="budget in affectedBudgets" 
+                :key="budget.id" 
+                :value="budget.id"
+              >
+                {{ budget.name }} ({{ budget.code }}) - ขาดอีก {{ formatCurrency(Math.max(0, budget.totalProposed - budget.remaining)) }} THB
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">จำนวนเงินที่ขอเพิ่ม (THB) *</label>
+            <UInput v-model.number="requestAmount" type="number" placeholder="0.00" />
+          </div>
+
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">เหตุผลในการขอเพิ่มงบประมาณ *</label>
+            <UTextarea 
+              v-model="requestReason" 
+              placeholder="ระบุเหตุผลความจำเป็นในการขออนุมัติเพิ่มงบประมาณ เช่น โครงการด่วน..." 
+              rows="3"
+            />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t pt-4">
+          <UButton @click="showRequestBudgetModal = false" variant="ghost" color="gray">ยกเลิก</UButton>
+          <UButton 
+            @click="submitBudgetRequest"
+            color="primary"
+            :loading="isSubmittingRequest"
+            :disabled="!requestCcId || !requestAmount || requestAmount <= 0"
+            class="px-5 cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-700"
+          >
+            ส่งคำขอเพิ่มงบประมาณ
+          </UButton>
+        </div>
+      </div>
+    </UModal>
   </div>
 </template>
 
@@ -394,6 +487,14 @@ const affectedBudgets = computed(() => {
     const reserved = Number(cc.budget_reserved_amount);
     const remaining = annual - used - reserved;
     const totalProposed = groups[ccId];
+    const isSufficient = totalProposed <= remaining;
+
+    const overrunAmount = totalProposed - remaining;
+    const tolerancePct = Number(cc.budget_overrun_tolerance_pct ?? 5.0);
+    const toleranceAmt = Number(cc.budget_overrun_tolerance_amount ?? 20000.0);
+    const pctLimit = remaining > 0 ? (remaining * (tolerancePct / 100)) : 0;
+
+    const isWithinTolerance = isSufficient || (overrunAmount <= toleranceAmt || (remaining > 0 && overrunAmount <= pctLimit));
 
     return {
       id: ccId,
@@ -403,13 +504,25 @@ const affectedBudgets = computed(() => {
       usedAndReserved: used + reserved,
       remaining,
       totalProposed,
-      isSufficient: totalProposed <= remaining,
+      isSufficient,
+      isWithinTolerance,
+      overrunAmount,
+      tolerancePct,
+      toleranceAmt,
     };
   }).filter(Boolean);
 });
 
 const hasOverBudgetLines = computed(() => {
   return affectedBudgets.value.some((b) => b && !b.isSufficient);
+});
+
+const hasHardBlockedLines = computed(() => {
+  return affectedBudgets.value.some((b) => b && !b.isWithinTolerance);
+});
+
+const hasOverrunWithinTolerance = computed(() => {
+  return affectedBudgets.value.some((b) => b && !b.isSufficient && b.isWithinTolerance);
 });
 
 const hasUnfilledFields = computed(() => {
@@ -454,13 +567,61 @@ const submitPR = async () => {
     const yy = new Date().getFullYear().toString().slice(-2);
     const mm = (new Date().getMonth() + 1).toString().padStart(2, '0');
     const mockPrNo = `PR${yy}${mm}999`;
-    const mockStatus = hasOverBudgetLines.value ? 'BlockedOverBudget' : 'PendingApproval';
+    const mockStatus = hasHardBlockedLines.value ? 'BlockedOverBudget' : 'PendingApproval';
 
     alert(`[MOCK] ส่งใบขอซื้อเรียบร้อย!\nเลขที่ใบขอซื้อ: ${mockPrNo}\nสถานะเอกสาร: ${mockStatus}`);
     cartStore.clearCart();
     navigateTo('/pr');
   } finally {
     isSubmitting.value = false;
+  }
+};
+
+const showRequestBudgetModal = ref(false);
+const requestCcId = ref('');
+const requestAmount = ref(0);
+const requestReason = ref('');
+const isSubmittingRequest = ref(false);
+
+const openRequestBudgetModal = () => {
+  const overBudgetCc = affectedBudgets.value.find((b) => b && !b.isSufficient);
+  if (overBudgetCc) {
+    requestCcId.value = overBudgetCc.id;
+    requestAmount.value = Math.ceil(overBudgetCc.totalProposed - overBudgetCc.remaining);
+  } else {
+    requestCcId.value = '';
+    requestAmount.value = 0;
+  }
+  requestReason.value = `ขอเพิ่มงบประมาณสำหรับใบขอซื้อวัตถุประสงค์: ${description.value}`;
+  showRequestBudgetModal.value = true;
+};
+
+const submitBudgetRequest = async () => {
+  if (!requestCcId.value || !requestAmount.value) return;
+  isSubmittingRequest.value = true;
+
+  try {
+    await $fetch('http://localhost:3001/api/budget/request', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authStore.token}`,
+      },
+      body: {
+        cost_center_id: requestCcId.value,
+        requested_amount: requestAmount.value,
+        reason: requestReason.value,
+      },
+    });
+    alert('ส่งคำขอเพิ่มงบประมาณไปยัง Accountant เรียบร้อยแล้ว!');
+    showRequestBudgetModal.value = false;
+    await loadCostCenters();
+  } catch (err) {
+    console.warn('Backend connection failed. Simulating budget request submission.');
+    alert(`[MOCK] ส่งคำขอเพิ่มงบประมาณเรียบร้อย!\nจำนวนเงิน: ${formatCurrency(requestAmount.value)} THB\nรอการอนุมัติจากทางทีมบัญชี`);
+    showRequestBudgetModal.value = false;
+  } finally {
+    isSubmittingRequest.value = false;
   }
 };
 

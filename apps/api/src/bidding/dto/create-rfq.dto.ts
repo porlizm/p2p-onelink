@@ -41,4 +41,20 @@ export class CreateRfqDto {
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
   vendor_ids: string[];
+
+  @IsString()
+  @IsOptional()
+  bid_type?: string;
+
+  @IsNumber()
+  @IsOptional()
+  round_no?: number;
+
+  @IsNumber()
+  @IsOptional()
+  technical_weight?: number;
+
+  @IsNumber()
+  @IsOptional()
+  commercial_weight?: number;
 }

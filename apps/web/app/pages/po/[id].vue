@@ -111,9 +111,60 @@
             </tbody>
           </table>
 
-          <div class="p-6 bg-slate-50/50 border-t border-[var(--border)] flex justify-between items-center">
-            <span class="text-sm font-semibold text-slate-500">มูลค่ารวมทั้งสิ้น (Grand Total):</span>
-            <span class="text-lg font-extrabold text-[var(--primary)]">{{ formatCurrency(po.total_amount) }} THB</span>
+          </div>
+
+        <!-- Payment Plan & Milestones -->
+        <div v-if="po.payment_milestones && po.payment_milestones.length > 0" class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden mt-6">
+          <div class="p-6 border-b border-[var(--border)] flex justify-between items-center bg-slate-50/50">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+              <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-indigo-600" />
+              <span>แผนงวดชำระเงิน (Payment Milestones)</span>
+            </h3>
+          </div>
+
+          <div class="divide-y divide-[var(--border)] text-sm">
+            <div 
+              v-for="ms in po.payment_milestones" 
+              :key="ms.milestone_id" 
+              class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/20"
+            >
+              <div>
+                <div class="font-bold text-slate-800 flex items-center gap-2">
+                  <span>{{ ms.title }}</span>
+                  <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-mono">{{ ms.percentage }}%</span>
+                </div>
+                <div class="text-xs text-slate-400 mt-1">ยอดเงิน: {{ formatCurrency(ms.amount) }} THB</div>
+                <div v-if="ms.error_message" class="text-xs text-red-500 mt-1 font-semibold flex items-center gap-1">
+                  <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4" />
+                  <span>{{ ms.error_message }} ({{ ms.error_code }})</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-3">
+                <span 
+                  class="px-2.5 py-1 rounded-full text-xs font-bold inline-block"
+                  :class="[
+                    ms.status === 'Paid' ? 'bg-green-50 text-green-700 border border-green-200' :
+                    ms.status === 'ProcessingPayment' ? 'bg-blue-50 text-blue-700 border border-blue-200 animate-pulse' :
+                    ms.status === 'Failed' ? 'bg-red-50 text-red-700 border border-red-200' :
+                    'bg-slate-100 text-slate-500 border border-slate-200'
+                  ]"
+                >
+                  {{ formatMilestoneStatus(ms.status) }}
+                </span>
+
+                <UButton
+                  v-if="ms.status === 'Pending' || ms.status === 'Failed'"
+                  @click="openOffsetDrawer(ms)"
+                  size="sm"
+                  color="indigo"
+                  class="cursor-pointer font-bold"
+                  icon="i-heroicons-paper-airplane"
+                >
+                  ส่งจ่ายเงิน (Pay)
+                </UButton>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -154,6 +205,29 @@
               <span v-else class="font-medium text-slate-400 italic block mt-1">
                 ยังไม่ได้รับแจ้งวันที่ส่งมอบจากผู้ขาย
               </span>
+            </div>
+            
+            <div v-if="isCancellable" class="pt-4 border-t border-slate-100 space-y-2">
+              <UButton 
+                v-if="po.status === 'SentToVendor' || po.status === 'VendorConfirmed' || po.status === 'PartiallyReceived'"
+                :to="`/gr-stock/create?po_id=${po.po_id}`"
+                color="primary" 
+                block
+                icon="i-heroicons-document-check"
+                class="cursor-pointer"
+              >
+                บันทึกตรวจรับสินค้า (GR)
+              </UButton>
+              <UButton 
+                color="red" 
+                variant="outline"
+                block
+                icon="i-heroicons-x-circle"
+                class="cursor-pointer font-bold"
+                @click="cancelPO"
+              >
+                ยกเลิกใบสั่งซื้อ (Cancel PO)
+              </UButton>
             </div>
           </div>
         </div>
@@ -220,11 +294,94 @@
         </template>
       </UCard>
     </UModal>
+
+    <!-- Credit Note Offset Drawer/Modal -->
+    <UModal v-model="offsetOpen">
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[var(--foreground)]">
+              ยืนยันการจ่ายเงินพร้อมหักกลบ Credit Notes
+            </h3>
+            <UButton 
+              color="gray" 
+              variant="ghost" 
+              icon="i-heroicons-x-mark" 
+              class="cursor-pointer"
+              @click="offsetOpen = false" 
+            />
+          </div>
+        </template>
+
+        <div class="space-y-4 py-2 text-xs">
+          <div class="bg-indigo-50 p-3 rounded-lg border border-indigo-100 space-y-1">
+            <div class="font-bold text-indigo-900">งวดงาน: {{ selectedMilestone?.title || 'ชำระเต็มจำนวน' }}</div>
+            <div class="text-indigo-700">ยอดชำระขั้นต้น: {{ formatCurrency(selectedMilestone?.amount || po?.total_amount || 0) }} THB</div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="font-bold text-slate-700 mb-1">เลือกใบลดหนี้ (Credit Notes) ที่ต้องการหักกลบ:</div>
+            
+            <div v-if="creditNotes.length === 0" class="text-slate-400 italic py-2">
+              ไม่พบใบลดหนี้ (Credit Notes) ที่ได้รับการอนุมัติของคู่ค้ารายนี้
+            </div>
+            
+            <div 
+              v-else 
+              v-for="cn in creditNotes" 
+              :key="cn.cn_dn_id"
+              class="flex items-center justify-between p-2.5 border rounded-lg hover:bg-slate-50 cursor-pointer"
+              @click="toggleCn(cn)"
+            >
+              <div class="flex items-center gap-2">
+                <UCheckbox :model-value="selectedCnIds.includes(cn.cn_dn_id)" />
+                <div>
+                  <div class="font-bold text-slate-800">ใบลดหนี้ #{{ cn.cn_dn_id.substring(0, 8) }}</div>
+                  <div class="text-[10px] text-slate-400">เหตุผล: {{ cn.reason }}</div>
+                </div>
+              </div>
+              <div class="font-bold text-red-600">-{{ formatCurrency(cn.amount) }} THB</div>
+            </div>
+          </div>
+
+          <div class="border-t pt-3 space-y-2 text-xs font-semibold text-slate-600">
+            <div class="flex justify-between">
+              <span>ยอดชำระขั้นต้น:</span>
+              <span>{{ formatCurrency(selectedMilestone?.amount || po?.total_amount || 0) }} THB</span>
+            </div>
+            <div class="flex justify-between text-red-600">
+              <span>หักกลบ Credit Notes:</span>
+              <span>-{{ formatCurrency(totalDeduction) }} THB</span>
+            </div>
+            <div class="flex justify-between text-lg font-extrabold text-[var(--primary)] border-t pt-2">
+              <span>ยอดเงินโอนสุทธิ (Net Payout):</span>
+              <span>{{ formatCurrency(netPayout) }} THB</span>
+            </div>
+          </div>
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton variant="outline" size="sm" @click="offsetOpen = false">ยกเลิก</UButton>
+            <UButton 
+              color="indigo" 
+              size="sm" 
+              class="cursor-pointer font-bold" 
+              :loading="isSubmittingPayment"
+              @click="confirmTriggerPayment"
+            >
+              <UIcon name="i-heroicons-check" class="w-4 h-4 mr-1" />
+              ยืนยันสั่งจ่ายสุทธิ (Net Transfer)
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+    </UModal>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
@@ -234,8 +391,20 @@ const poId = route.params.id as string;
 const loading = ref(true);
 const po = ref<any>(null);
 
+const isCancellable = computed(() => {
+  const invalidStatuses = ['Paid', 'FullyReceived', 'Closed', 'Cancelled', 'Rejected'];
+  return po.value && !invalidStatuses.includes(po.value.status);
+});
+
 const revisionOpen = ref(false);
 const revisionLines = ref<any[]>([]);
+
+// Payment/Milestones Refs
+const offsetOpen = ref(false);
+const selectedMilestone = ref<any>(null);
+const creditNotes = ref<any[]>([]);
+const selectedCnIds = ref<string[]>([]);
+const isSubmittingPayment = ref(false);
 
 const loadPoDetails = async () => {
   loading.value = true;
@@ -280,6 +449,10 @@ const loadPoDetails = async () => {
             pr_line_id: '101',
           },
         ],
+        payment_milestones: [
+          { milestone_id: 'm1_po2', title: 'งวดที่ 1 - มัดจำ (30%)', percentage: 30, amount: 8550, status: 'Pending', error_code: null, error_message: null },
+          { milestone_id: 'm2_po2', title: 'งวดที่ 2 - ส่งมอบงานส่วนที่เหลือ (70%)', percentage: 70, amount: 19950, status: 'Pending', error_code: null, error_message: null },
+        ],
       };
     } else {
       po.value = {
@@ -321,6 +494,10 @@ const loadPoDetails = async () => {
             po_id: 'po_mock_1',
             pr_line_id: '202',
           },
+        ],
+        payment_milestones: [
+          { milestone_id: 'm1_po1', title: 'งวดที่ 1 - มัดจำ (30%)', percentage: 30, amount: 25650, status: 'Pending', error_code: null, error_message: null },
+          { milestone_id: 'm2_po1', title: 'งวดที่ 2 - ส่งมอบงานส่วนที่เหลือ (70%)', percentage: 70, amount: 59850, status: 'Pending', error_code: null, error_message: null },
         ],
       };
     }
@@ -384,12 +561,120 @@ const saveRevision = async () => {
   }
 };
 
+const cancelPO = async () => {
+  if (!confirm(`คุณต้องการยกเลิกใบสั่งซื้อ ${po.value.po_no} ใช่หรือไม่? ยอดเงินคงค้างสำรองที่ไม่ได้ตรวจรับจะถูกส่งคืนศูนย์ต้นทุน`)) {
+    return;
+  }
+  try {
+    const res = await $fetch<any>(`http://localhost:3001/api/po/${poId}/cancel`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${authStore.token}`,
+      },
+    });
+    po.value = res;
+    alert('ยกเลิกใบสั่งซื้อเรียบร้อยแล้ว!');
+  } catch (err: any) {
+    console.warn('Backend PO cancellation failed, applying locally.');
+    po.value.status = 'Cancelled';
+    alert(`[MOCK] ยกเลิกใบสั่งซื้อ ${po.value.po_no} สำเร็จ! (คืนงบจองที่เหลือเรียบร้อย)`);
+  }
+};
+
+const toggleCn = (cn: any) => {
+  const idx = selectedCnIds.value.indexOf(cn.cn_dn_id);
+  if (idx > -1) {
+    selectedCnIds.value.splice(idx, 1);
+  } else {
+    selectedCnIds.value.push(cn.cn_dn_id);
+  }
+};
+
+const totalDeduction = computed(() => {
+  return creditNotes.value
+    .filter((cn) => selectedCnIds.value.includes(cn.cn_dn_id))
+    .reduce((sum, cn) => sum + Number(cn.amount), 0);
+});
+
+const netPayout = computed(() => {
+  const base = selectedMilestone.value ? Number(selectedMilestone.value.amount) : Number(po.value?.total_amount || 0);
+  return Math.max(0, base - totalDeduction.value);
+});
+
+const openOffsetDrawer = async (milestone: any) => {
+  selectedMilestone.value = milestone;
+  selectedCnIds.value = [];
+  
+  // Load approved credit notes for this vendor
+  try {
+    const res = await $fetch<any[]>(`http://localhost:3001/api/payment/credit-debit-note/${po.value.vendor_id}`, {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    creditNotes.value = res.filter((cn) => cn.status === 'Approved' && cn.type === 'Credit');
+  } catch (err) {
+    console.warn('Failed to load credit notes, using mock data.');
+    creditNotes.value = [
+      { cn_dn_id: 'cn_mock_1', type: 'Credit', amount: 1500.00, reason: 'สินค้าชำรุดเสียหายในขั้นตอนขนส่ง', status: 'Approved' },
+      { cn_dn_id: 'cn_mock_2', type: 'Credit', amount: 3200.00, reason: 'ปรับลดราคาปริมาตรส่วนเกิน', status: 'Approved' }
+    ];
+  }
+  offsetOpen.value = true;
+};
+
+const confirmTriggerPayment = async () => {
+  if (!po.value) return;
+  isSubmittingPayment.value = true;
+  try {
+    const res = await $fetch<any>('http://localhost:3001/api/payment/trigger', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${authStore.token}`,
+      },
+      body: {
+        po_id: poId,
+        milestone_id: selectedMilestone.value?.milestone_id || undefined,
+        selected_cn_ids: selectedCnIds.value,
+      },
+    });
+    po.value = res;
+    offsetOpen.value = false;
+    alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ!');
+  } catch (err: any) {
+    console.error(err);
+    // Local simulation
+    if (selectedMilestone.value) {
+      const ms = po.value.payment_milestones.find((m: any) => m.milestone_id === selectedMilestone.value.milestone_id);
+      if (ms) {
+        ms.status = 'ProcessingPayment';
+      }
+    }
+    po.value.status = 'ProcessingPayment';
+    offsetOpen.value = false;
+    alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ! (Simulated)');
+  } finally {
+    isSubmittingPayment.value = false;
+  }
+};
+
+const formatMilestoneStatus = (status: string) => {
+  switch (status) {
+    case 'Pending': return 'รอชำระเงิน';
+    case 'ProcessingPayment': return 'กำลังโอนเงิน...';
+    case 'Paid': return 'จ่ายเงินสำเร็จ';
+    case 'Failed': return 'โอนเงินล้มเหลว';
+    default: return status;
+  }
+};
+
 const formatStatus = (status?: string) => {
   switch (status) {
     case 'SentToVendor': return 'ส่งให้ผู้ขายแล้ว';
     case 'VendorConfirmed': return 'ผู้ขายยืนยันการรับสั่งซื้อ';
     case 'RevisionRequested': return 'ขอแก้ไขรายการ';
     case 'FullyReceived': return 'รับสินค้าครบถ้วน';
+    case 'Cancelled': return 'ยกเลิกแล้ว';
+    case 'Rejected': return 'ปฏิเสธ';
     default: return status || '—';
   }
 };

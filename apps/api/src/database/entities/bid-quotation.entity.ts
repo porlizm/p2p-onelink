@@ -33,6 +33,9 @@ export class BidQuotation {
   @CreateDateColumn({ type: 'timestamp' })
   submitted_at: Date;
 
+  @Column({ type: 'int', default: 80 })
+  technical_score: number;
+
   @OneToMany(() => BidQuotationLine, (line) => line.quotation, { cascade: true })
   lines: BidQuotationLine[];
 }

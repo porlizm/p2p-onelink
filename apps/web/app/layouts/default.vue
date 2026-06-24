@@ -130,6 +130,9 @@ const handleLogout = () => {
 const menus = [
   { title: 'แดชบอร์ด', path: '/', icon: 'i-heroicons-squares-2x2-20-solid' },
   { title: 'ข้อมูลคู่ค้า (Vendor)', path: '/vendors', icon: 'i-heroicons-users-20-solid' },
+  { title: 'ประเมินผลผู้ค้า (Evaluation)', path: '/vendors/evaluation', icon: 'i-heroicons-clipboard-document-check-20-solid' },
+  { title: 'สัญญาสั่งซื้อ (Contracts)', path: '/vendors/contracts', icon: 'i-heroicons-document-duplicate-20-solid' },
+  { title: 'อนุมัติแค็ตตาล็อก (Catalog Approval)', path: '/vendors/catalog-approval', icon: 'i-heroicons-folder-open-20-solid' },
   { title: 'รายการสินค้า (Catalog)', path: '/catalog', icon: 'i-heroicons-shopping-bag-20-solid' },
   { title: 'ใบขอซื้อ (PR)', path: '/pr', icon: 'i-heroicons-document-text-20-solid' },
   { title: 'ประกวดราคา (Bidding)', path: '/bidding', icon: 'i-heroicons-trophy-20-solid' },

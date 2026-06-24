@@ -63,6 +63,8 @@ export enum PurchaseOrderStatus {
   PARTIALLY_RECEIVED = 'PartiallyReceived',
   FULLY_RECEIVED = 'FullyReceived',
   REVISION_REQUESTED = 'RevisionRequested',
+  PROCESSING_PAYMENT = 'ProcessingPayment',
+  PAID = 'Paid',
   CLOSED = 'Closed',
   CANCELLED = 'Cancelled',
 }

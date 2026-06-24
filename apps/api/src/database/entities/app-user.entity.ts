@@ -31,6 +31,18 @@ export class AppUser {
   @Column({ type: 'int', default: 30 })
   session_timeout_minutes: number;
 
+  @Column({ type: 'timestamp', nullable: true })
+  pdpa_consent_date: Date | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  allowed_ip_range: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  reset_token: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  reset_token_expires: Date | null;
+
   @OneToMany(() => UserRole, (ur) => ur.user)
   user_roles: UserRole[];
 

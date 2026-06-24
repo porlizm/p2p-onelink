@@ -9,6 +9,7 @@ import { ItemPrice } from '../database/entities/item-price.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
 import { ConfirmPoDto, RequestRevisionDto, RevisePoDto } from './dto/po.dto';
 import { PurchaseOrderStatus, PurchaseRequisitionStatus } from '@p2p/shared';
+import { AuditLog } from '../database/entities/audit-log.entity';
 
 @Injectable()
 export class PoService {
@@ -61,6 +62,31 @@ export class PoService {
       });
       const poNo = `${prefix}${(count + 1).toString().padStart(3, '0')}`;
 
+      const totalAmount = Number(pr.total_amount);
+      const m1_amt = Number((totalAmount * 0.3).toFixed(2));
+      const m2_amt = Number((totalAmount - m1_amt).toFixed(2));
+
+      const milestones = [
+        {
+          milestone_id: 'm1_' + Math.random().toString(36).substring(2, 9),
+          title: 'งวดที่ 1 - มัดจำ (30%)',
+          percentage: 30,
+          amount: m1_amt,
+          status: 'Pending' as 'Pending',
+          error_code: null,
+          error_message: null,
+        },
+        {
+          milestone_id: 'm2_' + Math.random().toString(36).substring(2, 9),
+          title: 'งวดที่ 2 - ส่งมอบงานส่วนที่เหลือ (70%)',
+          percentage: 70,
+          amount: m2_amt,
+          status: 'Pending' as 'Pending',
+          error_code: null,
+          error_message: null,
+        }
+      ];
+
       // 4. Create PO Header
       const po = manager.getRepository(PurchaseOrder).create({
         po_no: poNo,
@@ -71,6 +97,7 @@ export class PoService {
         total_amount: pr.total_amount,
         revision_no: 0,
         estimated_delivery_date: null,
+        payment_milestones: milestones,
       });
 
       const savedPo = await manager.getRepository(PurchaseOrder).save(po);
@@ -213,6 +240,26 @@ export class PoService {
       totalAmount = allPoLines.reduce((sum, line) => sum + Number(line.total_price), 0);
       po.total_amount = totalAmount;
 
+      // Update payment milestones proportionally if they exist
+      if (po.payment_milestones && po.payment_milestones.length > 0) {
+        const milestones = [...po.payment_milestones];
+        let remainingAmount = totalAmount;
+        for (let i = 0; i < milestones.length; i++) {
+          const ms = milestones[i];
+          if (i === milestones.length - 1) {
+            ms.amount = Number(remainingAmount.toFixed(2));
+          } else {
+            const amt = Number((totalAmount * (ms.percentage / 100)).toFixed(2));
+            ms.amount = amt;
+            remainingAmount -= amt;
+          }
+          ms.error_code = null;
+          ms.error_message = null;
+          ms.status = 'Pending';
+        }
+        po.payment_milestones = milestones;
+      }
+
       const savedPo = await manager.getRepository(PurchaseOrder).save(po);
 
       // Adjust Cost Center budget reservations if there are changes
@@ -236,4 +283,189 @@ export class PoService {
       };
     });
   }
+
+  async triggerPayment(poId: string) {
+    const po = await this.poRepo.findOne({ where: { po_id: poId } });
+    if (!po) {
+      throw new NotFoundException('ไม่พบเอกสาร PO');
+    }
+    po.status = PurchaseOrderStatus.PROCESSING_PAYMENT;
+    return await this.poRepo.save(po);
+  }
+
+  async paymentCallback(poNo: string, status: 'Success' | 'Failed') {
+    const po = await this.poRepo.findOne({ where: { po_no: poNo } });
+    if (!po) {
+      throw new NotFoundException('ไม่พบเอกสาร PO');
+    }
+    po.status = status === 'Success' ? PurchaseOrderStatus.PAID : PurchaseOrderStatus.VENDOR_CONFIRMED;
+    return await this.poRepo.save(po);
+  }
+
+  async rejectPO(poId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const po = await manager.getRepository(PurchaseOrder).findOne({
+        where: { po_id: poId },
+        relations: ['lines', 'pr', 'pr.lines'],
+      });
+
+      if (!po) {
+        throw new NotFoundException('ไม่พบเอกสาร PO');
+      }
+
+      if (
+        po.status !== PurchaseOrderStatus.PENDING_APPROVAL &&
+        po.status !== PurchaseOrderStatus.SENT_TO_VENDOR
+      ) {
+        throw new BadRequestException(`ไม่สามารถปฏิเสธได้เนื่องจากเอกสารอยู่ในสถานะ ${po.status}`);
+      }
+
+      const beforeValue = { status: po.status };
+      po.status = PurchaseOrderStatus.REJECTED;
+      const saved = await manager.getRepository(PurchaseOrder).save(po);
+
+      // Release reserved budget for the PO (unreceived portion)
+      const ccDiffs: { [ccId: string]: number } = {};
+      for (const poLine of po.lines) {
+        if (poLine.pr_line_id && po.pr_id) {
+          const prLine = await manager.getRepository(PurchaseRequisitionLine).findOne({
+            where: { line_id: poLine.pr_line_id },
+          });
+          if (prLine) {
+            const ccId = prLine.cost_center_id;
+            const unreceivedQty = Number(poLine.quantity) - Number(poLine.received_quantity);
+            if (unreceivedQty > 0) {
+              const amountToRelease = unreceivedQty * Number(poLine.unit_price);
+              ccDiffs[ccId] = (ccDiffs[ccId] || 0) + amountToRelease;
+            }
+          }
+        }
+      }
+
+      for (const ccId of Object.keys(ccDiffs)) {
+        const amountToRelease = ccDiffs[ccId];
+        const costCenter = await manager.getRepository(CostCenter).findOne({
+          where: { cost_center_id: ccId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (costCenter) {
+          const oldReserved = Number(costCenter.budget_reserved_amount);
+          costCenter.budget_reserved_amount = Math.max(0, oldReserved - amountToRelease);
+          await manager.getRepository(CostCenter).save(costCenter);
+
+          // Log in Audit Trail
+          const auditCC = manager.getRepository(AuditLog).create({
+            user_id: userId,
+            action: 'RELEASE_BUDGET_PO_REJECT',
+            entity_type: 'CostCenter',
+            entity_id: ccId,
+            before_value_json: { reserved: oldReserved },
+            after_value_json: { reserved: costCenter.budget_reserved_amount },
+            timestamp: new Date(),
+          });
+          await manager.save(auditCC);
+        }
+      }
+
+      // Create PO Audit Log
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: userId,
+        action: 'REJECT_PO',
+        entity_type: 'PurchaseOrder',
+        entity_id: poId,
+        before_value_json: beforeValue,
+        after_value_json: { status: po.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
+  }
+
+  async cancelPO(poId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const po = await manager.getRepository(PurchaseOrder).findOne({
+        where: { po_id: poId },
+        relations: ['lines', 'pr', 'pr.lines'],
+      });
+
+      if (!po) {
+        throw new NotFoundException('ไม่พบเอกสาร PO');
+      }
+
+      const invalidStatuses = [
+        PurchaseOrderStatus.PAID,
+        PurchaseOrderStatus.FULLY_RECEIVED,
+        PurchaseOrderStatus.CLOSED,
+        PurchaseOrderStatus.CANCELLED,
+        PurchaseOrderStatus.REJECTED,
+      ];
+      if (invalidStatuses.includes(po.status)) {
+        throw new BadRequestException(`ไม่สามารถยกเลิกได้เนื่องจากเอกสารอยู่ในสถานะ ${po.status}`);
+      }
+
+      const beforeValue = { status: po.status };
+      po.status = PurchaseOrderStatus.CANCELLED;
+      const saved = await manager.getRepository(PurchaseOrder).save(po);
+
+      // Release reserved budget for the PO (unreceived portion)
+      const ccDiffs: { [ccId: string]: number } = {};
+      for (const poLine of po.lines) {
+        if (poLine.pr_line_id && po.pr_id) {
+          const prLine = await manager.getRepository(PurchaseRequisitionLine).findOne({
+            where: { line_id: poLine.pr_line_id },
+          });
+          if (prLine) {
+            const ccId = prLine.cost_center_id;
+            const unreceivedQty = Number(poLine.quantity) - Number(poLine.received_quantity);
+            if (unreceivedQty > 0) {
+              const amountToRelease = unreceivedQty * Number(poLine.unit_price);
+              ccDiffs[ccId] = (ccDiffs[ccId] || 0) + amountToRelease;
+            }
+          }
+        }
+      }
+
+      for (const ccId of Object.keys(ccDiffs)) {
+        const amountToRelease = ccDiffs[ccId];
+        const costCenter = await manager.getRepository(CostCenter).findOne({
+          where: { cost_center_id: ccId },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (costCenter) {
+          const oldReserved = Number(costCenter.budget_reserved_amount);
+          costCenter.budget_reserved_amount = Math.max(0, oldReserved - amountToRelease);
+          await manager.getRepository(CostCenter).save(costCenter);
+
+          // Log in Audit Trail
+          const auditCC = manager.getRepository(AuditLog).create({
+            user_id: userId,
+            action: 'RELEASE_BUDGET_PO_CANCEL',
+            entity_type: 'CostCenter',
+            entity_id: ccId,
+            before_value_json: { reserved: oldReserved },
+            after_value_json: { reserved: costCenter.budget_reserved_amount },
+            timestamp: new Date(),
+          });
+          await manager.save(auditCC);
+        }
+      }
+
+      // Create PO Audit Log
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: userId,
+        action: 'CANCEL_PO',
+        entity_type: 'PurchaseOrder',
+        entity_id: poId,
+        before_value_json: beforeValue,
+        after_value_json: { status: po.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
+  }
 }
+

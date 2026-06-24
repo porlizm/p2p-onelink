@@ -33,6 +33,35 @@
         </UFormField>
       </div>
 
+      <!-- Bid Type & Round Number -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <UFormField label="ประเภทการประมูล (Bid Type) *" name="bidType" required>
+          <select 
+            v-model="bidType" 
+            class="w-full px-3 py-2 text-sm border border-[var(--border)] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
+          >
+            <option value="RFQ_Closed">RFQ (แบบปิดทั่วไป)</option>
+            <option value="SealedBid">Sealed Bid (ซองปิดปกปิดราคากลาง)</option>
+            <option value="OpenAuction">Open Auction (การประมูลแบบเปิดเผยราคา)</option>
+          </select>
+        </UFormField>
+
+        <UFormField label="รอบการประมูล (Round Number) *" name="roundNo" required>
+          <UInput v-model.number="roundNo" type="number" min="1" size="md" class="mt-1" />
+        </UFormField>
+      </div>
+
+      <!-- Weights for Technical & Commercial Evaluation (only for RFQ / Sealed Bid) -->
+      <div v-if="bidType === 'RFQ_Closed' || bidType === 'SealedBid'" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
+        <UFormField label="สัดส่วนคะแนนเทคนิค (Technical Weight %) *" name="technicalWeight" required>
+          <UInput v-model.number="technicalWeight" type="number" min="0" max="100" size="md" class="mt-1" @update:model-value="adjustWeights('technical')" />
+        </UFormField>
+
+        <UFormField label="สัดส่วนคะแนนราคา (Commercial Weight %) *" name="commercialWeight" required>
+          <UInput v-model.number="commercialWeight" type="number" min="0" max="100" size="md" class="mt-1" @update:model-value="adjustWeights('commercial')" />
+        </UFormField>
+      </div>
+
       <UFormField label="รายละเอียดข้อกำหนดเพิ่มเติม (Bidding Description)" name="description">
         <UTextarea v-model="description" placeholder="ระบุเงื่อนไข ขอบเขตงาน (TOR) หรือวิธีการพิจารณา..." rows="3" class="mt-1" />
       </UFormField>
@@ -144,6 +173,18 @@ const title = ref('');
 const description = ref('');
 // Default close date in 7 days
 const closeDate = ref(new Date(Date.now() + 86400000 * 7).toISOString().slice(0, 16));
+const bidType = ref('RFQ_Closed');
+const roundNo = ref(1);
+const technicalWeight = ref(40);
+const commercialWeight = ref(60);
+
+const adjustWeights = (source: string) => {
+  if (source === 'technical') {
+    commercialWeight.value = Math.max(0, 100 - Number(technicalWeight.value || 0));
+  } else {
+    technicalWeight.value = Math.max(0, 100 - Number(commercialWeight.value || 0));
+  }
+};
 const items = ref<any[]>([
   { item_name: 'โน้ตบุ๊คสำหรับงานสำนักงาน 14 นิ้ว', quantity: 30, uom: 'เครื่อง' }
 ]);
@@ -196,6 +237,10 @@ const submitRFQ = async () => {
     close_date: new Date(closeDate.value).toISOString(),
     items: items.value,
     vendor_ids: selectedVendors.value,
+    bid_type: bidType.value,
+    round_no: Number(roundNo.value) || 1,
+    technical_weight: Number(technicalWeight.value) || 0,
+    commercial_weight: Number(commercialWeight.value) || 100,
   };
 
   try {

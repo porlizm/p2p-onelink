@@ -4,159 +4,535 @@
     <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">เปรียบเทียบซองเสนอราคาโครงการ: {{ rfq?.title }}</h2>
-        <p class="text-xs text-[var(--muted-foreground)] mt-1">
-          เลขที่โครงการประมูล: <span class="font-bold text-[var(--primary)]">{{ rfq?.rfq_no }}</span> | วันปิดเสนอราคา: {{ formatDate(rfq?.close_date) }}
+        <div class="flex items-center gap-4 mt-1">
+          <p class="text-xs text-[var(--muted-foreground)]">
+            เลขที่โครงการประมูล: <span class="font-bold text-[var(--primary)]">{{ rfq?.rfq_no }}</span> | วันปิดเสนอราคา: {{ formatDate(rfq?.close_date) }}
+          </p>
+          <span v-if="rfq?.technical_weight > 0" class="px-2 py-0.5 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded text-[10px] font-bold">
+            เกณฑ์คะแนน: เทคนิค {{ rfq.technical_weight }}% / ราคา {{ rfq.commercial_weight }}%
+          </span>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <UButton 
+          v-if="rfq?.technical_weight > 0 && rfq?.status !== 'Awarded' && !peekingForbidden"
+          @click="saveTechnicalScores"
+          color="indigo"
+          size="sm"
+          :loading="savingScores"
+          class="font-semibold shadow-sm cursor-pointer"
+        >
+          <UIcon name="i-heroicons-document-check" class="w-4 h-4 mr-1" />
+          บันทึกคะแนนเทคนิค
+        </UButton>
+        <NuxtLink to="/bidding">
+          <UButton variant="outline" size="sm">
+            <UIcon name="i-heroicons-chevron-left" class="w-4 h-4 mr-1" />
+            ย้อนกลับ
+          </UButton>
+        </NuxtLink>
+      </div>
+    </div>
+
+    <!-- SLA Timeout warning card -->
+    <div v-if="rfq?.status === 'Awarded'" class="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-3">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center">
+            <UIcon name="i-heroicons-clock" class="w-6 h-6 animate-pulse" />
+          </div>
+          <div>
+            <h3 class="font-bold text-sm text-indigo-900">กระบวนการยืนยันผู้ชนะประมูล (Winner SLA Response Monitoring)</h3>
+            <p class="text-xs text-indigo-700 mt-0.5">
+              ผู้ชนะประมูลต้องเข้าตอบรับ PO และลงนามใบสั่งซื้อภายในกำหนดเวลา 72 ชั่วโมง (SLA)
+              <span v-if="!slaExpired" class="font-bold text-indigo-950"> | เวลาที่เหลือ: 71 ชั่วโมง 45 นาที</span>
+              <span v-else class="font-bold text-red-600 block mt-1 flex items-center gap-1">
+                <UIcon name="i-heroicons-exclamation-circle" class="w-4 h-4" />
+                <span>คำเตือน: เลยกำหนดเวลา SLA 72 ชั่วโมงแล้ว ผู้ชนะประมูลยังไม่เข้ามาตอบรับงาน</span>
+              </span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <UButton 
+            v-if="!slaExpired && !rfq?.is_escalated"
+            @click="slaExpired = true"
+            size="xs"
+            color="amber"
+            variant="outline"
+            class="font-bold"
+          >
+            จำลองสถานการณ์เลยกำหนดเวลา SLA (Simulate SLA Timeout)
+          </UButton>
+          <UButton
+            v-if="slaExpired && !rfq?.is_escalated"
+            @click="triggerEscalation"
+            color="red"
+            size="sm"
+            class="font-bold cursor-pointer"
+            :loading="escalating"
+          >
+            <UIcon name="i-heroicons-arrow-path-rounded-square" class="w-4 h-4 mr-1" />
+            ปลดสิทธิ์และประกาศผู้ชนะสำรอง (Cancel & Re-award to Runner-up)
+          </UButton>
+        </div>
+      </div>
+
+      <div v-if="rfq?.is_escalated" class="p-3 bg-red-100 border border-red-200 text-red-800 rounded-lg text-xs font-semibold flex items-center gap-2">
+        <UIcon name="i-heroicons-shield-exclamation" class="w-5 h-5 text-red-600" />
+        <span>ระบบดำเนินการยกเลิกใบสั่งซื้อผู้เสนอราคารายก่อนหน้าเนื่องจากผิดสัญญาการตอบสนอง และทำการออกใบขอซื้อ (PR) ให้กับผู้เสนอราคาอันดับสำรอง (Runner-up) เรียบร้อยแล้ว</span>
+      </div>
+    </div>
+
+    <!-- Tab Selector Navigation -->
+    <div class="flex border-b border-slate-200 bg-white px-6 py-2 rounded-t-2xl border-t border-l border-r border-[var(--border)]">
+      <button 
+        @click="activeTab = 'sealed'"
+        class="px-5 py-3 text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2"
+        :class="activeTab === 'sealed' ? 'border-[#0054FF] text-[#0054FF]' : 'border-transparent text-slate-500 hover:text-slate-700'"
+      >
+        <UIcon name="i-heroicons-lock-closed" class="w-4 h-4" />
+        <span>เปรียบเทียบซองปิด (Sealed Bidding)</span>
+      </button>
+      <button 
+        @click="activeTab = 'multicriteria'"
+        class="px-5 py-3 text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2"
+        :class="activeTab === 'multicriteria' ? 'border-[#0054FF] text-[#0054FF]' : 'border-transparent text-slate-500 hover:text-slate-700'"
+      >
+        <UIcon name="i-heroicons-adjustments-horizontal" class="w-4 h-4" />
+        <span>ประเมินคะแนนหลายมิติ (Multi-Criteria Worksheet)</span>
+      </button>
+      <button 
+        @click="activeTab = 'reverse_auction'"
+        class="px-5 py-3 text-sm font-bold border-b-2 transition-colors cursor-pointer flex items-center gap-2"
+        :class="activeTab === 'reverse_auction' ? 'border-[#0054FF] text-[#0054FF]' : 'border-transparent text-slate-500 hover:text-slate-700'"
+      >
+        <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
+        <span>จำลองการแข่งราคา (Live Reverse Auction)</span>
+      </button>
+    </div>
+
+    <!-- TAB 1: Sealed Bidding Comparison -->
+    <div v-if="activeTab === 'sealed'">
+      <div v-if="peekingForbidden" class="p-8 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-3">
+        <UIcon name="i-heroicons-lock-closed" class="w-12 h-12 text-amber-500 mx-auto" />
+        <h3 class="font-bold text-base text-amber-900">ระเบียบซองปิด (Sealed Bidding Active)</h3>
+        <p class="text-xs text-amber-800 max-w-lg mx-auto">
+          ตามข้อบังคับการจัดซื้อจัดจ้าง พนักงานจัดซื้อไม่ได้รับอนุญาตให้เปิดซองเสนอราคาเพื่อดูราคากลางเปรียบเทียบก่อนถึงกำหนดวันปิดเสนอราคา ({{ formatDate(rfq?.close_date) }}) เพื่อความโปร่งใสสูงสุดของระบบประมูล
         </p>
       </div>
-      <NuxtLink to="/bidding">
-        <UButton variant="outline" size="sm">
-          <UIcon name="i-heroicons-chevron-left" class="w-4 h-4 mr-1" />
-          ย้อนกลับ
-        </UButton>
-      </NuxtLink>
+
+      <div v-else class="grid grid-cols-1 gap-6">
+        <div class="bg-white border border-[var(--border)] rounded-b-2xl shadow-[var(--shadow-sm)] p-6 overflow-hidden">
+          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[var(--border)] pb-2 flex items-center gap-2 mb-4">
+            <UIcon name="i-heroicons-presentation-chart-bar" class="w-4 h-4 text-[var(--primary)]" />
+            เปรียบเทียบใบเสนอราคา (Price & Terms Comparison)
+          </h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse min-w-[800px]">
+              <thead>
+                <tr class="bg-slate-50 border-b border-[var(--border)] text-xs text-slate-500 font-bold">
+                  <th class="p-3">สินค้า / ข้อกำหนดประมูล</th>
+                  <th 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id" 
+                    class="p-3 text-center border-l border-[var(--border)]"
+                    :class="{'bg-green-50/50': quote.status === 'Selected'}"
+                  >
+                    <div class="font-extrabold text-[var(--foreground)] truncate max-w-[200px]" :title="quote.vendor?.vendor_name">
+                      {{ quote.vendor?.vendor_name }}
+                    </div>
+                    <span class="text-[9px] text-[var(--muted-foreground)] block mt-0.5">Tax ID: {{ quote.vendor?.tax_id }}</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[var(--border)] text-sm">
+                <tr v-for="item in rfq?.items" :key="item.rfq_item_id">
+                  <td class="p-3">
+                    <div class="font-bold text-[var(--foreground)]">{{ item.item_name }}</div>
+                    <span class="text-[10px] text-[var(--muted-foreground)]">ความต้องการ: {{ item.quantity }} {{ item.uom }}</span>
+                  </td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)]"
+                    :class="{'bg-green-50/20': quote.status === 'Selected', 'font-bold text-green-600': isLowestForLine(item.rfq_item_id, quote)}"
+                  >
+                    <div v-if="isMasked(quote)" class="flex flex-col items-center justify-center text-amber-600 gap-1 py-1">
+                      <UIcon name="i-heroicons-lock-closed" class="w-4 h-4 animate-pulse" />
+                      <span class="text-[10px] font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">ซองปิด (Masked)</span>
+                    </div>
+                    <template v-else>
+                      <div>{{ formatCurrency(getLinePrice(item.rfq_item_id, quote)) }} THB</div>
+                      <span class="text-[9px] text-[var(--muted-foreground)] block mt-0.5">ราคารวม: {{ formatCurrency(getLinePrice(item.rfq_item_id, quote) * item.quantity) }} THB</span>
+                    </template>
+                  </td>
+                </tr>
+
+                <tr class="bg-slate-50/50 font-bold border-t border-[var(--border)]">
+                  <td class="p-3 text-xs text-[var(--muted-foreground)] uppercase">ยอดรวมราคาจัดจัดซื้อ (Total Cost)</td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)] text-base font-extrabold"
+                    :class="{'bg-green-50/50': quote.status === 'Selected', 'text-green-600': isLowestTotal(quote)}"
+                  >
+                    <div v-if="isMasked(quote)" class="text-xs font-bold text-amber-600 bg-amber-50/50 py-1 px-2 rounded inline-block">
+                      Locked
+                    </div>
+                    <template v-else>
+                      {{ formatCurrency(getQuoteTotal(quote)) }} THB
+                    </template>
+                  </td>
+                </tr>
+
+                <tr class="bg-slate-50/20 text-xs border-t border-[var(--border)]" v-if="rfq?.technical_weight > 0">
+                  <td class="p-3 text-[var(--muted-foreground)]">
+                    คะแนนด้านเทคนิค (Technical Score)
+                    <div class="text-[9px] text-slate-400">สัดส่วนน้ำหนัก: {{ rfq.technical_weight }}%</div>
+                  </td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)] font-bold text-slate-700"
+                  >
+                    <span v-if="isMasked(quote)" class="text-slate-400 font-normal">Locked</span>
+                    <div v-else class="flex items-center justify-center gap-1.5">
+                      <UInput v-model.number="quote.technical_score" type="number" min="0" max="100" size="xs" class="w-16 text-center bg-indigo-50/50 font-black" />
+                      <span>/ 100</span>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr class="bg-slate-50/20 text-xs border-t border-[var(--border)]" v-if="rfq?.technical_weight > 0">
+                  <td class="p-3 text-[var(--muted-foreground)]">
+                    คะแนนด้านราคา (Commercial Score)
+                    <div class="text-[9px] text-slate-400">สัดส่วนน้ำหนัก: {{ rfq.commercial_weight }}%</div>
+                  </td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)] font-bold text-slate-700"
+                  >
+                    <span v-if="isMasked(quote)" class="text-slate-400 font-normal">Locked</span>
+                    <span v-else>{{ getCommercialScore(quote) }} / 100</span>
+                  </td>
+                </tr>
+
+                <tr class="bg-indigo-50/30 text-xs border-t border-b border-[var(--border)] font-bold" v-if="rfq?.technical_weight > 0">
+                  <td class="p-3 text-indigo-900">
+                    คะแนนรวมถ่วงน้ำหนัก (Weighted Total)
+                    <div class="text-[9px] text-indigo-500 font-normal">Technical + Commercial</div>
+                  </td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)] text-sm font-extrabold text-indigo-700"
+                  >
+                    <span v-if="isMasked(quote)" class="text-slate-400 font-normal">Locked</span>
+                    <span v-else>{{ getWeightedTotalScore(quote) }} / 100</span>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="p-3 text-xs text-[var(--muted-foreground)] flex items-center gap-1 mt-1">
+                    <UIcon name="i-heroicons-truck" class="w-3.5 h-3.5" />
+                    ระยะเวลาจัดส่ง (Delivery Term)
+                  </td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)] text-xs font-semibold text-[var(--foreground)]"
+                    :class="{'bg-green-50/20': quote.status === 'Selected'}"
+                  >
+                    <span v-if="isMasked(quote)" class="text-slate-400 font-normal">Locked</span>
+                    <template v-else>
+                      {{ getMaxLeadTime(quote) }} วันทำการ
+                    </template>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td class="p-3 text-xs text-[var(--muted-foreground)] flex items-center gap-1 mt-1">
+                    <UIcon name="i-heroicons-paper-clip" class="w-3.5 h-3.5" />
+                    เอกสารข้อเสนอ (Documents)
+                  </td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-3 text-center border-l border-[var(--border)]"
+                    :class="{'bg-green-50/20': quote.status === 'Selected'}"
+                  >
+                    <span v-if="isMasked(quote)" class="text-xs text-slate-400">Locked</span>
+                    <template v-else>
+                      <a 
+                        v-if="quote.lines?.[0]?.quotation_url" 
+                        :href="quote.lines[0].quotation_url" 
+                        target="_blank"
+                        class="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-[var(--primary)] text-[var(--primary)] rounded-lg font-semibold hover:bg-slate-50 transition"
+                      >
+                        <UIcon name="i-heroicons-document-arrow-down" class="w-3.5 h-3.5" />
+                        ดาวน์โหลด PDF
+                      </a>
+                      <span v-else class="text-xs text-[var(--muted-foreground)]">ไม่ได้แนบเอกสาร</span>
+                    </template>
+                  </td>
+                </tr>
+
+                <tr class="bg-slate-100/30">
+                  <td class="p-3"></td>
+                  <td 
+                    v-for="quote in rfq?.quotations" 
+                    :key="quote.quote_id"
+                    class="p-4 text-center border-l border-[var(--border)]"
+                    :class="{'bg-green-50/50': quote.status === 'Selected'}"
+                  >
+                    <span 
+                      v-if="quote.status === 'Selected' || rfq?.status === 'Awarded'" 
+                      class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full border border-purple-200"
+                    >
+                      {{ quote.status === 'Selected' ? '🏆 ได้รับคัดเลือก (Selected)' : 'ไม่ได้รับคัดเลือก' }}
+                    </span>
+                    <div v-else-if="isMasked(quote)" class="text-xs font-semibold text-slate-400 flex items-center justify-center gap-1 bg-slate-50 py-1.5 px-3 rounded-lg border border-slate-200 max-w-[140px] mx-auto">
+                      <UIcon name="i-heroicons-lock-closed" class="w-3.5 h-3.5 text-slate-400" />
+                      <span>รอเปิดซองประมูล</span>
+                    </div>
+                    <UButton 
+                      v-else
+                      @click="awardQuote(quote.quote_id)"
+                      color="primary"
+                      size="sm"
+                      :loading="isAwarding"
+                      class="font-semibold shadow-sm cursor-pointer"
+                    >
+                      <UIcon name="i-heroicons-check-badge" class="w-4 h-4 mr-1" />
+                      เลือกผู้ขายรายนี้
+                    </UButton>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- Sealed Bid Active Warning -->
-    <div v-if="peekingForbidden" class="p-8 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-3">
-      <UIcon name="i-heroicons-lock-closed" class="w-12 h-12 text-amber-500 mx-auto" />
-      <h3 class="font-bold text-base text-amber-900">ระเบียบซองปิด (Sealed Bidding Active)</h3>
-      <p class="text-xs text-amber-800 max-w-lg mx-auto">
-        ตามข้อบังคับการจัดซื้อจัดจ้าง พนักงานจัดซื้อไม่ได้รับอนุญาตให้เปิดซองเสนอราคาเพื่อดูราคากลางเปรียบเทียบก่อนถึงกำหนดวันปิดเสนอราคา ({{ formatDate(rfq?.close_date) }}) เพื่อความโปร่งใสสูงสุดของระบบประมูล
-      </p>
-    </div>
+    <!-- TAB 2: Multi-Criteria Evaluation Worksheet -->
+    <div v-else-if="activeTab === 'multicriteria'" class="space-y-6">
+      <div class="bg-white border border-[var(--border)] rounded-2xl shadow-[var(--shadow-sm)] p-6">
+        <div class="border-b pb-4 mb-6">
+          <h3 class="font-extrabold text-base text-[#002266] flex items-center gap-2">
+            <UIcon name="i-heroicons-adjustments-horizontal" class="text-[#0054FF] w-5 h-5" />
+            <span>กระดาษทำการประเมินคะแนนเทคนิคหลายมิติ (Multi-Criteria Evaluation Sheet)</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">เกณฑ์ถ่วงน้ำหนักรวมของโครงการ: ฝ่ายจัดซื้อทำการประเมินคะแนนแยกตามหัวข้อเพื่อให้ระบบแปลงเป็นคะแนนเทคนิครวม (คะแนนเต็ม 100)</p>
+        </div>
 
-    <div v-else class="grid grid-cols-1 gap-6">
-      <!-- Side-by-side comparison card -->
-      <div class="bg-white border border-[var(--border)] rounded-2xl shadow-[var(--shadow-sm)] p-6 overflow-hidden">
-        <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[var(--border)] pb-2 flex items-center gap-2 mb-4">
-          <UIcon name="i-heroicons-presentation-chart-bar" class="w-4 h-4 text-[var(--primary)]" />
-          เปรียบเทียบใบเสนอราคา (Price & Terms Comparison)
-        </h3>
+        <div class="space-y-8">
+          <div v-for="quote in rfq?.quotations" :key="quote.quote_id" class="border border-slate-200 rounded-xl p-5 bg-slate-50/30 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3">
+              <span class="font-black text-sm text-[#002266]">{{ quote.vendor?.vendor_name }}</span>
+              <div class="flex items-center gap-2">
+                <span class="text-xs text-slate-400">คะแนนเทคนิครวมคำนวณได้:</span>
+                <span class="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 font-extrabold text-sm rounded-lg">
+                  {{ quote.technical_score }} / 100
+                </span>
+              </div>
+            </div>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse min-w-[800px]">
-            <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs text-slate-500 font-bold">
-                <th class="p-3">สินค้า / ข้อกำหนดประมูล</th>
-                <!-- Loop vendors headers -->
-                <th 
-                  v-for="quote in rfq?.quotations" 
-                  :key="quote.quote_id" 
-                  class="p-3 text-center border-l border-[var(--border)]"
-                  :class="{'bg-green-50/50': quote.status === 'Selected'}"
-                >
-                  <div class="font-extrabold text-[var(--foreground)] truncate max-w-[200px]" :title="quote.vendor?.vendor_name">
-                    {{ quote.vendor?.vendor_name }}
+            <!-- List criteria sliders -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div v-for="criterion in evaluationCriteria" :key="criterion.id" class="space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                  <div>
+                    <span class="font-bold text-slate-700 text-xs">{{ criterion.name }}</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">{{ criterion.desc }}</span>
                   </div>
-                  <span class="text-[9px] text-[var(--muted-foreground)] block mt-0.5">Tax ID: {{ quote.vendor?.tax_id }}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[var(--border)] text-sm">
-              <!-- Loop items -->
-              <tr v-for="item in rfq?.items" :key="item.rfq_item_id">
-                <td class="p-3">
-                  <div class="font-bold text-[var(--foreground)]">{{ item.item_name }}</div>
-                  <span class="text-[10px] text-[var(--muted-foreground)]">ความต้องการ: {{ item.quantity }} {{ item.uom }}</span>
-                </td>
-                
-                <!-- Pricing entries for each vendor quote -->
-                <td 
-                  v-for="quote in rfq?.quotations" 
-                  :key="quote.quote_id"
-                  class="p-3 text-center border-l border-[var(--border)]"
-                  :class="{'bg-green-50/20': quote.status === 'Selected', 'font-bold text-green-600': isLowestForLine(item.rfq_item_id, quote)}"
-                >
-                  <div>{{ formatCurrency(getLinePrice(item.rfq_item_id, quote)) }} THB</div>
-                  <span class="text-[9px] text-[var(--muted-foreground)]">ราคารวม: {{ formatCurrency(getLinePrice(item.rfq_item_id, quote) * item.quantity) }} THB</span>
-                </td>
-              </tr>
-
-              <!-- Total Row -->
-              <tr class="bg-slate-50/50 font-bold border-t border-[var(--border)]">
-                <td class="p-3 text-xs text-[var(--muted-foreground)] uppercase">ยอดรวมราคาจัดจัดซื้อ (Total Cost)</td>
-                <td 
-                  v-for="quote in rfq?.quotations" 
-                  :key="quote.quote_id"
-                  class="p-3 text-center border-l border-[var(--border)] text-base font-extrabold"
-                  :class="{'bg-green-50/50': quote.status === 'Selected', 'text-green-600': isLowestTotal(quote)}"
-                >
-                  {{ formatCurrency(getQuoteTotal(quote)) }} THB
-                </td>
-              </tr>
-
-              <!-- Delivery Lead Time -->
-              <tr>
-                <td class="p-3 text-xs text-[var(--muted-foreground)] flex items-center gap-1 mt-1">
-                  <UIcon name="i-heroicons-truck" class="w-3.5 h-3.5" />
-                  ระยะเวลาจัดส่ง (Delivery Term)
-                </td>
-                <td 
-                  v-for="quote in rfq?.quotations" 
-                  :key="quote.quote_id"
-                  class="p-3 text-center border-l border-[var(--border)] text-xs font-semibold text-[var(--foreground)]"
-                  :class="{'bg-green-50/20': quote.status === 'Selected'}"
-                >
-                  {{ getMaxLeadTime(quote) }} วันทำการ
-                </td>
-              </tr>
-
-              <!-- Quotation Attachments -->
-              <tr>
-                <td class="p-3 text-xs text-[var(--muted-foreground)] flex items-center gap-1 mt-1">
-                  <UIcon name="i-heroicons-paper-clip" class="w-3.5 h-3.5" />
-                  เอกสารข้อเสนอ (Documents)
-                </td>
-                <td 
-                  v-for="quote in rfq?.quotations" 
-                  :key="quote.quote_id"
-                  class="p-3 text-center border-l border-[var(--border)]"
-                  :class="{'bg-green-50/20': quote.status === 'Selected'}"
-                >
-                  <a 
-                    v-if="quote.lines?.[0]?.quotation_url" 
-                    :href="quote.lines[0].quotation_url" 
-                    target="_blank"
-                    class="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-[var(--primary)] text-[var(--primary)] rounded-lg font-semibold hover:bg-slate-50 transition"
-                  >
-                    <UIcon name="i-heroicons-document-arrow-down" class="w-3.5 h-3.5" />
-                    ดาวน์โหลด PDF
-                  </a>
-                  <span v-else class="text-xs text-[var(--muted-foreground)]">ไม่ได้แนบเอกสาร</span>
-                </td>
-              </tr>
-
-              <!-- Action/Decision -->
-              <tr class="bg-slate-100/30">
-                <td class="p-3"></td>
-                <td 
-                  v-for="quote in rfq?.quotations" 
-                  :key="quote.quote_id"
-                  class="p-4 text-center border-l border-[var(--border)]"
-                  :class="{'bg-green-50/50': quote.status === 'Selected'}"
-                >
-                  <span 
-                    v-if="quote.status === 'Selected' || rfq?.status === 'Awarded'" 
-                    class="px-3 py-1 bg-purple-100 text-purple-800 text-xs font-bold rounded-full border border-purple-200"
-                  >
-                    {{ quote.status === 'Selected' ? '🏆 ได้รับคัดเลือก (Selected)' : 'ไม่ได้รับคัดเลือก' }}
+                  <span class="font-black text-[#0054FF] bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                    {{ criteriaScores[quote.quote_id]?.[criterion.id] || 0 }} / {{ criterion.max }}
                   </span>
-                  
-                  <UButton 
-                    v-else
-                    @click="awardQuote(quote.quote_id)"
-                    color="primary"
-                    size="sm"
-                    :loading="isAwarding"
-                    class="font-semibold shadow-sm cursor-pointer"
+                </div>
+                <div class="flex items-center gap-3">
+                  <input 
+                    type="range" 
+                    v-model.number="criteriaScores[quote.quote_id][criterion.id]" 
+                    min="0" 
+                    :max="criterion.max" 
+                    @input="updateTechnicalScoreFromCriteria(quote.quote_id)"
+                    class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-[#0054FF]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="border-t pt-5 mt-6 flex justify-end">
+          <UButton 
+            color="primary" 
+            icon="i-heroicons-check-circle"
+            class="bg-[#0054FF] hover:bg-[#002266] font-bold text-xs cursor-pointer px-6"
+            @click="activeTab = 'sealed'; alert('อัปเดตคะแนนประเมินและถ่วงน้ำหนักรวมของใบเสนอราคาเรียบร้อยแล้ว!')"
+          >
+            ยืนยันผลคะแนนและกลับหน้าเปรียบเทียบ
+          </UButton>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Reverse Auction Live Dashboard -->
+    <div v-else-if="activeTab === 'reverse_auction'" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-6 text-white overflow-hidden relative">
+        <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+        <!-- Upper Banner -->
+        <div class="flex flex-col md:flex-row items-center justify-between border-b border-slate-800 pb-5 mb-6 gap-4 relative z-10">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 rounded-xl flex items-center justify-center animate-pulse">
+              <UIcon name="i-heroicons-arrow-path" class="w-6 h-6" />
+            </div>
+            <div>
+              <h3 class="font-black text-base text-slate-100">ห้องประมูลราคาย้อนกลับแบบเรียลไทม์ (Live Reverse Auction Monitor)</h3>
+              <p class="text-[11px] text-slate-400 mt-0.5">จำลองการเสนอราคาแข่งขันแบบเวลาจำกัด โดยผู้จัดหาทุกรายจะเห็นอันดับของตนเองและเสนอราคาแข่งลงมา</p>
+            </div>
+          </div>
+
+          <!-- Timer block -->
+          <div class="flex items-center gap-4 bg-slate-800/80 border border-slate-700 rounded-xl p-3.5 min-w-[200px] justify-center">
+            <UIcon name="i-heroicons-clock" class="w-6 h-6 text-orange-400 animate-pulse" />
+            <div>
+              <span class="text-[10px] text-slate-400 block uppercase font-bold tracking-wider">เวลาที่เหลือ (Remaining)</span>
+              <span class="text-xl font-mono font-black text-orange-400">{{ formatAuctionTime(auctionTimeRemaining) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+          <!-- Left side: Live Leaderboard -->
+          <div class="lg:col-span-2 space-y-4">
+            <h4 class="font-extrabold text-xs text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+              <UIcon name="i-heroicons-list-bullet" class="text-indigo-400 w-4 h-4" />
+              <span>ตารางอันดับข้อเสนอแบบเรียลไทม์ (Leaderboard)</span>
+            </h4>
+
+            <div class="space-y-3">
+              <div 
+                v-for="aq in [...auctionQuotes].sort((a, b) => a.rank - b.rank)" 
+                :key="aq.quote_id" 
+                class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-4 flex items-center justify-between transition-all duration-300 hover:border-slate-600"
+                :class="{'border-green-500/40 bg-green-500/5': aq.rank === 1}"
+              >
+                <div class="flex items-center gap-4">
+                  <div 
+                    class="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm"
+                    :class="[
+                      aq.rank === 1 ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                      aq.rank === 2 ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                      'bg-slate-700/50 text-slate-400 border border-slate-600/30'
+                    ]"
                   >
-                    <UIcon name="i-heroicons-check-badge" class="w-4 h-4 mr-1" />
-                    เลือกผู้ขายรายนี้
-                  </UButton>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                    #{{ aq.rank }}
+                  </div>
+                  <div>
+                    <span class="font-bold text-slate-200 block text-xs">{{ aq.vendor_name }}</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">ราคาเริ่มต้น: {{ formatCurrency(aq.initialPrice) }} THB</span>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                  <div class="text-right">
+                    <div class="text-sm font-black text-slate-100">{{ formatCurrency(aq.currentPrice) }} THB</div>
+                    <div class="flex items-center justify-end gap-1.5 mt-0.5">
+                      <span 
+                        class="text-[9px] font-bold px-1.5 py-0.5 rounded"
+                        :class="[
+                          aq.rank === 1 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                        ]"
+                      >
+                        {{ aq.rank === 1 ? 'Leading' : 'Outbid' }}
+                      </span>
+                      <span class="text-[9px] text-slate-400">
+                        ลดลงแล้ว: -{{ (((aq.initialPrice - aq.currentPrice) / aq.initialPrice) * 100).toFixed(1) }}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Manual trigger to negotiate (Only when simulation runs) -->
+                  <div class="pl-4 border-l border-slate-700/50" v-if="isAuctionRunning">
+                    <UButton
+                      size="xs"
+                      color="primary"
+                      variant="soft"
+                      class="text-[10px] font-bold bg-[#0054FF]/20 text-[#0054FF] hover:bg-[#0054FF]/30 border border-[#0054FF]/40 cursor-pointer"
+                      @click="placeManualBuyerBidCorrection(aq.quote_id, 1.5)"
+                    >
+                      ต่อรองลด 1.5%
+                    </UButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Controller Panel -->
+            <div class="bg-slate-800/30 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 mt-6">
+              <div class="text-xs text-slate-400">
+                <span class="font-bold text-slate-200 block">แผงควบคุมการจำลอง (Simulation Panel)</span>
+                กดเริ่มจำลองเพื่อจำลองการเสนอราคาที่อัปเดตแบบสดชิงอันดับ Leaderboard
+              </div>
+              <div class="flex items-center gap-2">
+                <UButton
+                  v-if="!isAuctionRunning"
+                  @click="startAuctionSimulation"
+                  color="green"
+                  icon="i-heroicons-play-solid"
+                  class="font-bold text-xs bg-green-600 hover:bg-green-700 cursor-pointer"
+                >
+                  เริ่มการจำลองประมูล (Start Simulation)
+                </UButton>
+                <UButton
+                  v-else
+                  @click="stopAuctionSimulation"
+                  color="red"
+                  icon="i-heroicons-pause-solid"
+                  class="font-bold text-xs bg-red-600 hover:bg-red-700 cursor-pointer"
+                >
+                  หยุดการจำลอง (Pause)
+                </UButton>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right side: Bidding Activity Feed -->
+          <div class="space-y-4">
+            <h4 class="font-extrabold text-xs text-slate-300 uppercase tracking-widest flex items-center gap-1.5">
+              <UIcon name="i-heroicons-bell-alert" class="text-indigo-400 w-4 h-4" />
+              <span>ประวัติการลดราคาแบบสด (Activity Feed)</span>
+            </h4>
+
+            <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-4 h-80 overflow-y-auto space-y-3 font-mono text-[10px]">
+              <div class="text-slate-500 italic text-center py-2" v-if="!isAuctionRunning && auctionQuotes.every(aq => aq.priceDrops.length === 0)">
+                รอเริ่มการจำลองเพื่อจับตาการเคลื่อนไหว...
+              </div>
+              <div v-else class="space-y-2">
+                <div v-for="aq in auctionQuotes" :key="aq.quote_id">
+                  <div v-for="(drop, idx) in aq.priceDrops" :key="idx" class="flex flex-col bg-slate-800/50 p-2 rounded border border-slate-700/30 animate-fadeIn mb-2">
+                    <div class="flex justify-between text-indigo-400 font-bold">
+                      <span>[{{ drop.time }}] {{ aq.vendor_name.split(' ')[0] }}</span>
+                      <span class="text-green-400">✔ OFFER</span>
+                    </div>
+                    <div class="flex justify-between text-slate-300 mt-1">
+                      <span>ราคายื่นใหม่:</span>
+                      <span class="font-bold text-white">{{ formatCurrency(drop.amount) }} THB</span>
+                    </div>
+                    <span v-if="drop.note" class="text-[9px] text-yellow-500 mt-0.5 font-sans font-bold">• {{ drop.note }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -164,15 +540,172 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
 
+const activeTab = ref('sealed'); // sealed, multicriteria, reverse_auction
 const rfq = ref<any>(null);
 const peekingForbidden = ref(false);
 const isAwarding = ref(false);
+const savingScores = ref(false);
+const slaExpired = ref(false);
+const escalating = ref(false);
+
+// Multi-Criteria evaluation parameters
+const evaluationCriteria = ref([
+  { id: 'tech', name: 'ความสมบูรณ์และข้อกำหนดทางเทคนิค (Technical Specs)', max: 30, desc: 'ครอบคลุมตามข้อกำหนดในเอกสาร TOR' },
+  { id: 'leadtime', name: 'ความรวดเร็วและแผนการจัดส่ง (Delivery Terms)', max: 30, desc: 'ความเสี่ยงด้านความล่าช้าและการรับประกันเวลาส่งมอบ' },
+  { id: 'warranty', name: 'การรับประกันและบริการหลังการขาย (Warranty & SLA)', max: 20, desc: 'เงื่อนไขการเคลมอะไหล่และการบำรุงรักษา' },
+  { id: 'stability', name: 'ความน่าเชื่อถือและสถานะทางการเงิน (Supplier Stability)', max: 20, desc: 'Altman Z-Score และประวัติผลการดำเนินงาน' }
+]);
+
+const criteriaScores = ref<Record<string, Record<string, number>>>({});
+
+const initCriteriaScores = () => {
+  if (!rfq.value?.quotations) return;
+  rfq.value.quotations.forEach((quote: any) => {
+    if (!criteriaScores.value[quote.quote_id]) {
+      const baseTech = quote.technical_score || 80;
+      criteriaScores.value[quote.quote_id] = {
+        tech: Math.min(30, Math.round((baseTech * 30) / 100)),
+        leadtime: Math.min(30, Math.round((baseTech * 30) / 100)),
+        warranty: Math.min(20, Math.round((baseTech * 20) / 100)),
+        stability: Math.min(20, Math.round((baseTech * 20) / 100))
+      };
+    }
+  });
+};
+
+const updateTechnicalScoreFromCriteria = (quoteId: string) => {
+  const scores = criteriaScores.value[quoteId];
+  if (!scores) return;
+  const total = Object.values(scores).reduce((sum, val) => sum + val, 0);
+  const quote = rfq.value.quotations.find((q: any) => q.quote_id === quoteId);
+  if (quote) {
+    quote.technical_score = total;
+  }
+};
+
+// Reverse Auction States
+const isAuctionRunning = ref(false);
+const auctionTimeRemaining = ref(120); // 2 minutes in seconds
+const auctionTimerInterval = ref<any>(null);
+const auctionQuotes = ref<any[]>([]);
+
+const formatAuctionTime = (sec: number) => {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+};
+
+const initAuctionQuotes = () => {
+  if (!rfq.value?.quotations) return;
+  auctionQuotes.value = rfq.value.quotations.map((q: any) => {
+    const initialPrice = getQuoteTotal(q);
+    return {
+      quote_id: q.quote_id,
+      vendor_name: q.vendor?.vendor_name,
+      initialPrice,
+      currentPrice: initialPrice,
+      priceDrops: [],
+      rank: 1
+    };
+  });
+  updateAuctionRanks();
+};
+
+const updateAuctionRanks = () => {
+  const sorted = [...auctionQuotes.value].sort((a, b) => a.currentPrice - b.currentPrice);
+  auctionQuotes.value.forEach((aq) => {
+    aq.rank = sorted.findIndex(s => s.quote_id === aq.quote_id) + 1;
+  });
+};
+
+const startAuctionSimulation = () => {
+  if (isAuctionRunning.value) return;
+  isAuctionRunning.value = true;
+  auctionTimeRemaining.value = 120;
+  
+  auctionTimerInterval.value = setInterval(() => {
+    if (auctionTimeRemaining.value > 0) {
+      auctionTimeRemaining.value--;
+      
+      // Trigger random price drops from competitors every 4 ticks
+      if (auctionTimeRemaining.value % 4 === 0) {
+        simulateCompetitorBids();
+      }
+    } else {
+      stopAuctionSimulation();
+    }
+  }, 1000);
+};
+
+const stopAuctionSimulation = () => {
+  isAuctionRunning.value = false;
+  if (auctionTimerInterval.value) {
+    clearInterval(auctionTimerInterval.value);
+    auctionTimerInterval.value = null;
+  }
+};
+
+const simulateCompetitorBids = () => {
+  const eligibleQuotes = auctionQuotes.value.filter(aq => aq.rank > 1 || Math.random() > 0.5);
+  if (eligibleQuotes.length === 0) return;
+  const target = eligibleQuotes[Math.floor(Math.random() * eligibleQuotes.length)];
+  
+  const dropPercent = 0.01 + Math.random() * 0.02; // 1% to 3%
+  const dropVal = Math.round(target.currentPrice * dropPercent);
+  target.currentPrice = Math.max(target.initialPrice * 0.8, target.currentPrice - dropVal); // bid floor is 80%
+  
+  target.priceDrops.unshift({
+    time: formatAuctionTime(auctionTimeRemaining.value),
+    amount: target.currentPrice
+  });
+
+  updateAuctionRanks();
+};
+
+const placeManualBuyerBidCorrection = (quoteId: string, percentage: number) => {
+  const target = auctionQuotes.value.find(aq => aq.quote_id === quoteId);
+  if (!target) return;
+  const dropVal = Math.round(target.currentPrice * (percentage / 100));
+  target.currentPrice = Math.max(target.initialPrice * 0.75, target.currentPrice - dropVal);
+  target.priceDrops.unshift({
+    time: formatAuctionTime(auctionTimeRemaining.value),
+    amount: target.currentPrice,
+    note: 'ต่อรองราคากลาง Match สำเร็จ'
+  });
+  updateAuctionRanks();
+  alert(`ส่งคำต่อรองราคาสำเร็จ! ผู้ขายยินยอมปรับราคารวมลงเหลือ ${formatCurrency(target.currentPrice)} THB`);
+};
+
+// Fixed formula helper methods
+const getCommercialScore = (quote: any) => {
+  const currentTotal = getQuoteTotal(quote);
+  if (currentTotal === 0) return 0;
+  const allTotals = rfq.value?.quotations?.map((q: any) => isMasked(q) ? 0 : getQuoteTotal(q)).filter((t: number) => t > 0) || [];
+  if (allTotals.length === 0) return 0;
+  const minTotal = Math.min(...allTotals);
+  return Math.round((minTotal / currentTotal) * 100);
+};
+
+const getWeightedTotalScore = (quote: any) => {
+  const techWeight = rfq.value?.technical_weight || 0;
+  const commWeight = rfq.value?.commercial_weight || 0;
+  const techScore = quote.technical_score || 0;
+  const commScore = getCommercialScore(quote);
+  return Number(((techScore * techWeight) / 100 + (commScore * commWeight) / 100).toFixed(1));
+};
+
+const isMasked = (quote: any) => {
+  if (!rfq.value) return false;
+  if (quote.is_sealed_masked) return true;
+  // Fallback: If it's a sealed bid and close date is in the future
+  return rfq.value.bid_type === 'SealedBid' && new Date() < new Date(rfq.value.close_date);
+};
 
 const loadComparison = async () => {
   try {
@@ -183,6 +716,8 @@ const loadComparison = async () => {
     });
     rfq.value = res;
     peekingForbidden.value = false;
+    initCriteriaScores();
+    initAuctionQuotes();
   } catch (err: any) {
     if (err.status === 403) {
       peekingForbidden.value = true;
@@ -204,6 +739,8 @@ const loadComparison = async () => {
         title: 'จัดซื้อโน้ตบุ๊ค 14 นิ้ว สำหรับทีมวิศวกรรวม 30 เครื่อง',
         close_date: new Date(Date.now() - 3600000), // closed
         status: 'OpenForQuotation',
+        technical_weight: 40,
+        commercial_weight: 60,
         items: [
           { rfq_item_id: 'i1', item_name: 'โน้ตบุ๊คสำหรับงานสำนักงาน 14 นิ้ว', quantity: 30, uom: 'เครื่อง' }
         ],
@@ -211,6 +748,7 @@ const loadComparison = async () => {
           {
             quote_id: 'q1',
             status: 'Submitted',
+            technical_score: 85,
             vendor: { vendor_name: 'บริษัท ดิจิทัล โซลูชั่น ซัพพลาย จำกัด', tax_id: '0105561012345' },
             lines: [
               { rfq_item_id: 'i1', unit_price: 28500, delivery_days: 10, quotation_url: '/uploads/quotations/quote_mock_1.pdf' }
@@ -219,6 +757,7 @@ const loadComparison = async () => {
           {
             quote_id: 'q2',
             status: 'Submitted',
+            technical_score: 92,
             vendor: { vendor_name: 'บริษัท อินโนเวทีฟ ไอที เซอร์วิส จำกัด', tax_id: '0105562023456' },
             lines: [
               { rfq_item_id: 'i1', unit_price: 27900, delivery_days: 14, quotation_url: '/uploads/quotations/quote_mock_2.pdf' }
@@ -227,6 +766,7 @@ const loadComparison = async () => {
           {
             quote_id: 'q3',
             status: 'Submitted',
+            technical_score: 78,
             vendor: { vendor_name: 'บริษัท เทคโนโลยี เน็กซ์ จำกัด', tax_id: '0105563134567' },
             lines: [
               { rfq_item_id: 'i1', unit_price: 27500, delivery_days: 7, quotation_url: '/uploads/quotations/quote_mock_3.pdf' }
@@ -235,6 +775,8 @@ const loadComparison = async () => {
         ]
       };
     }
+    initCriteriaScores();
+    initAuctionQuotes();
   }
 };
 
@@ -260,19 +802,21 @@ const getMaxLeadTime = (quote: any) => {
 };
 
 const isLowestForLine = (itemId: string, quote: any) => {
+  if (isMasked(quote)) return false;
   const currentPrice = getLinePrice(itemId, quote);
   if (currentPrice === 0) return false;
   
-  const allPrices = rfq.value?.quotations?.map((q: any) => getLinePrice(itemId, q)).filter((p: number) => p > 0) || [];
+  const allPrices = rfq.value?.quotations?.map((q: any) => isMasked(q) ? 0 : getLinePrice(itemId, q)).filter((p: number) => p > 0) || [];
   const minPrice = Math.min(...allPrices);
   return currentPrice === minPrice;
 };
 
 const isLowestTotal = (quote: any) => {
+  if (isMasked(quote)) return false;
   const currentTotal = getQuoteTotal(quote);
   if (currentTotal === 0) return false;
 
-  const allTotals = rfq.value?.quotations?.map((q: any) => getQuoteTotal(q)).filter((t: number) => t > 0) || [];
+  const allTotals = rfq.value?.quotations?.map((q: any) => isMasked(q) ? 0 : getQuoteTotal(q)).filter((t: number) => t > 0) || [];
   const minTotal = Math.min(...allTotals);
   return currentTotal === minTotal;
 };
@@ -297,6 +841,34 @@ const awardQuote = async (quoteId: string) => {
     navigateTo('/pr');
   } finally {
     isAwarding.value = false;
+  }
+};
+
+const triggerEscalation = async () => {
+  if (!confirm('คุณยืนยันต้องการประกาศผู้ประมูลสำรอง (Runner-up) เป็นผู้ชนะแทนใช่หรือไม่? ระบบจะทำการยกเลิกเอกสารเดิมและสั่งจองงบประมาณให้ผู้จำหน่ายสำรองรายใหม่ทันที')) return;
+  escalating.value = true;
+  try {
+    const res = await $fetch<any>(`http://localhost:3001/api/bidding/rfq/${rfq.value.rfq_id}/escalate`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authStore.token}`,
+      },
+    });
+    alert(`ปรับเปลี่ยนผู้ชนะประมูลสำเร็จ!\nสร้างใบขอซื้อให้ผู้ประมูลสำรองเรียบร้อย: เลขที่ ${res.new_pr_no}`);
+    await loadComparison();
+  } catch (err: any) {
+    console.warn('Backend escalation failed, applying locally.');
+    // Local mock simulation of re-award to runner-up (which is q2)
+    rfq.value.is_escalated = true;
+    rfq.value.status = 'Awarded';
+    
+    // Set q2 as Selected, others as Not Selected
+    rfq.value.quotations.forEach((q: any) => {
+      q.status = q.quote_id === 'q2' ? 'Selected' : 'NotSelected';
+    });
+    alert(`[MOCK] เลื่อนสิทธิ์ผู้ชนะสำรองสำเร็จ!\nระบบสร้างใบขอซื้อให้สำรอง: PR2606999 (บริษัท อินโนเวทีฟ ไอที เซอร์วิส จำกัด)`);
+  } finally {
+    escalating.value = false;
   }
 };
 

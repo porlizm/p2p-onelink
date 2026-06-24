@@ -35,6 +35,9 @@ export class PurchaseOrderLine {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   quantity: number;
 
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  received_quantity: number;
+
   @Column({ type: 'varchar', length: 50 })
   uom: string;
 

@@ -10,6 +10,8 @@ import { CostCenter } from '../database/entities/cost-center.entity';
 import { ConfirmPoDto, RequestRevisionDto, RevisePoDto } from './dto/po.dto';
 import { PurchaseOrderStatus, PurchaseRequisitionStatus } from '@p2p/shared';
 import { AuditLog } from '../database/entities/audit-log.entity';
+import { PurchaseContract } from '../database/entities/purchase-contract.entity';
+import { Notification } from '../database/entities/notification.entity';
 
 @Injectable()
 export class PoService {
@@ -98,6 +100,7 @@ export class PoService {
         revision_no: 0,
         estimated_delivery_date: null,
         payment_milestones: milestones,
+        contract_id: pr.contract_id || null,
       });
 
       const savedPo = await manager.getRepository(PurchaseOrder).save(po);
@@ -117,6 +120,36 @@ export class PoService {
       });
 
       await manager.getRepository(PurchaseOrderLine).save(poLines);
+
+      // Contract Utilization Limit Control (Deduct budget on PO creation if linked to contract)
+      if (pr.contract_id) {
+        const contract = await manager.getRepository(PurchaseContract).findOne({
+          where: { contract_id: pr.contract_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (contract) {
+          const oldRemaining = Number(contract.remaining_amount);
+          contract.remaining_amount = oldRemaining - totalAmount;
+          await manager.save(contract);
+
+          const totalAmt = Number(contract.total_amount);
+          const usedAmt = totalAmt - contract.remaining_amount;
+          const utilizationPct = (usedAmt / totalAmt) * 100;
+
+          if (utilizationPct >= 80) {
+            const pctText = utilizationPct >= 90 ? '90%' : '80%';
+            const msg = `สัญญากลางเลขที่ ${contract.contract_no} ถูกใช้งานไปแล้วเกิน ${pctText} (${utilizationPct.toFixed(2)}%) วงเงินคงเหลือปัจจุบันคือ ${contract.remaining_amount} THB`;
+            const notification = manager.getRepository(Notification).create({
+              recipient_user_id: userId,
+              channel: 'System',
+              trigger_event: 'CONTRACT_LIMIT_WARNING',
+              message: msg,
+              read_flag: false,
+            });
+            await manager.save(notification);
+          }
+        }
+      }
 
       // 6. Update PR status
       pr.status = PurchaseRequisitionStatus.CONVERTED_TO_PO;
@@ -238,6 +271,43 @@ export class PoService {
         where: { po_id: poId },
       });
       totalAmount = allPoLines.reduce((sum, line) => sum + Number(line.total_price), 0);
+
+      // Validate against Contract Remaining Amount if linked (US-114 Validation)
+      if (po.contract_id) {
+        const contract = await manager.getRepository(PurchaseContract).findOne({
+          where: { contract_id: po.contract_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (!contract) {
+          throw new NotFoundException('ไม่พบสัญญากลางที่ผูกกับใบสั่งซื้อนี้');
+        }
+        const diff = totalAmount - Number(po.total_amount);
+        if (diff > 0 && Number(contract.remaining_amount) < diff) {
+          throw new BadRequestException(
+            `ยอดปรับปรุงรวมใหม่ของ PO เพิ่มขึ้น ${diff} THB เกินวงเงินคงเหลือของสัญญากลาง (วงเงินคงเหลือปัจจุบัน ${contract.remaining_amount} THB)`
+          );
+        }
+        contract.remaining_amount = Number(contract.remaining_amount) - diff;
+        await manager.save(contract);
+
+        const totalAmt = Number(contract.total_amount);
+        const usedAmt = totalAmt - contract.remaining_amount;
+        const utilizationPct = (usedAmt / totalAmt) * 100;
+
+        if (utilizationPct >= 80) {
+          const pctText = utilizationPct >= 90 ? '90%' : '80%';
+          const msg = `สัญญากลางเลขที่ ${contract.contract_no} ถูกใช้งานไปแล้วเกิน ${pctText} (${utilizationPct.toFixed(2)}%) วงเงินคงเหลือปัจจุบันคือ ${contract.remaining_amount} THB`;
+          const notification = manager.getRepository(Notification).create({
+            recipient_user_id: userId,
+            channel: 'System',
+            trigger_event: 'CONTRACT_LIMIT_WARNING',
+            message: msg,
+            read_flag: false,
+          });
+          await manager.save(notification);
+        }
+      }
+
       po.total_amount = totalAmount;
 
       // Update payment milestones proportionally if they exist
@@ -367,6 +437,18 @@ export class PoService {
         }
       }
 
+      // Release contract budget if linked
+      if (po.contract_id) {
+        const contract = await manager.getRepository(PurchaseContract).findOne({
+          where: { contract_id: po.contract_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (contract) {
+          contract.remaining_amount = Number(contract.remaining_amount) + Number(po.total_amount);
+          await manager.save(contract);
+        }
+      }
+
       // Create PO Audit Log
       const audit = manager.getRepository(AuditLog).create({
         user_id: userId,
@@ -449,6 +531,18 @@ export class PoService {
             timestamp: new Date(),
           });
           await manager.save(auditCC);
+        }
+      }
+
+      // Release contract budget if linked
+      if (po.contract_id) {
+        const contract = await manager.getRepository(PurchaseContract).findOne({
+          where: { contract_id: po.contract_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (contract) {
+          contract.remaining_amount = Number(contract.remaining_amount) + Number(po.total_amount);
+          await manager.save(contract);
         }
       }
 

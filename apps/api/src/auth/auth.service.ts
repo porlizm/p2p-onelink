@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppUser } from '../database/entities/app-user.entity';
+import { AuditLog } from '../database/entities/audit-log.entity';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -10,6 +11,8 @@ export class AuthService {
   constructor(
     @InjectRepository(AppUser)
     private userRepository: Repository<AppUser>,
+    @InjectRepository(AuditLog)
+    private auditRepository: Repository<AuditLog>,
     private jwtService: JwtService,
   ) {}
 
@@ -99,9 +102,14 @@ export class AuthService {
     };
   }
 
-  async resetPassword(token: string, pass: string) {
+  async resetPassword(token: string, pass: string, ipAddress: string) {
     if (!token) {
       throw new BadRequestException('Token ไม่ถูกต้อง');
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`-]).{8,}$/;
+    if (!passwordRegex.test(pass)) {
+      throw new BadRequestException('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร และประกอบด้วยอักษรพิมพ์ใหญ่ (A-Z), อักษรพิมพ์เล็ก (a-z), ตัวเลข (0-9) และอักขระพิเศษอย่างน้อยประเภทละ 1 ตัว');
     }
 
     const user = await this.userRepository.findOne({
@@ -116,11 +124,26 @@ export class AuthService {
       throw new BadRequestException('ลิงก์กู้คืนรหัสผ่านหมดอายุแล้ว');
     }
 
+    const beforeValue = { reset_token: token };
+
     const hash = await bcrypt.hash(pass, 10);
     user.password_hash = hash;
     user.reset_token = null;
     user.reset_token_expires = null;
     await this.userRepository.save(user);
+
+    // Save Audit Log
+    const audit = this.auditRepository.create({
+      user_id: user.user_id,
+      action: 'RESET_PASSWORD',
+      entity_type: 'AppUser',
+      entity_id: user.user_id,
+      before_value_json: beforeValue,
+      after_value_json: { ip_address: ipAddress, timestamp: new Date() },
+      ip_address: ipAddress,
+      timestamp: new Date(),
+    });
+    await this.auditRepository.save(audit);
 
     return {
       success: true,

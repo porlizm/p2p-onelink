@@ -238,8 +238,9 @@ const formatDate = (dateVal: any) => {
   }) + ' น.';
 };
 
-const formatCurrency = (val?: number) => {
-  if (val === undefined || val === null) return '0.00';
-  return val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 </script>

@@ -7,6 +7,26 @@ export class CreateGrLineDto {
 
   @IsNumber()
   qty_received: number;
+
+  @IsNumber()
+  @IsOptional()
+  qc_passed_qty?: number;
+
+  @IsNumber()
+  @IsOptional()
+  qc_failed_qty?: number;
+
+  @IsString()
+  @IsOptional()
+  qc_status?: string;
+
+  @IsString()
+  @IsOptional()
+  bin_location?: string;
+
+  @IsString()
+  @IsOptional()
+  qc_remarks?: string;
 }
 
 export class CreateGrAttachmentDto {

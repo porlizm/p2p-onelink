@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Ip } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Ip, Query } from '@nestjs/common';
 import { ContractService } from './contract.service';
 
 @Controller('api')
@@ -41,5 +41,44 @@ export class ContractController {
       name: body.name,
       ip,
     });
+  }
+
+  @Post('contract/:id/submit-approval')
+  async submitApproval(@Param('id') id: string) {
+    return this.contractService.submitApproval(id);
+  }
+
+  @Post('contract/:id/approve')
+  async approveContract(@Param('id') id: string) {
+    return this.contractService.approveContract(id);
+  }
+
+  @Post('contract/:id/reject')
+  async rejectContract(@Param('id') id: string) {
+    return this.contractService.rejectContract(id);
+  }
+
+  @Post('contract/:id/amend')
+  async amendContract(
+    @Param('id') id: string,
+    @Body() body: {
+      title: string;
+      start_date: string;
+      end_date: string;
+      total_amount: number;
+      contract_type?: string;
+      contract_period?: string;
+      resources?: any[];
+      rental_details?: any;
+      warranty_details?: any;
+    },
+  ) {
+    return this.contractService.amendContract(id, body);
+  }
+
+  @Post('contract/check-expirations')
+  async checkExpirations(@Query('simulateDays') simulateDays?: string) {
+    const days = simulateDays ? Number(simulateDays) : undefined;
+    return this.contractService.checkContractExpirations(days);
   }
 }

@@ -49,4 +49,9 @@ export * from './budget-request.entity';
 export * from './procurement-item-type.entity';
 export * from './asset-rental-log.entity';
 export * from './license-subscription.entity';
-
+export * from './asset.entity';
+export * from './asset-allocation.entity';
+export * from './annual-plan.entity';
+export * from './demand-collection.entity';
+export * from './contract-milestone.entity';
+export * from './asset-maintenance.entity';

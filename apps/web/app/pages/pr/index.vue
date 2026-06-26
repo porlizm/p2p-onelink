@@ -236,7 +236,7 @@
                       </a>
                     </div>
                   </td>
-                  <td class="p-2 text-right">{{ line.quantity }} {{ line.uom }}</td>
+                  <td class="p-2 text-right">{{ formatQuantity(line.quantity) }} {{ line.uom }}</td>
                   <td class="p-2 text-right">{{ formatCurrency(line.unit_price) }}</td>
                   <td class="p-2 text-right font-bold">{{ formatCurrency(line.total_price) }}</td>
                 </tr>
@@ -470,8 +470,15 @@ const formatDate = (dateVal: any) => {
   }) + ' น.';
 };
 
-const formatCurrency = (val?: number) => {
-  if (val === undefined || val === null) return '0.00';
-  return val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
+
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 </script>

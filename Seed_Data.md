@@ -244,11 +244,20 @@
 
 ### 4.6 `asset` (Tier 3 — 3 แถว)
 
-| asset_id | asset_name | asset_type | owner_employee_id | status |
-|---|---|---|---|---|
-| ast_001 | โน้ตบุ๊ค เลขทรัพย์สิน AST-2026-014 | Physical | usr_001 | Active |
-| ast_002 | โน้ตบุ๊ค เลขทรัพย์สิน AST-2026-015 | Physical | usr_002 | Active |
-| ast_003 | จอคอมพิวเตอร์ เลขทรัพย์สิน AST-2026-022 | Physical | usr_006 | Active |
+| asset_id | asset_tag | asset_name | asset_type | unit_price | total_qty | distributed_qty | remaining_qty | owner_bu_id | acquisition_date | license_key | expiry_date | status |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ast_001 | AST-2026-0001 | โน้ตบุ๊ค Lenovo ThinkPad L14 Gen 4 | Goods | 35,000 | 100 | 90 | 10 | bu_002 | 30 วันก่อน | - | - | Distributed |
+| ast_002 | AST-2026-0002 | Microsoft 365 Business Standard (Cloud License) | License | 450 | 150 | 0 | 150 | bu_002 | 15 วันก่อน | M365-STD-150SEATS-JWD2026 | อีก 350 วัน | In Stock |
+| ast_003 | AST-2026-0003 | บริการระบบคลาวด์ AWS Enterprise Cloud Infrastructure | Service | 120,000 | 1 | 0 | 1 | bu_002 | 45 วันก่อน | - | อีก 320 วัน | In Stock |
+
+### 4.7 `asset_allocation` (Tier 3 — 4 แถว)
+
+| allocation_id | asset_id | to_bu_id | allocated_qty | allocation_type | rental_rate | start_date | end_date | status |
+|---|---|---|---|---|---|---|---|---|
+| alloc_001 | ast_001 | bu_001 | 20 | Rental | 500 | 30 วันก่อน | อีก 335 วัน | Active |
+| alloc_002 | ast_001 | bu_003 | 20 | Rental | 500 | 30 วันก่อน | อีก 335 วัน | Active |
+| alloc_003 | ast_001 | bu_005 | 20 | Rental | 500 | 30 วันก่อน | อีก 335 วัน | Active |
+| alloc_004 | ast_001 | bu_004 | 30 | Rental | 500 | 30 วันก่อน | อีก 335 วัน | Active |
 
 ---
 

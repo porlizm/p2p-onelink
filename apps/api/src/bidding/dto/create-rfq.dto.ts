@@ -42,6 +42,11 @@ export class CreateRfqDto {
   @IsNotEmpty({ each: true })
   vendor_ids: string[];
 
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  committee_member_ids?: string[];
+
   @IsString()
   @IsOptional()
   bid_type?: string;
@@ -57,4 +62,8 @@ export class CreateRfqDto {
   @IsNumber()
   @IsOptional()
   commercial_weight?: number;
+
+  @IsString()
+  @IsOptional()
+  shortlist_approver_id?: string;
 }

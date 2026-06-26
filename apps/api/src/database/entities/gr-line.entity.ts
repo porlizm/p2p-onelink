@@ -40,4 +40,19 @@ export class GoodsReceiptLine {
 
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   variance_qty: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  qc_passed_qty: number;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
+  qc_failed_qty: number;
+
+  @Column({ type: 'varchar', length: 50, default: 'Passed' }) // 'Passed', 'Failed', 'Partial'
+  qc_status: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  bin_location: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  qc_remarks: string | null;
 }

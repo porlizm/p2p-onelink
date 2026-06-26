@@ -63,4 +63,18 @@ export class BudgetController {
   ) {
     return this.budgetService.updateTolerance(id, body.budget_overrun_tolerance_pct, body.budget_overrun_tolerance_amount);
   }
+
+  @Get('reconciliation')
+  async getReconciliation() {
+    return this.budgetService.getReconciliation();
+  }
+
+  @Post('reconciliation/adjust')
+  async saveAdjustment(
+    @Body() body: { cost_center_id: string; adjustment_amount: number; remarks: string },
+    @Req() req: any,
+  ) {
+    const username = req.user?.username || 'System';
+    return this.budgetService.saveAdjustment(body.cost_center_id, body.adjustment_amount, body.remarks, username);
+  }
 }

@@ -13,6 +13,8 @@ import { BusinessUnit } from '../database/entities/business-unit.entity';
 import { CreditDebitNote } from '../database/entities/credit-debit-note.entity';
 import { PurchaseOrder } from '../database/entities/purchase-order.entity';
 import { VendorBankAccount } from '../database/entities/vendor-bank-account.entity';
+import { PurchaseContract } from '../database/entities/purchase-contract.entity';
+import { AuditLog } from '../database/entities/audit-log.entity';
 import { PurchaseRequisitionStatus, InvoiceStatus, PurchaseOrderStatus } from '@p2p/shared';
 
 @Injectable()
@@ -556,6 +558,8 @@ export class PaymentService {
         throw new NotFoundException('ไม่พบเอกสาร PO');
       }
 
+      let paidAmount = 0;
+
       if (po.payment_milestones && po.payment_milestones.length > 0) {
         const milestones = [...po.payment_milestones];
         // Find the one in 'ProcessingPayment'
@@ -565,6 +569,7 @@ export class PaymentService {
             activeMilestone.status = 'Paid';
             activeMilestone.error_code = null;
             activeMilestone.error_message = null;
+            paidAmount = Number(activeMilestone.amount);
 
             // If all milestones are Paid, set PO status to Paid. Otherwise, set PO status to VendorConfirmed so they can pay next milestone
             const allPaid = milestones.every((m) => m.status === 'Paid');
@@ -589,6 +594,7 @@ export class PaymentService {
             po.status = PurchaseOrderStatus.PAID;
             po.payment_error_code = null;
             po.payment_error_message = null;
+            paidAmount = Number(po.total_amount);
           } else {
             po.status = PurchaseOrderStatus.VENDOR_CONFIRMED;
             po.payment_error_code = errorCode || 'PAYMENT_FAILED';
@@ -601,10 +607,42 @@ export class PaymentService {
           po.status = PurchaseOrderStatus.PAID;
           po.payment_error_code = null;
           po.payment_error_message = null;
+          paidAmount = Number(po.total_amount);
         } else {
           po.status = PurchaseOrderStatus.VENDOR_CONFIRMED;
           po.payment_error_code = errorCode || 'PAYMENT_FAILED';
           po.payment_error_message = errorMessage || 'การชำระเงินล้มเหลวจากผู้ให้บริการเครือข่าย e-Payment';
+        }
+      }
+
+      // If success payment, deduct from linked PurchaseContract remaining_amount (US-114 operational update)
+      if (status === 'Success' && po.contract_id && paidAmount > 0) {
+        const contract = await manager.getRepository(PurchaseContract).findOne({
+          where: { contract_id: po.contract_id },
+          lock: { mode: 'pessimistic_write' },
+        });
+        if (contract) {
+          const oldRemaining = Number(contract.remaining_amount);
+          const newRemaining = Math.max(0, oldRemaining - paidAmount);
+          contract.remaining_amount = newRemaining;
+          await manager.save(contract);
+
+          // Log in AuditLog
+          const audit = manager.getRepository(AuditLog).create({
+            action: 'CONTRACT_DEDUCTION',
+            entity_type: 'PurchaseContract',
+            entity_id: contract.contract_id,
+            before_value_json: {
+              remaining_amount: oldRemaining,
+            },
+            after_value_json: {
+              remaining_amount: newRemaining,
+              po_no: po.po_no,
+              paid_amount: paidAmount,
+            },
+            ip_address: '127.0.0.1',
+          });
+          await manager.save(audit);
         }
       }
 

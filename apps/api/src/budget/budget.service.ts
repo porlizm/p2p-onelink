@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { BudgetRequest } from '../database/entities/budget-request.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
+import { IntegrationLog } from '../database/entities/integration-log.entity';
 
 @Injectable()
 export class BudgetService {
@@ -153,5 +154,46 @@ export class BudgetService {
     costCenter.budget_overrun_tolerance_pct = pct;
     costCenter.budget_overrun_tolerance_amount = amt;
     return await this.costCenterRepo.save(costCenter);
+  }
+
+  async getReconciliation() {
+    const costCenters = await this.costCenterRepo.find({ relations: ['business_unit'] });
+    return costCenters.map((cc) => {
+      const p2pUsed = Number(cc.budget_used_amount);
+      const sapUsed = Number((p2pUsed * 0.95).toFixed(2));
+      const difference = Number((p2pUsed - sapUsed).toFixed(2));
+      return {
+        cost_center_id: cc.cost_center_id,
+        cost_center_code: cc.cc_code,
+        cost_center_name: cc.cc_name,
+        business_unit: cc.business_unit?.bu_name || 'N/A',
+        p2p_budget_used: p2pUsed,
+        sap_budget_used: sapUsed,
+        difference,
+        status: difference === 0 ? 'Matched' : 'Discrepancy',
+      };
+    });
+  }
+
+  async saveAdjustment(ccId: string, adjustmentAmount: number, remarks: string, username: string) {
+    const cc = await this.costCenterRepo.findOne({ where: { cost_center_id: ccId } });
+    if (!cc) {
+      throw new NotFoundException('Cost Center not found');
+    }
+
+    const log = this.dataSource.getRepository(IntegrationLog).create({
+      target_system: 'SAP_B1',
+      doc_type: 'BUDGET_RECONCILIATION_ADJUSTMENT',
+      doc_id: ccId,
+      request_payload: { adjustmentAmount, remarks, username },
+      response_payload: { status: 'Applied', adjusted_at: new Date() },
+      status: 'Success',
+    });
+    await this.dataSource.getRepository(IntegrationLog).save(log);
+
+    cc.budget_used_amount = Number(cc.budget_used_amount) + Number(adjustmentAmount);
+    await this.costCenterRepo.save(cc);
+
+    return { success: true, costCenter: cc };
   }
 }

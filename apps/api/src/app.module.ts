@@ -17,6 +17,9 @@ import { ContractModule } from './contract/contract.module';
 import { CatalogSubmissionModule } from './catalog-submission/catalog-submission.module';
 import { BudgetModule } from './budget/budget.module';
 import { NotificationModule } from './notification/notification.module';
+import { AssetModule } from './asset/asset.module';
+import { PlanningModule } from './planning/planning.module';
+import { AiAuditModule } from './ai/ai-audit.module';
 
 
 
@@ -54,6 +57,9 @@ import { NotificationModule } from './notification/notification.module';
     CatalogSubmissionModule,
     BudgetModule,
     NotificationModule,
+    AssetModule,
+    PlanningModule,
+    AiAuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],

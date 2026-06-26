@@ -108,10 +108,10 @@
             <tr v-for="line in grDetails?.lines" :key="line.gr_line_id" class="hover:bg-slate-50/50 transition">
               <td class="px-6 py-4 font-mono font-bold text-slate-500 text-xs">{{ line.item?.central_item_code || 'N/A' }}</td>
               <td class="px-6 py-4 font-semibold text-slate-800">{{ line.item?.item_name || 'N/A' }}</td>
-              <td class="px-6 py-4 text-right font-semibold text-slate-600">{{ line.qty_ordered }}</td>
-              <td class="px-6 py-4 text-right font-extrabold text-blue-600">{{ line.qty_received }}</td>
+              <td class="px-6 py-4 text-right font-semibold text-slate-600">{{ formatQuantity(line.qty_ordered) }}</td>
+              <td class="px-6 py-4 text-right font-extrabold text-blue-600">{{ formatQuantity(line.qty_received) }}</td>
               <td class="px-6 py-4 text-right font-extrabold" :class="[line.variance_qty < 0 ? 'text-red-500' : 'text-slate-400']">
-                {{ line.variance_qty > 0 ? '+' : '' }}{{ line.variance_qty }}
+                {{ line.variance_qty > 0 ? '+' : '' }}{{ formatQuantity(line.variance_qty) }}
               </td>
               <td class="px-6 py-4 text-center text-slate-500">{{ line.item?.uom || 'ชิ้น' }}</td>
             </tr>
@@ -307,4 +307,9 @@ const formatDate = (date: any) => {
 onMounted(() => {
   loadGrDetails();
 });
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
 </script>

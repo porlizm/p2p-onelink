@@ -31,8 +31,32 @@ export class PurchaseContract {
   @Column({ type: 'decimal', precision: 15, scale: 2 })
   remaining_amount: number;
 
+  @Column({ type: 'varchar', length: 50, default: 'Sales' })
+  contract_type: string; // 'Sales', 'Rental', 'Service', 'Warranty'
+
+  @Column({ type: 'varchar', length: 50, default: 'Custom' })
+  contract_period: string; // '6 Months', '1 Year', '3 Years', 'Custom'
+
+  @Column({ type: 'jsonb', nullable: true })
+  resources: { role: string; rate: number; unit: 'hour' | 'day' | 'month'; quantity: number }[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  rental_details: { billing_cycle: string; installment_amount: number; return_conditions?: string } | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  warranty_details: { sla_level: string; contact_person: string; start_date: Date; end_date: Date } | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  parent_contract_id: string | null;
+
+  @Column({ type: 'int', default: 1 })
+  version_no: number;
+
+  @Column({ type: 'varchar', length: 50, default: 'Original' })
+  contract_class: string; // 'Original', 'Amendment', 'Addendum'
+
   @Column({ type: 'varchar', length: 50, default: 'Draft' })
-  status: string; // 'Draft', 'PendingSignature', 'Signed', 'Expired'
+  status: string; // 'Draft', 'PendingApproval', 'Approved', 'PendingSignature', 'Signed', 'Rejected', 'Expired', 'Superceded'
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   document_url: string;

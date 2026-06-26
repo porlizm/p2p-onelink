@@ -7,6 +7,9 @@ import { CostCenter } from '../database/entities/cost-center.entity';
 import { CreatePrDto } from './dto/create-pr.dto';
 import { PurchaseRequisitionStatus } from '@p2p/shared';
 import { AuditLog } from '../database/entities/audit-log.entity';
+import { PurchaseContract } from '../database/entities/purchase-contract.entity';
+import { AnnualPlan } from '../database/entities/annual-plan.entity';
+import { Item } from '../database/entities/item.entity';
 
 @Injectable()
 export class PrService {
@@ -46,6 +49,24 @@ export class PrService {
         const lineTotal = Number(line.quantity) * Number(line.unit_price);
         ccTotals[line.cost_center_id] = (ccTotals[line.cost_center_id] || 0) + lineTotal;
         totalAmount += lineTotal;
+      }
+
+      // Check Contract Validity & Remaining Amount (US-114 Validation)
+      if (createPrDto.contract_id) {
+        const contract = await manager.getRepository(PurchaseContract).findOne({
+          where: { contract_id: createPrDto.contract_id },
+        });
+        if (!contract) {
+          throw new NotFoundException('ไม่พบสัญญากลางที่ระบุ');
+        }
+        if (contract.status !== 'Signed') {
+          throw new BadRequestException(`สัญญาจัดซื้อยังอยู่ในสถานะ "${contract.status}" และไม่สามารถจัดซื้อได้ (ต้องประทับตราและลงนามครบถ้วน)`);
+        }
+        if (Number(contract.remaining_amount) < totalAmount) {
+          throw new BadRequestException(
+            `ยอดขอซื้อรวม (${totalAmount} THB) เกินวงเงินคงเหลือของสัญญากลาง (วงเงินคงเหลือปัจจุบัน ${contract.remaining_amount} THB)`
+          );
+        }
       }
 
       // 3. Check budget for each Cost Center
@@ -91,8 +112,7 @@ export class PrService {
           status = PurchaseRequisitionStatus.PENDING_APPROVAL;
           isBudgetOverrun = true;
         } else {
-          status = PurchaseRequisitionStatus.BLOCKED_OVER_BUDGET;
-          isBudgetOverrun = true;
+          throw new BadRequestException('ไม่สามารถสร้างใบขอซื้อได้: งบประมาณจัดซื้อเกินวงเงินคงเหลือและเกินเกณฑ์ผ่อนปรน (Tolerance) ของแผนกท่าน กรุณายื่นคำขอปรับเพิ่มงบประมาณ');
         }
       }
 
@@ -112,6 +132,53 @@ export class PrService {
         }
       }
 
+      // Check Unplanned Purchase (Planning Control)
+      let isUnplanned = false;
+      const currentYear = new Date().getFullYear();
+      for (const line of createPrDto.lines) {
+        let category = 'Unknown';
+        if (line.item_id) {
+          const item = await manager.getRepository(Item).findOne({
+            where: { item_id: line.item_id }
+          });
+          if (item) {
+            category = item.item_type;
+          }
+        }
+        if (category === 'Unknown' || !category) {
+          if (line.item_name.includes('อุปกรณ์ไอที') || line.item_name.includes('IT')) {
+            category = 'อุปกรณ์ไอที';
+          } else {
+            category = line.item_name;
+          }
+        }
+
+        const plan = await manager.getRepository(AnnualPlan).findOne({
+          where: {
+            year: currentYear,
+            business_category: category,
+          }
+        }) || await manager.getRepository(AnnualPlan).findOne({
+          where: {
+            year: currentYear,
+            business_category: Like(`%${category}%`),
+          }
+        });
+
+        if (!plan) {
+          isUnplanned = true;
+        } else {
+          const lineTotal = Number(line.quantity) * Number(line.unit_price);
+          if (Number(plan.remaining_budget) < lineTotal) {
+            isUnplanned = true;
+          } else {
+            // Deduct the budget
+            plan.remaining_budget = Number(plan.remaining_budget) - lineTotal;
+            await manager.save(plan);
+          }
+        }
+      }
+
       // 4. Create and save PR Header
       const pr = manager.getRepository(PurchaseRequisition).create({
         pr_no: prNo,
@@ -121,7 +188,9 @@ export class PrService {
         total_amount: totalAmount,
         description: createPrDto.description,
         is_budget_overrun: isBudgetOverrun,
+        is_unplanned: isUnplanned,
         approver_role: approverRole,
+        contract_id: createPrDto.contract_id || null,
       });
 
       const savedPr = await manager.getRepository(PurchaseRequisition).save(pr);
@@ -270,6 +339,47 @@ export class PrService {
         }
       }
 
+      // Restore AnnualPlan budget if not unplanned
+      if (!pr.is_unplanned) {
+        const currentYear = new Date().getFullYear();
+        for (const line of pr.lines) {
+          let category = 'Unknown';
+          if (line.item_id) {
+            const item = await manager.getRepository(Item).findOne({
+              where: { item_id: line.item_id }
+            });
+            if (item) {
+              category = item.item_type;
+            }
+          }
+          if (category === 'Unknown' || !category) {
+            if (line.item_name.includes('อุปกรณ์ไอที') || line.item_name.includes('IT')) {
+              category = 'อุปกรณ์ไอที';
+            } else {
+              category = line.item_name;
+            }
+          }
+
+          const plan = await manager.getRepository(AnnualPlan).findOne({
+            where: {
+              year: currentYear,
+              business_category: category,
+            }
+          }) || await manager.getRepository(AnnualPlan).findOne({
+            where: {
+              year: currentYear,
+              business_category: Like(`%${category}%`),
+            }
+          });
+
+          if (plan) {
+            const lineTotal = Number(line.quantity) * Number(line.unit_price);
+            plan.remaining_budget = Number(plan.remaining_budget) + lineTotal;
+            await manager.save(plan);
+          }
+        }
+      }
+
       // Create PR Audit Log
       const audit = manager.getRepository(AuditLog).create({
         user_id: userId,
@@ -336,6 +446,47 @@ export class PrService {
             timestamp: new Date(),
           });
           await manager.save(auditCC);
+        }
+      }
+
+      // Restore AnnualPlan budget if not unplanned
+      if (!pr.is_unplanned) {
+        const currentYear = new Date().getFullYear();
+        for (const line of pr.lines) {
+          let category = 'Unknown';
+          if (line.item_id) {
+            const item = await manager.getRepository(Item).findOne({
+              where: { item_id: line.item_id }
+            });
+            if (item) {
+              category = item.item_type;
+            }
+          }
+          if (category === 'Unknown' || !category) {
+            if (line.item_name.includes('อุปกรณ์ไอที') || line.item_name.includes('IT')) {
+              category = 'อุปกรณ์ไอที';
+            } else {
+              category = line.item_name;
+            }
+          }
+
+          const plan = await manager.getRepository(AnnualPlan).findOne({
+            where: {
+              year: currentYear,
+              business_category: category,
+            }
+          }) || await manager.getRepository(AnnualPlan).findOne({
+            where: {
+              year: currentYear,
+              business_category: Like(`%${category}%`),
+            }
+          });
+
+          if (plan) {
+            const lineTotal = Number(line.quantity) * Number(line.unit_price);
+            plan.remaining_budget = Number(plan.remaining_budget) + lineTotal;
+            await manager.save(plan);
+          }
         }
       }
 

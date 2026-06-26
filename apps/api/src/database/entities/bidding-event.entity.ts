@@ -49,6 +49,21 @@ export class BiddingEvent {
   @Column({ type: 'boolean', default: false })
   is_escalated: boolean;
 
+  @Column({ type: 'jsonb', nullable: true })
+  committee_members: string[] | null;
+
+  @Column({ type: 'jsonb', nullable: true })
+  decryption_keys: Record<string, { decrypted: boolean; entered_at: string | null }> | null;
+
+  @Column({ type: 'boolean', default: false })
+  is_decrypted: boolean;
+
+  @Column({ type: 'boolean', default: true })
+  shortlist_approved: boolean;
+
+  @Column({ type: 'uuid', nullable: true })
+  shortlist_approver_id: string | null;
+
   @Column({ type: 'timestamp' })
   close_date: Date;
 

@@ -6,7 +6,7 @@
 
 | Phase | ชื่อ | ขอบเขตการพัฒนาล่าสุด | สถานะการพัฒนา |
 |---|---|---|---|
-| Phase 1 | P2P Core MVP & Integrations | Master Data → PR (พร้อมเช็คงบประมาณและปลดล็อกแบบยืดหยุ่น) → Bidding พื้นฐาน → PO → GR → **e-Payment Bridge & Webhook** (พร้อมระบบเคลมงวดงาน/การโอนล้มเหลว), **Cost Center & Budget Management** (พร้อมระบบปลดล็อกงบ), **Post-Bidding Notifications**, SAP B1 Sync, Security Baseline | พัฒนาจริง (Core Prototype เสร็จสิ้น) |
+| Phase 1 | P2P Core MVP & Integrations | Master Data → PR (พร้อมเช็คงบประมาณและปลดล็อกแบบยืดหยุ่น) → Bidding พื้นฐาน → PO → GR → **e-Payment Bridge & Webhook** (พร้อมระบบเคลมงวดงาน/การโอนล้มเหลว), **Cost Center & Budget Management** (พร้อมระบบปลดล็อกงบ), **Post-Bidding Notifications**, SAP B1 Sync, **Asset Management & Inter-BU Distribution**, Security Baseline | พัฒนาจริง (Core Prototype เสร็จสิ้น) |
 | Phase 2 | P2P Enhancement & Compliance | Advanced Sourcing (Reverse Auction, Multi-Criteria sheets), Evaluation, Analytics, Compliance ขั้นสูง | พัฒนาจริงบางส่วน (Reverse Auction & Multi-Criteria ถูกพัฒนาเป็น Mockup เพิ่มเติม) |
 | Phase 3 | Employee to Payment (ESS) | Travel/Advance/Expense/Foreign/Medical (ระบบเบิกจ่ายพนักงาน) | **ยกเลิกการพัฒนาจริง (ทำเฉพาะ Mockup ตามข้อตกลงล่าสุด)** |
 | Phase 4 | AI Enablement | AI Sourcing Suggestions, Risk Audit, Defect Detection, OCR Scanner, Sentiment Insights | พัฒนาเป็น **Interactive Mockup ในระบบ Prototype** เพื่อให้ลูกค้าคอนเฟิร์ม |
@@ -164,9 +164,9 @@
 **So that** คืนวงเงินงบประมาณกลับไปให้หน่วยงานใช้งานได้ทันที ไม่เกิดปัญหางบสำรองค้างในระบบ
 
 **Acceptance Criteria:**
-- [ ] เมื่อ PR หรือ PO ถูกปฏิเสธการอนุมัติ (Rejected) หรือถูกกดยกเลิกเอกสาร (Cancelled) หรือถูกลบรายการออก
-- [ ] ระบบต้องวิ่งไปลดค่า `budget_reserved_amount` ของ Cost Center ที่เกี่ยวข้องคืนกลับมาเท่ากับมูลค่ารายการที่ยกเลิกโดยอัตโนมัติ
-- [ ] บันทึกประวัติการคืนวงเงินลงใน Audit Trail เพื่อใช้ตรวจสอบย้อนหลัง
+- [x] เมื่อ PR หรือ PO ถูกปฏิเสธการอนุมัติ (Rejected) หรือถูกกดยกเลิกเอกสาร (Cancelled) หรือถูกลบรายการออก
+- [x] ระบบต้องวิ่งไปลดค่า `budget_reserved_amount` ของ Cost Center ที่เกี่ยวข้องคืนกลับมาเท่ากับมูลค่ารายการที่ยกเลิกโดยอัตโนมัติ
+- [x] บันทึกประวัติการคืนวงเงินลงใน Audit Trail เพื่อใช้ตรวจสอบย้อนหลัง
 
 **Priority:** Must | **TOR Reference:** Enterprise Edge Case (PJ250051-Budget-01)
 
@@ -178,9 +178,9 @@
 **So that** สามารถดำเนินโครงการเร่งด่วนต่อได้ภายใต้นโยบายควบคุมความเสี่ยงของฝ่ายบริหาร
 
 **Acceptance Criteria:**
-- [ ] กำหนดค่าเกณฑ์ยอมรับงบประมาณเกิน (Tolerance Limits) เช่น ยอมให้เกินได้ไม่เกิน 5% ของงบประมาณคงเหลือ หรือไม่เกิน 20,000 บาท
-- [ ] หากยอดจัดซื้อเกินงบไม่เกินเกณฑ์ Tolerance ระบบจะไม่บล็อกการสร้าง PR แต่จะขึ้นเตือนสถานะงบเกินสีส้ม และทำการเปลี่ยนเส้นทางอนุมัติ (Escalation Approval Route) ส่งตรงไปหาหัวหน้าแผนก หรือ CFO/VP โดยอัตโนมัติ ตามลำดับขั้น DOA พิเศษ
-- [ ] หากยอดเกินเกณฑ์ Tolerance ที่กำหนดไว้ ระบบจะแสดง Hard Block และบังคับส่งเอกสารขอเพิ่มงบ (US-128) เท่านั้น
+- [x] กำหนดค่าเกณฑ์ยอมรับงบประมาณเกิน (Tolerance Limits) เช่น ยอมให้เกินได้ไม่เกิน 5% ของงบประมาณคงเหลือ หรือไม่เกิน 20,000 บาท
+- [x] หากยอดจัดซื้อเกินงบไม่เกินเกณฑ์ Tolerance ระบบจะไม่บล็อกการสร้าง PR แต่จะขึ้นเตือนสถานะงบเกินสีส้ม และทำการเปลี่ยนเส้นทางอนุมัติ (Escalation Approval Route) ส่งตรงไปหาหัวหน้าแผนก หรือ CFO/VP โดยอัตโนมัติ ตามลำดับขั้น DOA พิเศษ
+- [x] หากยอดเกินเกณฑ์ Tolerance ที่กำหนดไว้ ระบบจะแสดง Hard Block และบังคับส่งเอกสารขอเพิ่มงบ (US-128) เท่านั้น
 
 **Priority:** Should | **TOR Reference:** Enterprise Risk Policy (PJ250051-Budget-02)
 
@@ -355,6 +355,54 @@
 
 ---
 
+### US-141: Service & Resource Outsourcing Contract Setup
+**As a** Buyer / Department Manager
+**I want** to draft outsourcing service contracts (e.g., Developers, Housekeepers/Maids) by selecting contract periods (6 months, 1 year, 3 years, or custom) and setting start/end dates
+**So that** ข้อตกลงการจ้างงานและระยะเวลาสัญญาของทรัพยากรจัดจ้างระบุไว้ชัดเจน พร้อมสำหรับคำนวณและตั้งรอบบิลชำระเงิน
+
+**Acceptance Criteria:**
+- [x] รองรับการระบุข้อมูลทรัพยากรจัดจ้างภายนอก (เช่น ประเภททรัพยากร/บทบาท, อัตราค่าจ้างต่อหน่วยชิ้น/ชั่วโมง/เดือน, จำนวน)
+- [x] มีตัวเลือกในการเลือกช่วงระยะเวลากลางสัญญาจ้าง: 6 เดือน (6 Months), 1 ปี (1 Year), 3 ปี (3 Years) หรือแบบกำหนดเอง (Custom) ในขั้นตอนเสนอประมูล
+- [x] กำหนดวันเริ่มต้นสัญญา (Contract Start Date) และวันสิ้นสุดสัญญา (Contract End Date) ที่ชัดเจนในระบบ
+- [x] สามารถเชื่อมโยงรายละเอียดสัญญาและเงื่อนไขระยะเวลาเข้ากับใบสั่งซื้อ (PO) เพื่อวางรอบการตรวจรับและตั้งหนี้แบ่งจ่าย (Milestone Billing Schedule)
+
+**Priority:** Must | **TOR Reference:** Custom Scope Contract Management
+
+---
+
+### US-142: Multi-Type Contract & Warranty Period Tracking
+**As a** Buyer / Asset Administrator
+**I want** to record different contract categories (Sales, Rental, Service, and Warranty/Support Agreements) and specify warranty/maintenance coverage durations
+**So that** สามารถติดตามระยะเวลาเช่า ระยะเวลารับประกันสินค้า/การขาย และการรับประกันบริการได้อย่างถูกต้อง พร้อมแจ้งเตือนล่วงหน้า
+
+**Acceptance Criteria:**
+- [x] แยกประเภทสัญญาออกเป็น: การขาย (Sales), การเช่า (Rental), การบริการ (Service) และการรับประกัน/การบำรุงรักษา (Warranty/Maintenance)
+- [x] สำหรับสัญญาการเช่า (Rental) รองรับการระบุกำหนดการเช่า, ค่าเช่ารายงวด, และเงื่อนไขการส่งคืนสินทรัพย์เมื่อสิ้นสุดสัญญา
+- [x] สำหรับสัญญาการรับประกันและการบำรุงรักษา (Warranty/Maintenance) สามารถบันทึกขอบเขตการคุ้มครอง (SLA), ผู้รับผิดชอบดูแล, วันเริ่มต้น-สิ้นสุดการรับประกัน
+- [x] จัดทำ Dashboard ศูนย์รวมสัญญา (Contract Registry Console) เพื่อให้ผู้ใช้สามารถตรวจสอบสถานะสัญญาที่ Active, ใกล้หมดอายุ, และหมดอายุแล้ว
+- [x] ระบบส่งข้อความแจ้งเตือนทางอีเมลและ Portal ล่วงหน้า 30, 60, 90 วันก่อนสัญญาหรือระยะเวลาการรับประกัน/การเช่าสิ้นสุด เพื่อเตรียมการต่ออายุหรือเปิดประมูลรอบใหม่
+
+**Priority:** Must | **TOR Reference:** Custom Scope Contract Management
+
+---
+
+### US-143: Contract Amendment & Addendum Control
+**As a** Buyer / Contract Administrator
+**I want** to create contract amendments or addendums to adjust terms (duration extensions, pricing/rate changes, quantity adjustments, and warranty terms) across all contract types
+**So that** ข้อมูลการแก้ไขปรับปรุงสัญญาการจัดซื้อจัดจ้างทุกประเภทได้รับการจัดทำเวอร์ชันอย่างถูกต้อง มีผลผูกพัน และปรับปรุงตารางบิลชำระเงินตามเงื่อนไขที่เปลี่ยนไปโดยอัตโนมัติ
+
+**Acceptance Criteria:**
+- [x] รองรับการขอแก้ไขเอกสารสัญญา (Amendment) สำหรับสัญญาจ้างงานทุกประเภท (การขาย, การเช่า, บริการ, เอาท์ซอร์สพนักงาน, และการรับประกัน/บำรุงรักษา)
+- [x] สามารถปรับปรุงเงื่อนไขหลักในสัญญา: การขยายระยะเวลาสัญญา (ปรับเปลี่ยน Start/End Date), ปรับอัตราราคาค่าบริการหรือราคาสินค้า, เปลี่ยนแปลงจำนวนสินค้า/ทรัพยากร และขอบเขตระยะเวลารับประกันสินค้า/SLA
+- [x] ระบบสร้างเอกสารสัญญาเวอร์ชันใหม่และเก็บประวัติเวอร์ชันอย่างเป็นระบบ (เช่น สัญญาฉบับแก้ไข V1.1 หรือ Addendum เอกสารแนบท้ายสัญญาฉบับที่ 1) ลิงก์เข้ากับสัญญาฉบับหลักต้นทาง
+- [x] มีขั้นตอนการส่งคำร้องขอแก้ไขสัญญาเข้าสู่สายอนุมัติภายในตามลำดับผู้มีอำนาจ (DOA Approval Workflow) ก่อนที่สัญญาฉบับแก้ไขจะมีผลบังคับใช้
+- [x] เมื่อสัญญาฉบับแก้ไขได้รับอนุมัติเสร็จสิ้น ระบบจะทำการปรับปรุงข้อมูลในใบสั่งซื้อ (PO) และตารางผูกพันการชำระเงิน (Milestone/Billing Schedule) ที่เกี่ยวข้องโดยอัตโนมัติตามรอบเวลาและราคาที่เปลี่ยนแปลง
+- [x] เก็บบันทึกข้อมูลเปรียบเทียบก่อนการแก้ไข (Before) และหลังการแก้ไข (After) ลงในระบบประวัติการตรวจสอบ (Audit Trail) ทุกครั้งเพื่อความโปร่งใสและตรวจสอบความปลอดภัยทางการเงิน
+
+**Priority:** Must | **TOR Reference:** Custom Scope Contract Management
+
+---
+
 ## Epic P1-H: Vendor Portal (สิทธิ์เข้าถึงของผู้ขาย)
 
 ### US-115: Vendor Self-Service Portal
@@ -375,10 +423,10 @@
 **So that** ฉันสามารถเข้าถึงระบบเพื่อทำธุรกรรม เสนอราคา หรือรับทราบ PO ได้โดยไม่ต้องติดต่อฝ่ายจัดซื้อจัดจ้าง
 
 **Acceptance Criteria:**
-- [ ] มีลิงก์ "ลืมรหัสผ่าน (Forgot Password)" บนหน้า Login ของ Vendor Portal
-- [ ] Vendor กรอกอีเมลที่ลงทะเบียนไว้ ระบบจะทำการตรวจสอบและสร้าง Secure Verification Token ส่งลิงก์ตั้งค่ารหัสผ่านใหม่ไปทางอีเมล
-- [ ] มีขั้นตอนบังคับให้ตั้งรหัสผ่านใหม่ที่ตรงตาม Password Complexity Policy (ยาวขั้นต่ำ 8 ตัวอักษร, มีอักษรพิเศษและตัวเลข)
-- [ ] เก็บบันทึกไอพีแอดเดรสและเวลาที่มีการเปลี่ยนรหัสผ่านเพื่อความปลอดภัย
+- [x] มีลิงก์ "ลืมรหัสผ่าน (Forgot Password)" บนหน้า Login ของ Vendor Portal
+- [x] Vendor กรอกอีเมลที่ลงทะเบียนไว้ ระบบจะทำการตรวจสอบและสร้าง Secure Verification Token ส่งลิงก์ตั้งค่ารหัสผ่านใหม่ไปทางอีเมล
+- [x] มีขั้นตอนบังคับให้ตั้งรหัสผ่านใหม่ที่ตรงตาม Password Complexity Policy (ยาวขั้นต่ำ 8 ตัวอักษร, มีอักษรพิเศษและตัวเลข)
+- [x] เก็บบันทึกไอพีแอดเดรสและเวลาที่มีการเปลี่ยนรหัสผ่านเพื่อความปลอดภัย
 
 **Priority:** Must | **TOR Reference:** Security Operations (PJ250051-Vendor-04)
 
@@ -390,10 +438,10 @@
 **So that** ป้องกันการหลอกลวงแก้ไขเลขที่บัญชีเพื่อสวมรอยรับเงินโอน (Invoice Redirection / Bank Fraud)
 
 **Acceptance Criteria:**
-- [ ] เมื่อ Vendor ทำการขอแก้ไขเลขที่บัญชีธนาคาร (Bank Account) หรือเอกสาร Book Bank บน Portal
-- [ ] ระบบต้องระงับ (Hold) การจ่ายเงินและล็อคการทำธุรกรรมโอนเงิน (e-Payment Trigger) ของ Vendor รายนี้ไว้ชั่วคราว พร้อมตั้งสถานะของข้อมูลธนาคารเป็น `Pending Verification`
-- [ ] ระบบสร้างคำขอให้ฝ่ายจัดซื้อจัดจ้างและฝ่ายบัญชี (2 คนแยกกัน) ทำการตรวจสอบเอกสารตัวจริงและโทรศัพท์ติดต่อยืนยันตัวตนกับผู้มีอำนาจของ Vendor (Dual-Verification Flow)
-- [ ] เมื่อได้รับการอนุมัติยืนยันครบถ้วนจากทั้งสองแผนก จึงจะทำการอัปเดตและปลดล็อคการส่งจ่ายเงิน e-Payment ได้
+- [x] เมื่อ Vendor ทำการขอแก้ไขเลขที่บัญชีธนาคาร (Bank Account) หรือเอกสาร Book Bank บน Portal
+- [x] ระบบต้องระงับ (Hold) การจ่ายเงินและล็อคการทำธุรกรรมโอนเงิน (e-Payment Trigger) ของ Vendor รายนี้ไว้ชั่วคราว พร้อมตั้งสถานะของข้อมูลธนาคารเป็น `Pending Verification`
+- [x] ระบบสร้างคำขอให้ฝ่ายจัดซื้อจัดจ้างและฝ่ายบัญชี (2 คนแยกกัน) ทำการตรวจสอบเอกสารตัวจริงและโทรศัพท์ติดต่อยืนยันตัวตนกับผู้มีอำนาจของ Vendor (Dual-Verification Flow)
+- [x] เมื่อได้รับการอนุมัติยืนยันครบถ้วนจากทั้งสองแผนก จึงจะทำการอัปเดตและปลดล็อคการส่งจ่ายเงิน e-Payment ได้
 
 **Priority:** Must | **TOR Reference:** Financial Control & Anti-Fraud Policy (PJ250051-Security-05)
 
@@ -439,9 +487,9 @@
 **So that** ฉันสามารถวินิจฉัยหาสาเหตุที่การจ่ายเงินล้มเหลวและดำเนินการแก้ไขได้อย่างตรงจุด
 
 **Acceptance Criteria:**
-- [ ] เมื่อ API `POST /api/payment/callback` ส่งสถานะ `Failed` มา ระบบต้องบันทึกรายละเอียดของสาเหตุ เช่น `ErrorCode` (e.g. INSUFFICIENT_FUNDS, INVALID_ACCOUNT, EXPIRY_REJECT) และคำบรรยายข้อผิดพลาด
-- [ ] แสดงรายละเอียดข้อผิดพลาดนี้บนแถบแจ้งเตือนของหน้าต่างประวัติการจ่ายเงินของ PO บน Payment Queue
-- [ ] เก็บ Log ประวัติความพยายามในการกดจ่ายเงิน และจำนวนรอบการล้มเหลวลงใน Integration Logs หน้าจอระบบ
+- [x] เมื่อ API `POST /api/payment/callback` ส่งสถานะ `Failed` มา ระบบต้องบันทึกรายละเอียดของสาเหตุ เช่น `ErrorCode` (e.g. INSUFFICIENT_FUNDS, INVALID_ACCOUNT, EXPIRY_REJECT) และคำบรรยายข้อผิดพลาด
+- [x] แสดงรายละเอียดข้อผิดพลาดนี้บนแถบแจ้งเตือนของหน้าต่างประวัติการจ่ายเงินของ PO บน Payment Queue
+- [x] เก็บ Log ประวัติความพยายามในการกดจ่ายเงิน และจำนวนรอบการล้มเหลวลงใน Integration Logs หน้าจอระบบ
 
 **Priority:** Should | **TOR Reference:** Operational Efficiency (PJ250051-Payment-03)
 
@@ -453,9 +501,9 @@
 **So that** สามารถจ่ายเงินล่วงหน้าและจ่ายเงินตามรอบการส่งมอบงานในแต่ละงวดสัญญาได้ถูกต้อง
 
 **Acceptance Criteria:**
-- [ ] ระบบอนุญาตให้จัดตั้งงวดการชำระเงิน (Milestones) ในหน้าจอ PO หรือสร้างคำขอแบ่งจ่ายบางส่วน (Partial Payments) เช่น งวดที่ 1 จ่าย 30%
-- [ ] เมื่อกด "ส่งคำขอจ่ายเงิน (Trigger Payment)" ระบบจะดึงข้อมูลยอดของงวดปัจจุบันส่งไปยัง e-Payment และบันทึกยอดเงินค้างจ่าย (Pending Balance) ที่เหลือของ PO รายการนั้น
-- [ ] อัปเดตสถานะของงวดนั้นๆ แยกเป็น `Paid` หรือ `Processing` โดย PO จะถูกปิดสมบูรณ์ (`Paid` ทั้งใบ) ก็ต่อเมื่องวดจ่ายงวดสุดท้ายเสร็จสมบูรณ์
+- [x] ระบบอนุญาตให้จัดตั้งงวดการชำระเงิน (Milestones) ในหน้าจอ PO หรือสร้างคำขอแบ่งจ่ายบางส่วน (Partial Payments) เช่น งวดที่ 1 จ่าย 30%
+- [x] เมื่อกด "ส่งคำขอจ่ายเงิน (Trigger Payment)" ระบบจะดึงข้อมูลยอดของงวดปัจจุบันส่งไปยัง e-Payment และบันทึกยอดเงินค้างจ่าย (Pending Balance) ที่เหลือของ PO รายการนั้น
+- [x] อัปเดตสถานะของงวดนั้นๆ แยกเป็น `Paid` หรือ `Processing` โดย PO จะถูกปิดสมบูรณ์ (`Paid` ทั้งใบ) ก็ต่อเมื่องวดจ่ายงวดสุดท้ายเสร็จสมบูรณ์
 
 **Priority:** Must | **TOR Reference:** Procurement Custom Contract Terms (PJ250051-Payment-04)
 
@@ -467,9 +515,9 @@
 **So that** ยอดโอนเงินสุทธิ (Net Payout) ที่ส่งไปยัง e-Payment มีความถูกต้องหลังหักลบค่าปรับหรือสินค้ารับคืน
 
 **Acceptance Criteria:**
-- [ ] ระบบตรวจสอบและดึงรายการ Credit Notes (ใบลดหนี้) หรือ Debit Notes (ใบเพิ่มหนี้) ทั้งหมดที่ถูกอนุมัติเชื่อมโยงกับ PO หรือคู่ค้ารายนั้น
-- [ ] หน้าจอการเงินแสดงแถบสำหรับติ๊กเลือกใบ CN/DN เพื่อนำมาหักกลบกับการจ่ายเงินรอบนี้
-- [ ] ทำการคำนวณยอดเงินจ่ายสุทธิ: `Net Payment = PO Amount - CN Amount` และนำยอดสุทธิเสนอเข้า e-Payment Bridge ป้องกันการจ่ายเงินเกินขอบเขตจริง
+- [x] ระบบตรวจสอบและดึงรายการ Credit Notes (ใบลดหนี้) หรือ Debit Notes (ใบเพิ่มหนี้) ทั้งหมดที่ถูกอนุมัติเชื่อมโยงกับ PO หรือคู่ค้ารายนั้น
+- [x] หน้าจอการเงินแสดงแถบสำหรับติ๊กเลือกใบ CN/DN เพื่อนำมาหักกลบกับการจ่ายเงินรอบนี้
+- [x] ทำการคำนวณยอดเงินจ่ายสุทธิ: `Net Payment = PO Amount - CN Amount` และนำยอดสุทธิเสนอเข้า e-Payment Bridge ป้องกันการจ่ายเงินเกินขอบเขตจริง
 
 **Priority:** Must | **TOR Reference:** Accounting Principles & Auditing (PJ250051-Payment-05)
 
@@ -588,7 +636,54 @@
 
 ---
 
+## Epic P1-M: Asset Management & BU Distribution Control (การบริหารและติดตามสินทรัพย์ส่งมอบ)
+
+### US-144: Asset Acquisition & Registry (บันทึกการถือครองสินทรัพย์และการจัดซื้อ)
+**As a** Buyer / Asset Administrator
+**I want** to record and register acquired physical items, services, and software licenses
+**So that** บริษัทมีระบบศูนย์กลางในการติดตามสินทรัพย์ที่จัดซื้อเข้ามาทั้งหมดในเครือ
+
+**Acceptance Criteria:**
+- [x] บันทึกข้อมูลและประวัติการถือครองสินทรัพย์ โดยระบุรายละเอียด: รหัสสินทรัพย์ (Asset Tag), ชื่อสินทรัพย์, ประเภท (สินค้า/บริการ/การเช่า/ซอฟต์แวร์สิทธิ์ใช้งาน), รหัสสั่งซื้ออ้างอิง (PR/PO Ref), ราคาทุนที่จัดซื้อ (Unit Price), วันที่เริ่มถือครอง และเจ้าของสินทรัพย์หลัก (เช่น ส่วนกลาง HQ)
+- [x] รองรับการติดตามสถานะของสินทรัพย์ เช่น พร้อมใช้งาน (In Stock), ส่งมอบแล้ว (Distributed), เช่าใช้งาน (Rented), ชำรุด/เลิกใช้งาน (Scrapped)
+- [x] บันทึกรายละเอียดเฉพาะของสินค้าบริการดิจิทัล/ซอฟต์แวร์สิทธิ์การใช้งาน (Software Licenses) เช่น Product Key, จำนวนเครื่องที่ระบุให้ใช้งานได้ (Seats), และกำหนดรอบระยะเวลาวันหมดอายุสัญญาบริการ
+
+**Priority:** Must | **TOR Reference:** Custom Scope Asset Management
+
+---
+
+### US-145: Inter-BU Asset Distribution & Rental Tracking (การส่งมอบและการเช่าสินทรัพย์ข้ามหน่วยงาน)
+**As a** Asset Administrator
+**I want** to track the allocation, distribution, and rental of assets from HQ to different Business Units (BUs) and affiliates
+**So that** ทราบตำแหน่งการถือครองล่าสุดของสินทรัพย์แต่ละชิ้น และคำนวณสัดส่วนการเช่าใช้งานข้ามหน่วยงานได้อย่างถูกต้องแม่นยำ
+
+**Acceptance Criteria:**
+- [x] บันทึกการส่งมอบและการโอนย้ายสินทรัพย์ข้ามหน่วยงาน (Inter-BU Asset Distribution) ระบุหน่วยงานที่รับผิดชอบหลักและผู้รับมอบปลายทาง
+- [x] ระบบคำนวณและตัดสต็อกย่อยตามยอดที่ส่วนกลางส่งมอบเช่าให้กับ BU ต่างๆ เช่น ส่วนกลางจัดซื้อโน้ตบุ๊ค 100 เครื่อง ส่งมอบให้ BU ใน SCGJWD เช่าไปใช้งาน 3 BU จำนวนรวม 60 เครื่อง และส่งต่อให้บริษัทในเครือ SCGJWD เช่าไปใช้งานอีก 30 เครื่อง (และเหลือสำรองที่ส่วนกลาง 10 เครื่อง)
+- [x] บันทึกรายละเอียดการเช่าข้ามหน่วยงาน (BU-to-BU Asset Rental Log) รวมถึง วันเริ่มต้นเช่า, วันสิ้นสุดการเช่า, และอัตราค่าเช่าภายในเครือ (Internal Rental Rate) เพื่อใช้เป็นหลักฐานประกอบการปันส่วนค่าใช้จ่าย
+
+**Priority:** Must | **TOR Reference:** Custom Scope Asset Management
+
+---
+
+### US-146: Asset Holding Console & Utilization Dashboard (แดชบอร์ดแสดงการถือครองสินทรัพย์ข้ามบริษัท)
+**As a** Executive / Asset Manager
+**I want** a holding console and dashboard to view utilization and asset ownership across all BUs and sub-companies
+**So that** สามารถประเมินความคุ้มค่าและกระจายการใช้ประโยชน์จากทรัพยากรส่วนกลางได้อย่างมีประสิทธิภาพสูงสุด
+
+**Acceptance Criteria:**
+- [x] หน้ารวมแดชบอร์ดแสดงจำนวนและการกระจายตัวของสินทรัพย์ (Asset Holding Dashboard) จำแนกตามประเภท สินค้า, บริการ, และซอฟต์แวร์ลิขสิทธิ์
+- [x] มีฟิลเตอร์กรองข้อมูลการถือครองตามรายชื่อ Business Unit (BU), รายชื่อบริษัทในเครือ, และสถานะการใช้งานของสินทรัพย์
+- [x] แสดงภาพกราฟการกระจายสัดส่วนผู้ถือครองสินทรัพย์ (เช่น วงแหวนสัดส่วนการครอบครองแล็ปท็อปของส่วนกลาง, BU ต่างๆ และบริษัทในเครือ)
+- [x] แจ้งเตือนสินทรัพย์ประเภทสัญญาบริการหรือลิขสิทธิ์ซอฟต์แวร์ที่ใกล้จะหมดอายุเพื่อให้ผู้ดูแลเตรียมดำเนินการต่ออายุ
+
+**Priority:** Must | **TOR Reference:** Custom Scope Asset Management
+
+---
+
 # PHASE 2 — P2P Enhancement & Compliance
+
+> เป้าหมาย: ฟังก์ชันเพิ่มเติมสำหรับการวิเคราะห์ การประเมิน และการประมูลขั้นสูง
 
 > เป้าหมาย: ฟังก์ชันเพิ่มเติมสำหรับการวิเคราะห์ การประเมิน และการประมูลขั้นสูง
 
@@ -681,8 +776,8 @@
 
 | Phase | ขอบเขตหลัก | จำนวน User Story | สถานะการทำงาน |
 |---|---|---|---|
-| Phase 1 | Core MVP, e-Payment Bridge, Cost Center Budget, Post-Bidding Noti, Enterprise Cases | 40 Stories | พัฒนาสมบูรณ์ตามขอบเขตใหม่ |
+| Phase 1 | Core MVP, e-Payment Bridge, Cost Center Budget, Post-Bidding Noti, Enterprise Cases, Asset Management | 43 Stories | พัฒนาสมบูรณ์ตามขอบเขตใหม่ |
 | Phase 2 | Advanced Sourcing & Evaluation (Reverse Auction, Multi-Criteria) | 19 Stories | พัฒนาสมบูรณ์ตามความต้องการ (Mockup + Core Calculations) |
 | Phase 3 | ESS Module (Travel, Advance, Expense, Medical) | 12 Stories | จัดทำเฉพาะ Mockup (Out of scope of implementation) |
 | Phase 4 | AI Enablement (Sourcing, OCR, GR defect, Replenishment planner) | 9 Stories | จัดทำเป็น Interactive Mockup ในระบบ Prototype |
-| **รวม** | | **80 Stories (511 TOR RQs)** | |
+| **รวม** | | **83 Stories (514 TOR RQs)** | |

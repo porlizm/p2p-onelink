@@ -18,8 +18,12 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() body: { token: string; password?: string }) {
-    return this.authService.resetPassword(body.token, body.password || '');
+  async resetPassword(
+    @Body() body: { token: string; password?: string; ip?: string },
+    @Ip() clientIp: string,
+  ) {
+    const ip = body.ip || clientIp || '127.0.0.1';
+    return this.authService.resetPassword(body.token, body.password || '', ip);
   }
 
   @UseGuards(JwtAuthGuard)

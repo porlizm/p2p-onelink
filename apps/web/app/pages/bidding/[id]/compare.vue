@@ -115,7 +115,124 @@
 
     <!-- TAB 1: Sealed Bidding Comparison -->
     <div v-if="activeTab === 'sealed'">
-      <div v-if="peekingForbidden" class="p-8 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-3">
+      <!-- Shortlist Approval Banner -->
+      <div v-if="rfq?.shortlist_approved === false" class="mb-6 p-6 bg-slate-900 border border-slate-800 text-white rounded-2xl shadow-xl space-y-4 max-w-4xl mx-auto">
+        <div class="flex items-start gap-4">
+          <div class="p-3 bg-blue-500/10 text-blue-400 border border-blue-500/30 rounded-xl">
+            <UIcon name="i-heroicons-shield-check" class="w-6 h-6 animate-pulse" />
+          </div>
+          <div class="flex-1 space-y-1">
+            <h3 class="font-bold text-sm text-slate-100">รออนุมัติรายชื่อผู้มีสิทธิ์ส่งซอง (Shortlist Approval Pending)</h3>
+            <p class="text-xs text-slate-400">
+              โครงการจัดซื้อนี้กำหนดให้มีกระบวนการพิจารณาและอนุมัติรายชื่อผู้ขายที่มีสิทธิ์ร่วมเสนอราคา (Shortlist) ก่อนเปิดให้คู่ค้าส่งข้อเสนอจริง
+            </p>
+            <div class="text-xs text-slate-400 pt-1">
+              ผู้อนุมัติโครงการ: <span class="font-bold text-blue-400">{{ getMemberName(rfq?.shortlist_approver_id) || rfq?.shortlist_approver_id }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="authStore.user?.userId === rfq?.shortlist_approver_id" class="border-t border-slate-800 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div class="text-xs text-amber-400 font-semibold">
+            คุณเป็นผู้อนุมัติสำหรับโครงการนี้ กรุณาพิจารณารายชื่อผู้ขายและทำรายการอนุมัติ
+          </div>
+          <div class="flex gap-2">
+            <UButton 
+              @click="handleApproveShortlist(false)" 
+              color="red" 
+              size="sm" 
+              variant="outline"
+              class="font-bold cursor-pointer"
+              :loading="approvingShortlist"
+            >
+              ปฏิเสธรายชื่อ (Reject)
+            </UButton>
+            <UButton 
+              @click="handleApproveShortlist(true)" 
+              color="primary" 
+              size="sm"
+              class="font-bold bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
+              :loading="approvingShortlist"
+            >
+              อนุมัติรายชื่อ (Approve)
+            </UButton>
+          </div>
+        </div>
+        <div v-else class="border-t border-slate-800 pt-3 text-xs text-slate-500 italic text-center">
+          รอการพิจารณาและอนุมัติจากผู้กำหนดหน้าที่หลักของโครงการ
+        </div>
+      </div>
+
+      <!-- Decryption Ceremony Required -->
+      <div v-if="rfq?.bid_type === 'SealedBid' && !rfq?.is_decrypted" class="p-8 bg-slate-900 border border-slate-800 rounded-2xl text-white shadow-xl space-y-6 max-w-2xl mx-auto my-4">
+        <div class="text-center space-y-2">
+          <div class="w-16 h-16 bg-amber-500/10 text-amber-500 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto mb-2 animate-bounce">
+            <UIcon name="i-heroicons-key" class="w-10 h-10" />
+          </div>
+          <h3 class="font-black text-base text-slate-100">พิธีเปิดซองเสนอราคาร่วม (Committee Bid Decryption Ceremony)</h3>
+          <p class="text-[11px] text-slate-400 max-w-md mx-auto">
+            ตามระเบียบจัดซื้อและตรวจสอบบัญชี (US-0609) โครงการนี้มีรูปแบบประมูลซองปิด (Sealed Bidding) ซองเสนอราคาจะถูกเข้ารหัสลับและปิดผนึกไว้ จนกว่าคณะกรรมการอย่างน้อย 2 ท่านจะกรอกรหัสผ่านเพื่อปลดล็อกร่วมกัน
+          </p>
+        </div>
+
+        <div class="border-t border-slate-800 pt-5 space-y-4">
+          <h4 class="font-extrabold text-xs text-slate-300 uppercase tracking-wider">รายชื่อคณะกรรมการเปิดซองประมูลและสถานะ:</h4>
+          <div class="grid grid-cols-1 gap-2.5">
+            <div 
+              v-for="memberId in rfq?.committee_members" 
+              :key="memberId"
+              class="flex items-center justify-between p-3 rounded-lg border bg-slate-800/40 border-slate-700/50"
+            >
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-user" class="w-4 h-4 text-slate-400" />
+                <span class="text-xs font-bold text-slate-200">{{ getMemberName(memberId) }}</span>
+              </div>
+              <span 
+                class="px-2 py-0.5 rounded text-[10px] font-bold border"
+                :class="rfq?.decryption_keys?.[memberId]?.decrypted 
+                  ? 'bg-green-500/15 border-green-500/30 text-green-400' 
+                  : 'bg-red-500/15 border-red-500/30 text-red-400'"
+              >
+                {{ rfq?.decryption_keys?.[memberId]?.decrypted ? '🔓 ปลดล็อกแล้ว' : '🔒 ยังไม่ได้ยืนยัน' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Current User Decrypt Form -->
+        <div 
+          v-if="rfq?.committee_members?.includes(authStore.user?.userId) && !rfq?.decryption_keys?.[authStore.user?.userId]?.decrypted"
+          class="bg-slate-800/80 border border-slate-700 p-5 rounded-xl space-y-4"
+        >
+          <div class="text-xs text-slate-300">
+            <span class="font-extrabold text-amber-400 block mb-0.5">คุณได้รับแต่งตั้งเป็นคณะกรรมการของโครงการนี้</span>
+            กรุณากรอกรหัสผ่านของคุณ (เช่น 'password123' สำหรับบัญชีทดสอบ) เพื่อร่วมลงชื่อถอดรหัสซองประมูล
+          </div>
+          <div class="flex gap-2">
+            <UInput 
+              v-model="decryptionPassword" 
+              type="password" 
+              placeholder="กรอกรหัสผ่านของคุณ..." 
+              size="sm" 
+              class="w-full bg-slate-900 border-slate-700 text-white" 
+            />
+            <UButton 
+              @click="decryptBid" 
+              color="amber" 
+              size="sm" 
+              class="font-bold cursor-pointer"
+              :loading="decrypting"
+            >
+              ยืนยันถอดรหัส
+            </UButton>
+          </div>
+        </div>
+        <div v-else-if="rfq?.committee_members?.includes(authStore.user?.userId)" class="p-3 bg-green-500/10 border border-green-500/30 text-green-400 text-xs font-bold rounded-lg text-center">
+          คุณลงชื่อร่วมถอดรหัสเรียบร้อยแล้ว รอคณะกรรมการท่านถัดไปกรอกรหัสยืนยัน...
+        </div>
+      </div>
+
+      <div v-else-if="peekingForbidden" class="p-8 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-3">
         <UIcon name="i-heroicons-lock-closed" class="w-12 h-12 text-amber-500 mx-auto" />
         <h3 class="font-bold text-base text-amber-900">ระเบียบซองปิด (Sealed Bidding Active)</h3>
         <p class="text-xs text-amber-800 max-w-lg mx-auto">
@@ -152,18 +269,44 @@
                 <tr v-for="item in rfq?.items" :key="item.rfq_item_id">
                   <td class="p-3">
                     <div class="font-bold text-[var(--foreground)]">{{ item.item_name }}</div>
-                    <span class="text-[10px] text-[var(--muted-foreground)]">ความต้องการ: {{ item.quantity }} {{ item.uom }}</span>
+                    <span class="text-[10px] text-[var(--muted-foreground)]">ความต้องการ: {{ formatQuantity(item.quantity) }} {{ item.uom }}</span>
                   </td>
                   <td 
                     v-for="quote in rfq?.quotations" 
                     :key="quote.quote_id"
                     class="p-3 text-center border-l border-[var(--border)]"
-                    :class="{'bg-green-50/20': quote.status === 'Selected', 'font-bold text-green-600': isLowestForLine(item.rfq_item_id, quote)}"
+                    :class="{'bg-green-50/20': quote.status === 'Selected', 'font-bold text-green-600': !['RFI', 'RFP'].includes(rfq?.bid_type) && isLowestForLine(item.rfq_item_id, quote)}"
                   >
                     <div v-if="isMasked(quote)" class="flex flex-col items-center justify-center text-amber-600 gap-1 py-1">
                       <UIcon name="i-heroicons-lock-closed" class="w-4 h-4 animate-pulse" />
                       <span class="text-[10px] font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">ซองปิด (Masked)</span>
                     </div>
+                    <template v-else-if="rfq?.bid_type === 'RFI' || rfq?.bid_type === 'RFP'">
+                      <!-- Qualitative comments / Remarks -->
+                      <div class="text-left space-y-2 p-1.5 rounded-lg bg-slate-50 border border-slate-100">
+                        <div class="text-[10px] font-bold text-slate-700">ข้อเสนอเชิงคุณภาพ / คำอธิบาย:</div>
+                        <div class="text-xs text-slate-600 whitespace-pre-line">{{ getLineRemarks(item.rfq_item_id, quote) || 'ไม่มีการระบุข้อมูล' }}</div>
+                        
+                        <!-- Document upload for RFP -->
+                        <div v-if="rfq?.bid_type === 'RFP'" class="pt-1.5 border-t border-slate-200 mt-1">
+                          <div class="text-[10px] font-bold text-slate-500 mb-1">เอกสารทางเทคนิค (RFP Spec):</div>
+                          <a 
+                            v-if="getLineFileUrl(item.rfq_item_id, quote)" 
+                            :href="getLineFileUrl(item.rfq_item_id, quote)" 
+                            target="_blank"
+                            class="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] border border-blue-500 text-blue-600 bg-white hover:bg-blue-50 rounded font-semibold transition"
+                          >
+                            <UIcon name="i-heroicons-document-arrow-down" class="w-3 h-3" />
+                            ดาวน์โหลดไฟล์ข้อเสนอ
+                          </a>
+                          <span v-else class="text-[10px] text-slate-400">ไม่ได้แนบเอกสาร</span>
+                          
+                          <div v-if="getLineFileHash(item.rfq_item_id, quote)" class="mt-1 text-[8px] text-slate-400 font-mono overflow-x-hidden truncate max-w-[170px]" :title="'SHA-256 Checksum: ' + getLineFileHash(item.rfq_item_id, quote)">
+                            SHA-256: {{ getLineFileHash(item.rfq_item_id, quote).substring(0, 12) }}...
+                          </div>
+                        </div>
+                      </div>
+                    </template>
                     <template v-else>
                       <div>{{ formatCurrency(getLinePrice(item.rfq_item_id, quote)) }} THB</div>
                       <span class="text-[9px] text-[var(--muted-foreground)] block mt-0.5">ราคารวม: {{ formatCurrency(getLinePrice(item.rfq_item_id, quote) * item.quantity) }} THB</span>
@@ -171,7 +314,7 @@
                   </td>
                 </tr>
 
-                <tr class="bg-slate-50/50 font-bold border-t border-[var(--border)]">
+                <tr v-if="!['RFI', 'RFP'].includes(rfq?.bid_type)" class="bg-slate-50/50 font-bold border-t border-[var(--border)]">
                   <td class="p-3 text-xs text-[var(--muted-foreground)] uppercase">ยอดรวมราคาจัดจัดซื้อ (Total Cost)</td>
                   <td 
                     v-for="quote in rfq?.quotations" 
@@ -206,7 +349,7 @@
                   </td>
                 </tr>
 
-                <tr class="bg-slate-50/20 text-xs border-t border-[var(--border)]" v-if="rfq?.technical_weight > 0">
+                <tr class="bg-slate-50/20 text-xs border-t border-[var(--border)]" v-if="!['RFI', 'RFP'].includes(rfq?.bid_type) && rfq?.technical_weight > 0">
                   <td class="p-3 text-[var(--muted-foreground)]">
                     คะแนนด้านราคา (Commercial Score)
                     <div class="text-[9px] text-slate-400">สัดส่วนน้ำหนัก: {{ rfq.commercial_weight }}%</div>
@@ -221,7 +364,7 @@
                   </td>
                 </tr>
 
-                <tr class="bg-indigo-50/30 text-xs border-t border-b border-[var(--border)] font-bold" v-if="rfq?.technical_weight > 0">
+                <tr class="bg-indigo-50/30 text-xs border-t border-b border-[var(--border)] font-bold" v-if="!['RFI', 'RFP'].includes(rfq?.bid_type) && rfq?.technical_weight > 0">
                   <td class="p-3 text-indigo-900">
                     คะแนนรวมถ่วงน้ำหนัก (Weighted Total)
                     <div class="text-[9px] text-indigo-500 font-normal">Technical + Commercial</div>
@@ -267,16 +410,21 @@
                   >
                     <span v-if="isMasked(quote)" class="text-xs text-slate-400">Locked</span>
                     <template v-else>
-                      <a 
-                        v-if="quote.lines?.[0]?.quotation_url" 
-                        :href="quote.lines[0].quotation_url" 
-                        target="_blank"
-                        class="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-[var(--primary)] text-[var(--primary)] rounded-lg font-semibold hover:bg-slate-50 transition"
-                      >
-                        <UIcon name="i-heroicons-document-arrow-down" class="w-3.5 h-3.5" />
-                        ดาวน์โหลด PDF
-                      </a>
-                      <span v-else class="text-xs text-[var(--muted-foreground)]">ไม่ได้แนบเอกสาร</span>
+                      <div>
+                        <a 
+                          v-if="quote.lines?.[0]?.quotation_url" 
+                          :href="quote.lines[0].quotation_url" 
+                          target="_blank"
+                          class="inline-flex items-center gap-1 px-2.5 py-1 text-xs border border-[var(--primary)] text-[var(--primary)] rounded-lg font-semibold hover:bg-slate-50 transition"
+                        >
+                          <UIcon name="i-heroicons-document-arrow-down" class="w-3.5 h-3.5" />
+                          ดาวน์โหลด PDF
+                        </a>
+                        <span v-else class="text-xs text-[var(--muted-foreground)]">ไม่ได้แนบเอกสาร</span>
+                      </div>
+                      <div v-if="quote.lines?.[0]?.file_hash" class="mt-2 text-[9px] text-slate-400 font-mono text-center overflow-x-hidden truncate max-w-[180px] mx-auto bg-slate-50 border border-slate-200 px-1 py-0.5 rounded" :title="'SHA-256 Checksum: ' + quote.lines[0].file_hash">
+                        SHA-256: {{ quote.lines[0].file_hash.substring(0, 16) }}...
+                      </div>
                     </template>
                   </td>
                 </tr>
@@ -553,6 +701,72 @@ const isAwarding = ref(false);
 const savingScores = ref(false);
 const slaExpired = ref(false);
 const escalating = ref(false);
+
+const decryptionPassword = ref('');
+const decrypting = ref(false);
+
+const decryptBid = async () => {
+  if (!decryptionPassword.value) return;
+  decrypting.value = true;
+  try {
+    await $fetch<any>(`http://localhost:3001/api/bidding/rfq/${route.params.id}/decrypt`, {
+      method: 'POST',
+      body: { password: decryptionPassword.value },
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    alert('ลงนามถอดรหัสเรียบร้อยแล้ว!');
+    decryptionPassword.value = '';
+    loadComparison();
+  } catch (err: any) {
+    alert(err.data?.message || 'การถอดรหัสล้มเหลว');
+  } finally {
+    decrypting.value = false;
+  }
+};
+
+const approvingShortlist = ref(false);
+const handleApproveShortlist = async (approved: boolean) => {
+  if (!confirm(`คุณยืนยันต้องการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองสำหรับโครงการนี้ใช่หรือไม่?`)) return;
+  approvingShortlist.value = true;
+  try {
+    await $fetch(`http://localhost:3001/api/bidding/rfq/${rfq.value.rfq_id}/shortlist/approve`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authStore.token}` },
+      body: { approved }
+    });
+    alert(`ดำเนินการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองเสร็จสิ้น`);
+    await loadComparison();
+  } catch (err: any) {
+    console.error(err);
+    alert('เกิดข้อผิดพลาดในการอนุมัติ/ปฏิเสธ Shortlist');
+  } finally {
+    approvingShortlist.value = false;
+  }
+};
+
+const getLineRemarks = (itemId: string, quote: any) => {
+  const line = quote.lines?.find((l: any) => l.rfq_item_id === itemId || l.rfq_item?.rfq_item_id === itemId);
+  return line ? line.vendor_remarks : null;
+};
+
+const getLineFileUrl = (itemId: string, quote: any) => {
+  const line = quote.lines?.find((l: any) => l.rfq_item_id === itemId || l.rfq_item?.rfq_item_id === itemId);
+  return line ? line.quotation_url : null;
+};
+
+const getLineFileHash = (itemId: string, quote: any) => {
+  const line = quote.lines?.find((l: any) => l.rfq_item_id === itemId || l.rfq_item?.rfq_item_id === itemId);
+  return line ? line.file_hash : null;
+};
+
+const getMemberName = (userId: string) => {
+  const mapping: Record<string, string> = {
+    '00000008-0000-0000-0000-000000000004': 'warakorn.c (Approver Manager)',
+    '00000008-0000-0000-0000-000000000005': 'supawadee.i (Approver Senior Mgr)',
+    '00000008-0000-0000-0000-000000000010': 'nantaporn.s (Admin)'
+  };
+  return mapping[userId] || userId;
+};
 
 // Multi-Criteria evaluation parameters
 const evaluationCriteria = ref([
@@ -884,8 +1098,15 @@ const formatDate = (dateVal: any) => {
   }) + ' น.';
 };
 
-const formatCurrency = (val?: number) => {
-  if (val === undefined || val === null) return '0.00';
-  return val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
+
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 </script>

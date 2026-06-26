@@ -146,8 +146,10 @@ const filteredInvoices = computed(() => {
   });
 });
 
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(val);
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const formatDate = (date: any) => {

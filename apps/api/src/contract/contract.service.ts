@@ -3,6 +3,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PurchaseContract } from '../database/entities/purchase-contract.entity';
 import { Vendor } from '../database/entities/vendor.entity';
+import { PurchaseOrder } from '../database/entities/purchase-order.entity';
+import { AuditLog } from '../database/entities/audit-log.entity';
+import { Notification } from '../database/entities/notification.entity';
 
 @Injectable()
 export class ContractService {
@@ -11,6 +14,12 @@ export class ContractService {
     private readonly contractRepo: Repository<PurchaseContract>,
     @InjectRepository(Vendor)
     private readonly vendorRepo: Repository<Vendor>,
+    @InjectRepository(PurchaseOrder)
+    private readonly poRepo: Repository<PurchaseOrder>,
+    @InjectRepository(AuditLog)
+    private readonly auditRepo: Repository<AuditLog>,
+    @InjectRepository(Notification)
+    private readonly notificationRepo: Repository<Notification>,
   ) {}
 
   async createContract(body: {
@@ -20,6 +29,13 @@ export class ContractService {
     end_date: string;
     total_amount: number;
     document_url?: string;
+    contract_type?: string;
+    contract_period?: string;
+    resources?: any[];
+    rental_details?: any;
+    warranty_details?: any;
+    parent_contract_id?: string;
+    contract_class?: string;
   }) {
     const vendor = await this.vendorRepo.findOne({ where: { vendor_id: body.vendor_id } });
     if (!vendor) throw new NotFoundException('Vendor not found');
@@ -33,9 +49,17 @@ export class ContractService {
       end_date: new Date(body.end_date),
       total_amount: body.total_amount,
       remaining_amount: body.total_amount,
-      status: 'PendingSignature',
+      status: body.contract_class === 'Amendment' || body.contract_class === 'Addendum' ? 'Draft' : 'PendingSignature',
       document_url: body.document_url || `/uploads/documents/contract_template.pdf`,
       signatures: {},
+      contract_type: body.contract_type || 'Sales',
+      contract_period: body.contract_period || 'Custom',
+      resources: body.resources || null,
+      rental_details: body.rental_details || null,
+      warranty_details: body.warranty_details || null,
+      parent_contract_id: body.parent_contract_id || null,
+      version_no: 1,
+      contract_class: body.contract_class || 'Original',
     });
 
     return this.contractRepo.save(contract);
@@ -54,6 +78,80 @@ export class ContractService {
       relations: ['vendor'],
       order: { created_at: 'DESC' },
     });
+  }
+
+  async submitApproval(id: string) {
+    const contract = await this.contractRepo.findOne({ where: { contract_id: id } });
+    if (!contract) throw new NotFoundException('Contract not found');
+    contract.status = 'PendingApproval';
+    return this.contractRepo.save(contract);
+  }
+
+  async approveContract(id: string) {
+    const contract = await this.contractRepo.findOne({ where: { contract_id: id } });
+    if (!contract) throw new NotFoundException('Contract not found');
+    if (contract.status !== 'PendingApproval') {
+      throw new BadRequestException('Contract is not pending approval');
+    }
+    contract.status = 'PendingSignature';
+    return this.contractRepo.save(contract);
+  }
+
+  async rejectContract(id: string) {
+    const contract = await this.contractRepo.findOne({ where: { contract_id: id } });
+    if (!contract) throw new NotFoundException('Contract not found');
+    if (contract.status !== 'PendingApproval') {
+      throw new BadRequestException('Contract is not pending approval');
+    }
+    contract.status = 'Rejected';
+    return this.contractRepo.save(contract);
+  }
+
+  async amendContract(
+    id: string,
+    body: {
+      title: string;
+      start_date: string;
+      end_date: string;
+      total_amount: number;
+      contract_type?: string;
+      contract_period?: string;
+      resources?: any[];
+      rental_details?: any;
+      warranty_details?: any;
+    },
+  ) {
+    const parentContract = await this.contractRepo.findOne({ where: { contract_id: id } });
+    if (!parentContract) throw new NotFoundException('Parent contract not found');
+    if (parentContract.status !== 'Signed') {
+      throw new BadRequestException('Only fully signed contracts can be amended');
+    }
+
+    const versionNo = Number(parentContract.version_no) + 1;
+    const contractNo = `${parentContract.contract_no}-REV${versionNo}`;
+
+    const amendment = this.contractRepo.create({
+      contract_no: contractNo,
+      vendor_id: parentContract.vendor_id,
+      title: body.title,
+      start_date: new Date(body.start_date),
+      end_date: new Date(body.end_date),
+      total_amount: body.total_amount,
+      remaining_amount: body.total_amount,
+      status: 'Draft',
+      document_url: parentContract.document_url,
+      signatures: {},
+      contract_type: body.contract_type || parentContract.contract_type,
+      contract_period: body.contract_period || parentContract.contract_period,
+      resources: body.resources || parentContract.resources,
+      rental_details: body.rental_details || parentContract.rental_details,
+      warranty_details: body.warranty_details || parentContract.warranty_details,
+      parent_contract_id: parentContract.contract_id,
+      version_no: versionNo,
+      contract_class: 'Amendment',
+    });
+
+    return this.contractRepo.save(amendment);
   }
 
   async signContract(
@@ -87,10 +185,100 @@ export class ContractService {
     // If both signed, move to 'Signed' status
     if (signatures.buyer && signatures.vendor) {
       contract.status = 'Signed';
+
+      // Supercede parent contract if it's an amendment
+      if (contract.contract_class === 'Amendment' && contract.parent_contract_id) {
+        const parent = await this.contractRepo.findOne({ where: { contract_id: contract.parent_contract_id } });
+        if (parent) {
+          parent.status = 'Superceded';
+          await this.contractRepo.save(parent);
+
+          // Update linked POs
+          await this.poRepo.update(
+            { contract_id: parent.contract_id },
+            { contract_id: contract.contract_id }
+          );
+
+          // Log before/after comparison
+          const audit = this.auditRepo.create({
+            action: 'CONTRACT_AMENDMENT_EXECUTED',
+            entity_type: 'PurchaseContract',
+            entity_id: contract.contract_id,
+            before_value_json: {
+              contract_no: parent.contract_no,
+              title: parent.title,
+              total_amount: parent.total_amount,
+              start_date: parent.start_date,
+              end_date: parent.end_date,
+              resources: parent.resources,
+              rental_details: parent.rental_details,
+              warranty_details: parent.warranty_details,
+            },
+            after_value_json: {
+              contract_no: contract.contract_no,
+              title: contract.title,
+              total_amount: contract.total_amount,
+              start_date: contract.start_date,
+              end_date: contract.end_date,
+              resources: contract.resources,
+              rental_details: contract.rental_details,
+              warranty_details: contract.warranty_details,
+            },
+            ip_address: signatory.ip,
+          });
+          await this.auditRepo.save(audit);
+        }
+      }
     } else {
       contract.status = 'PendingSignature';
     }
 
     return this.contractRepo.save(contract);
+  }
+
+  async checkContractExpirations(simulateDays?: number) {
+    const contracts = await this.contractRepo.find({
+      where: { status: 'Signed' },
+      relations: ['vendor'],
+    });
+
+    const now = new Date();
+    const alertLogs = [];
+    const notifications = [];
+
+    for (const contract of contracts) {
+      const endDate = new Date(contract.end_date);
+      const diffTime = endDate.getTime() - now.getTime();
+      let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (simulateDays !== undefined) {
+        diffDays = simulateDays;
+      }
+
+      if (diffDays === 30 || diffDays === 60 || diffDays === 90) {
+        const message = `สัญญาจัดซื้อเลขที่ ${contract.contract_no} (${contract.title}) ของคู่ค้า ${contract.vendor?.vendor_name || 'ไม่ระบุ'} กำลังจะหมดอายุในอีก ${diffDays} วัน (สิ้นสุดวันที่ ${contract.end_date})`;
+        
+        const notif = this.notificationRepo.create({
+          recipient_user_id: '00000000-0000-0000-0000-000000000001',
+          channel: 'Portal & Email',
+          trigger_event: 'ContractExpiring',
+          message,
+          read_flag: false,
+        });
+        await this.notificationRepo.save(notif);
+        notifications.push(notif);
+
+        const emailLog = `[EMAIL ALERT SENT] To: buyer-admin@scgjwd.com | Subject: แจ้งเตือนสัญญาใกล้หมดอายุ (${diffDays} วัน) | Body: สัญญา ${contract.contract_no} จะสิ้นสุดในวันที่ ${contract.end_date}`;
+        console.log(emailLog);
+        alertLogs.push(emailLog);
+      }
+    }
+
+    return {
+      success: true,
+      checked_count: contracts.length,
+      triggered_alerts_count: alertLogs.length,
+      logged_emails: alertLogs,
+    };
   }
 }

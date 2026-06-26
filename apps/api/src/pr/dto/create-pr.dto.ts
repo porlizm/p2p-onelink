@@ -36,6 +36,10 @@ export class CreatePrDto {
   @IsOptional()
   description?: string;
 
+  @IsString()
+  @IsOptional()
+  contract_id?: string;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreatePrLineDto)

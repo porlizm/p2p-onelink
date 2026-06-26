@@ -104,7 +104,7 @@
                   <div class="font-semibold text-slate-700">{{ line.item_name }}</div>
                   <div class="text-[10px] text-slate-400 mt-0.5">Line ID: {{ line.po_line_id }}</div>
                 </td>
-                <td class="px-6 py-4 text-right font-medium text-slate-600">{{ line.quantity }} {{ line.uom }}</td>
+                <td class="px-6 py-4 text-right font-medium text-slate-600">{{ formatQuantity(line.quantity) }} {{ line.uom }}</td>
                 <td class="px-6 py-4 text-right font-medium text-slate-600">{{ formatCurrency(line.unit_price) }}</td>
                 <td class="px-6 py-4 text-right font-bold text-slate-800">{{ formatCurrency(line.total_price) }}</td>
               </tr>
@@ -264,8 +264,8 @@
                 <UInput 
                   v-model.number="line.quantity" 
                   type="number" 
-                  step="0.01" 
-                  min="0.01" 
+                  step="1" 
+                  min="1" 
                   size="sm"
                 />
               </div>
@@ -701,8 +701,15 @@ const formatDateNoTime = (dateVal: any) => {
   });
 };
 
-const formatCurrency = (val?: number) => {
-  if (val === undefined || val === null) return '0.00';
-  return val.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
+
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 </script>

@@ -58,16 +58,20 @@
               <th class="px-6 py-3 text-right">มูลค่ารวมสัญญากลาง</th>
               <th class="px-6 py-3 text-right">วงเงินคงเหลือ</th>
               <th class="px-6 py-3 text-center">ระยะเวลาบังคับใช้</th>
+              <th class="px-6 py-3 text-center">ประเภท / Class</th>
               <th class="px-6 py-3 text-center">สถานะ</th>
               <th class="px-6 py-3 text-center">การดำเนินการ</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--border)] text-slate-600">
             <tr v-for="c in contracts" :key="c.contract_id" class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-bold text-[#0054FF]">{{ c.contract_no }}</td>
+              <td class="px-6 py-4 font-bold text-[#0054FF]">
+                {{ c.contract_no }}
+                <span v-if="c.version_no > 1" class="text-[9px] text-slate-400 font-normal block">เวอร์ชัน {{ c.version_no }}</span>
+              </td>
               <td class="px-6 py-4">
                 <div class="font-bold text-slate-700">{{ c.title }}</div>
-                <div class="text-[10px] text-slate-400 mt-0.5">ประเภท: Blanket PO (วงเงินกำหนดอัตราส่วนลดคงที่)</div>
+                <div class="text-[10px] text-slate-400 mt-0.5">ประเภท: {{ formatContractType(c.contract_type) }} ({{ c.contract_period }})</div>
               </td>
               <td class="px-6 py-4 text-right font-bold text-slate-800">{{ formatCurrency(c.total_amount) }}</td>
               <td class="px-6 py-4 text-right font-extrabold text-indigo-600">{{ formatCurrency(c.remaining_amount) }}</td>
@@ -76,10 +80,25 @@
               </td>
               <td class="px-6 py-4 text-center">
                 <span 
+                  class="px-2 py-0.5 rounded text-[9px] font-bold border"
+                  :class="[
+                    c.contract_class === 'Amendment' ? 'bg-purple-50 text-purple-700 border-purple-200' :
+                    c.contract_class === 'Addendum' ? 'bg-teal-50 text-teal-700 border-teal-200' :
+                    'bg-slate-50 text-slate-700 border-slate-200'
+                  ]"
+                >
+                  {{ c.contract_class || 'Original' }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-center">
+                <span 
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold border inline-block"
                   :class="[
                     c.status === 'Signed' ? 'bg-green-50 text-green-700 border-green-200' :
                     c.status === 'PendingSignature' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                    c.status === 'PendingApproval' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                    c.status === 'Rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                    c.status === 'Superceded' ? 'bg-gray-100 text-gray-500 border-gray-200' :
                     'bg-slate-50 text-slate-600 border-slate-200'
                   ]"
                 >
@@ -113,7 +132,7 @@
               </td>
             </tr>
             <tr v-if="contracts.length === 0">
-              <td colspan="7" class="text-center py-10 text-slate-400">
+              <td colspan="8" class="text-center py-10 text-slate-400">
                 ไม่พบข้อมูลสัญญากับบริษัทของคุณในระบบ
               </td>
             </tr>
@@ -125,27 +144,58 @@
     <!-- Signing Drawer -->
     <USlideover v-model="showSignDrawer" prevent-close :ui="{ width: 'max-w-2xl' }">
       <div class="p-6 h-full flex flex-col justify-between" v-if="activeContract">
-        <div class="space-y-6 flex-1 overflow-y-auto">
+        <div class="space-y-6 flex-1 overflow-y-auto pr-1">
           <div class="flex items-center justify-between border-b pb-3">
             <div>
               <h3 class="font-black text-slate-800 text-base">สัญญาสั่งซื้อและราคากลาง</h3>
-              <p class="text-xs text-slate-400 mt-0.5">เลขที่สัญญา: {{ activeContract.contract_no }}</p>
+              <p class="text-xs text-slate-400 mt-0.5">เลขที่สัญญา: {{ activeContract.contract_no }} | Class: {{ activeContract.contract_class || 'Original' }}</p>
             </div>
             <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showSignDrawer = false" />
           </div>
 
           <!-- Document Viewer Mockup -->
-          <div class="border border-slate-200 rounded-xl p-6 bg-slate-50 text-slate-700 space-y-4 max-h-[360px] overflow-y-auto">
-            <div class="text-center font-extrabold text-slate-900 border-b pb-3 uppercase text-sm">
+          <div class="border border-slate-200 rounded-xl p-6 bg-slate-50 text-slate-700 space-y-4 max-h-[300px] overflow-y-auto">
+            <div class="text-center font-extrabold text-slate-900 border-b pb-3 uppercase text-xs">
               สัญญาข้อตกลงซื้อขายพัสดุและจัดหาบริการ (Blanket Purchase Agreement)
             </div>
             <div class="text-[11px] space-y-3 leading-relaxed">
-              <p>สัญญาฉบับนี้ทำขึ้นระหว่าง **บริษัท เจดับเบิ้ลยูดี อินโฟโลจิสติกส์ จำกัด (มหาชน)** (ฝ่ายผู้ซื้อ) และ **{{ authStore.vendor?.vendorName }}** (ฝ่ายผู้ขาย)</p>
+              <p>สัญญาฉบับนี้ทำขึ้นระหว่าง **บริษัท เจดับเบิ้ลยูดี อินโฟโลจิสติกส์ จำกัด (มหาชน)** (ฝ่ายผู้ซื้อ) และ **{{ authStore.vendor?.vendorName || 'บริษัทผู้ขายจำลอง' }}** (ฝ่ายผู้ขาย)</p>
               <p><strong>ชื่อบันทึกข้อตกลง:</strong> {{ activeContract.title }}</p>
+              <p><strong>ประเภทสัญญา:</strong> {{ formatContractType(activeContract.contract_type) }} ({{ activeContract.contract_period }})</p>
               <p><strong>วงเงินค้ำประกันสัญญากลาง:</strong> {{ formatCurrency(activeContract.total_amount) }}</p>
-              <p><strong>ข้อตกลงราคากลาง:</strong> ผู้ขายตกลงที่จะจำหน่ายพัสดุวัสดุและอุปกรณ์และบริการสนับสนุนให้แก่ผู้ซื้อ โดยยินยอมตรึงราคากลางคงที่ตามส่วนลดพิเศษเป็นระยะเวลาตามสัญญา และมีสิทธิเข้าประมูลเสนอขายรายการสั่งซื้อตามลำดับความต้องการผ่านทางแพลตฟอร์ม P2P OneLink</p>
               <p><strong>ระยะเวลากำหนด:</strong> เริ่มมีผลตั้งแต่วันที่ {{ formatDate(activeContract.start_date) }} ถึงวันที่ {{ formatDate(activeContract.end_date) }}</p>
-              <p>คู่สัญญาทั้งสองฝ่ายได้อ่านและรับทราบเงื่อนไขสัญญากลางฉบับนี้ครบถ้วนเป็นที่เรียบร้อย จึงได้ร่วมประทับตราและลงนามผ่านระบบความคุ้มครองทางอิเล็กทรอนิกส์</p>
+
+              <!-- TYPE-SPECIFIC DETAIL DISPLAY -->
+              <div v-if="activeContract.contract_type === 'Outsourcing' && activeContract.resources" class="border border-slate-200 rounded-lg p-3 bg-white space-y-2 mt-3">
+                <div class="font-bold text-slate-800 border-b pb-1">รายละเอียดรายชื่อ/อัตราจ้างพนักงาน Outsource (US-141)</div>
+                <div class="divide-y divide-slate-100 text-[10px]">
+                  <div v-for="(r, idx) in activeContract.resources" :key="idx" class="flex justify-between py-1">
+                    <span>ตำแหน่ง: {{ r.role }}</span>
+                    <span>อัตรา: {{ formatCurrency(r.rate) }} / {{ r.unit === 'hour' ? 'ชม.' : r.unit === 'day' ? 'วัน' : 'เดือน' }} (จำนวน {{ formatQuantity(r.quantity) }} ราย)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div v-if="activeContract.contract_type === 'Rental' && activeContract.rental_details" class="border border-slate-200 rounded-lg p-3 bg-white space-y-1.5 mt-3">
+                <div class="font-bold text-slate-800 border-b pb-1">รายละเอียดการเช่ารายงวด (US-142)</div>
+                <div class="flex justify-between text-[10px]">
+                  <span>รอบบิลเช่า: {{ activeContract.rental_details.billing_cycle }}</span>
+                  <span>ค่าเช่างวดละ: {{ formatCurrency(activeContract.rental_details.installment_amount) }}</span>
+                </div>
+                <div v-if="activeContract.rental_details.return_conditions" class="text-[9px] text-slate-500 mt-1">
+                  <strong>เงื่อนไขคืนทรัพย์สิน:</strong> {{ activeContract.rental_details.return_conditions }}
+                </div>
+              </div>
+
+              <div v-if="(activeContract.contract_type === 'Warranty' || activeContract.contract_type === 'Service') && activeContract.warranty_details" class="border border-slate-200 rounded-lg p-3 bg-white space-y-1.5 mt-3">
+                <div class="font-bold text-slate-800 border-b pb-1">ขอบเขตประกันภัย & SLA (US-142)</div>
+                <div class="flex justify-between text-[10px]">
+                  <span>มาตรฐานการบริการ (SLA): {{ activeContract.warranty_details.sla_level || '-' }}</span>
+                  <span>ผู้ประสานงาน Support: {{ activeContract.warranty_details.contact_person || '-' }}</span>
+                </div>
+              </div>
+
+              <p class="pt-3 border-t">คู่สัญญาทั้งสองฝ่ายได้อ่านและรับทราบเงื่อนไขสัญญากลางฉบับนี้ครบถ้วนเป็นที่เรียบร้อย จึงได้ร่วมประทับตราและลงนามผ่านระบบความคุ้มครองทางอิเล็กทรอนิกส์</p>
             </div>
           </div>
 
@@ -174,7 +224,7 @@
             </div>
           </div>
 
-          <!-- Signature Form Input (only if pending and not signed by vendor) -->
+          <!-- Signature Form Input -->
           <div v-if="activeContract.status === 'PendingSignature' && !activeContract.signatures?.vendor" class="space-y-4 pt-3 border-t border-slate-100">
             <h4 class="font-extrabold text-slate-800 text-xs">ระบุข้อมูลเพื่อลงนามอิเล็กทรอนิกส์</h4>
             
@@ -199,7 +249,6 @@
                 @mouseup="stopDrawing"
                 @mouseleave="stopDrawing"
               >
-                <!-- Render signature path using SVG inside -->
                 <svg class="absolute inset-0 w-full h-full pointer-events-none">
                   <path :d="signaturePath" fill="none" stroke="#002266" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
@@ -273,7 +322,11 @@ const loadContracts = async () => {
         remaining_amount: 1250000,
         start_date: '2026-01-01',
         end_date: '2026-12-31',
+        contract_type: 'Sales',
+        contract_period: '1 Year',
         status: 'Signed',
+        contract_class: 'Original',
+        version_no: 1,
         signatures: {
           buyer: { name: 'คุณนันทพร ศิริวัฒน์', signed_at: '2026-01-02T09:30:00Z', ip: '192.168.1.55' },
           vendor: { name: 'สมชาย ดีเลิศ (CEO)', signed_at: '2026-01-03T11:15:00Z', ip: '202.14.88.92' },
@@ -288,7 +341,15 @@ const loadContracts = async () => {
         remaining_amount: 800000,
         start_date: '2026-06-01',
         end_date: '2026-12-31',
+        contract_type: 'Outsourcing',
+        contract_period: '6 Months',
+        resources: [
+          { role: 'Senior Systems Architect', rate: 100000, unit: 'month', quantity: 1 },
+          { role: 'DevOps Engineer', rate: 60000, unit: 'month', quantity: 1 }
+        ],
         status: 'PendingSignature',
+        contract_class: 'Original',
+        version_no: 1,
         signatures: {
           buyer: { name: 'คุณนันทพร ศิริวัฒน์', signed_at: '2026-06-20T10:00:00Z', ip: '192.168.1.55' }
         }
@@ -347,7 +408,7 @@ const submitSignature = async () => {
       body: {
         role: 'vendor',
         name: signerName.value,
-        ip: '127.0.0.1' // Simulated IP
+        ip: '127.0.0.1'
       },
     });
 
@@ -355,17 +416,21 @@ const submitSignature = async () => {
     showSignDrawer.value = false;
     await loadContracts();
   } catch (err) {
-    // Simulated updates for prototype
+    // Simulated UAT updates
     const match = contracts.value.find(c => c.contract_id === activeContract.value.contract_id);
     if (match) {
       match.signatures = match.signatures || {};
       match.signatures.vendor = {
         name: signerName.value,
         signed_at: new Date().toISOString(),
-        ip: '127.0.0.1',
+        ip: '127.0.0.1 (UAT-VendorNetwork)',
       };
       if (match.signatures.buyer) {
         match.status = 'Signed';
+        if (match.contract_class === 'Amendment' && match.parent_contract_id) {
+          const parent = contracts.value.find(p => p.contract_id === match.parent_contract_id);
+          if (parent) parent.status = 'Superceded';
+        }
       }
     }
     alert('ลงนามดิจิทัลสำเร็จ! (Simulated)');
@@ -375,12 +440,23 @@ const submitSignature = async () => {
   }
 };
 
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB', maximumFractionDigits: 0 }).format(val);
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
+
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const formatStatus = (status: string, vendorSigned: any) => {
   if (status === 'Signed') return 'ลงนามร่วมกันแล้ว ✅';
+  if (status === 'PendingApproval') return 'รออนุมัติภายใน ⏳';
+  if (status === 'Rejected') return 'ปฏิเสธคำขอ ❌';
+  if (status === 'Superceded') return 'สัญญาสิ้นสุด/ปรับปรุงแล้ว ⛔';
   if (vendorSigned) return 'คุณลงนามแล้ว (รอผู้ซื้อ) ⏳';
   return 'รอลงนามจากคุณ ⏳';
 };
@@ -400,6 +476,17 @@ const formatDateTime = (val: string) => {
     hour: '2-digit',
     minute: '2-digit'
   });
+};
+
+const formatContractType = (t: string) => {
+  switch (t) {
+    case 'Sales': return 'การขายพัสดุ';
+    case 'Rental': return 'เช่าสินทรัพย์/ครุภัณฑ์';
+    case 'Service': return 'จ้างบริการ';
+    case 'Warranty': return 'บำรุงรักษา/SLA';
+    case 'Outsourcing': return 'Outsourcing พนักงาน';
+    default: return t || 'ทั่วไป';
+  }
 };
 
 onMounted(() => {

@@ -1,0 +1,49 @@
+=== STARTING END-TO-END VERIFICATION: SPRINT 3-6 (CONSOLIDATED) ===
+Logging in as users...
+✔ Logged in successfully.
+Fetching cost centers...
+Using Cost Center: 00000003-0000-0000-0000-000000000003
+
+--- Testing Module A: Planning & Control ---
+Uploading Annual Plan for 2026...
+✔ Annual Plan uploaded successfully.
+Creating PR exceeding budget...
+PR Created. PR No: PR2606003, Unplanned Flag: true
+✔ Unplanned purchase detection warning verified.
+
+--- Testing Module B: Contracts & Reconciliation ---
+Creating contract...
+Contract Created: 33bfac88-0de0-4eb4-8efb-73a567ca1c22, Status: PendingSignature
+Signing contract as buyer...
+Signing contract as vendor...
+Signed Contract Status: Signed
+Creating PR linked to contract (85,000 THB)...
+Converting PR to PO...
+PO Created: PO2606001
+Updated Contract Remaining Amount: 15000.00
+Checking notifications for contract threshold warnings...
+✔ Found warning notification: "สัญญากลางเลขที่ CNT-2026-6020 ถูกใช้งานไปแล้วเกิน 80% (85.00%) วงเงินคงเหลือปัจจุบันคือ 15000 THB"
+
+--- Testing Module C: WMS QC & Asset Lifecycle ---
+Creating Goods Receipt with QC failure...
+GR Created: GR-2026-0001, Status: ClaimRaised
+✔ Goods Receipt QC failure automatic Claim and Return Note flow verified.
+
+--- Testing Module D: AI & OCR Integrations ---
+Calling OCR invoice upload API...
+OCR Extracted Data: {
+  invoice_no: 'INV-OCR-GWR8TR',
+  invoice_date: '2026-06-26',
+  total_amount: 18909,
+  vendor_name: 'บริษัท ดิจิทัล โซลูชั่น ซัพพลาย จำกัด',
+  confidence_score: 0.98,
+  file_url: '/uploads/invoices/vendor_inv_test.pdf'
+}
+✔ OCR invoice parser verified.
+Creating two small PRs within 7 days by the same requester to trigger split auditor...
+Created small PRs: PR2606005 (30k) and PR2606006 (25k)
+Running AI Split Purchase Auditor...
+Audited results count: 1
+✔ AI Risk Auditor flagged split PRs successfully. Risk: Medium. Reason: "พบการขอซื้อย่อยจำนวน 2 รายการภายใน 7 วัน โดยผู้ร้องขอท่านเดียวกัน ซึ่งมียอดรวม 55000 THB เกินวงเงินอนุมัติขั้นต้นของแผนก (DOA limit 50000 THB) ส่อเจตนาแบ่งซอยงบสั่งซื้อเพื่อเลี่ยงเกณฑ์การอนุมัติ"
+
+=== ALL CONSOLIDATED SPRINTS 3-6 VERIFICATION STEPS PASSED SUCCESSFULLY! ===

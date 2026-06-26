@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Param, Body, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Get, Param, Body, UseGuards, Req, UseInterceptors, UploadedFile, BadRequestException, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
@@ -29,6 +29,16 @@ export class BiddingController {
     return this.biddingService.listVendorRFQs(vendorId);
   }
 
+  @Get('recommend-vendors')
+  async recommendVendors(@Query('category') category?: string) {
+    return this.biddingService.recommendVendors(category);
+  }
+
+  @Get('committee-candidates')
+  async getCommitteeCandidates() {
+    return this.biddingService.getCommitteeCandidates();
+  }
+
   @Get('rfq/:id')
   async getRFQDetails(@Param('id') id: string) {
     return this.biddingService.getRFQDetails(id);
@@ -37,6 +47,23 @@ export class BiddingController {
   @Get('rfq/:id/comparison')
   async getComparison(@Param('id') id: string, @Req() req: any) {
     return this.biddingService.getComparison(id, req.user);
+  }
+
+  @Post('rfq/:id/decrypt')
+  async decryptRFQ(@Param('id') id: string, @Body('password') password: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.biddingService.decryptRFQ(id, userId, password);
+  }
+
+  @Post('rfq/:id/shortlist/submit')
+  async submitShortlistForApproval(@Param('id') id: string, @Body('approver_id') approverId: string) {
+    return this.biddingService.submitShortlistForApproval(id, approverId);
+  }
+
+  @Post('rfq/:id/shortlist/approve')
+  async approveShortlist(@Param('id') id: string, @Body('approved') approved: boolean, @Req() req: any) {
+    const { userId } = req.user;
+    return this.biddingService.approveShortlist(id, userId, approved);
   }
 
   @Post('rfq/:id/award/:quoteId')

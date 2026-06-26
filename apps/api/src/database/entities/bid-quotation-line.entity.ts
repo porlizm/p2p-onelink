@@ -29,4 +29,10 @@ export class BidQuotationLine {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   quotation_url: string | null;
+
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  file_hash: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  vendor_remarks: string | null;
 }

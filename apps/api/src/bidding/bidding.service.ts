@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like } from 'typeorm';
 import { BiddingEvent } from '../database/entities/bidding-event.entity';
+import { Vendor } from '../database/entities/vendor.entity';
 import { RfqItem } from '../database/entities/rfq-item.entity';
 import { RfqVendor } from '../database/entities/rfq-vendor.entity';
 import { BidQuotation } from '../database/entities/bid-quotation.entity';
@@ -50,17 +51,34 @@ export class BiddingService {
       });
       const rfqNo = `${prefix}${(count + 1).toString().padStart(3, '0')}`;
 
+      // Set up committee members and their decryption keys object
+      const committeeMembers = dto.committee_member_ids && dto.committee_member_ids.length > 0
+        ? dto.committee_member_ids
+        : ['00000008-0000-0000-0000-000000000004', '00000008-0000-0000-0000-000000000005']; // default to warakorn.c and supawadee.i
+
+      const decryptionKeys: Record<string, any> = {};
+      for (const memberId of committeeMembers) {
+        decryptionKeys[memberId] = { decrypted: false, entered_at: null };
+      }
+
+      const requiresShortlistApproval = !!dto.shortlist_approver_id;
+
       // 2. Save RFQ Header
       const rfq = manager.getRepository(BiddingEvent).create({
         rfq_no: rfqNo,
         title: dto.title,
         description: dto.description || null,
         close_date: new Date(dto.close_date),
-        status: BiddingStatus.OPEN_FOR_QUOTATION,
+        status: requiresShortlistApproval ? BiddingStatus.PENDING_COMMITTEE_APPROVAL : BiddingStatus.OPEN_FOR_QUOTATION,
         bid_type: dto.bid_type || 'RFQ_Closed',
         round_no: dto.round_no || 1,
         technical_weight: dto.technical_weight || 0,
         commercial_weight: dto.commercial_weight || 100,
+        committee_members: committeeMembers,
+        decryption_keys: decryptionKeys,
+        is_decrypted: false,
+        shortlist_approved: !requiresShortlistApproval,
+        shortlist_approver_id: dto.shortlist_approver_id || null,
       });
       const savedRfq = await manager.getRepository(BiddingEvent).save(rfq);
 
@@ -138,15 +156,24 @@ export class BiddingService {
       const savedQuote = await manager.getRepository(BidQuotation).save(quote);
 
       // Create lines
-      const lines = dto.lines.map((line) =>
-        manager.getRepository(BidQuotationLine).create({
+      const crypto = require('crypto');
+      const lines = dto.lines.map((line) => {
+        let hash = null;
+        if (line.quotation_url) {
+          hash = crypto.createHash('sha256').update(line.quotation_url + '-' + savedQuote.quote_id).digest('hex');
+        } else {
+          hash = crypto.createHash('sha256').update(Math.random().toString() + '-' + Date.now()).digest('hex');
+        }
+        return manager.getRepository(BidQuotationLine).create({
           quote_id: savedQuote.quote_id,
           rfq_item_id: line.rfq_item_id,
           unit_price: line.unit_price,
-          delivery_days: line.delivery_days,
+          delivery_days: line.delivery_days || 0,
           quotation_url: line.quotation_url || null,
-        }),
-      );
+          file_hash: hash,
+          vendor_remarks: line.vendor_remarks || null,
+        });
+      });
       await manager.getRepository(BidQuotationLine).save(lines);
 
       return {
@@ -190,8 +217,19 @@ export class BiddingService {
 
     const today = new Date();
     const isBiddingOpen = today < new Date(rfq.close_date) && rfq.status === BiddingStatus.OPEN_FOR_QUOTATION;
+    const isSealedAndLocked = rfq.bid_type === 'SealedBid' && !rfq.is_decrypted;
 
-    if (isBiddingOpen) {
+    if (isSealedAndLocked) {
+      // Mask pricing details for Sealed Bids until decrypted, regardless of role or close date
+      for (const q of rfq.quotations) {
+        (q as any).is_sealed_masked = true;
+        if (q.lines) {
+          for (const l of q.lines) {
+            l.unit_price = 0;
+          }
+        }
+      }
+    } else if (isBiddingOpen) {
       const userRole = (user && typeof user === 'object' && user.role) ? user.role : 'Requester';
       const isAdmin = userRole === 'Admin';
 
@@ -589,6 +627,151 @@ export class BiddingService {
         winner_quote_id: rfq.winner_quote_id,
         new_pr_no: savedPr.pr_no,
       };
+    });
+  }
+
+  async decryptRFQ(rfqId: string, userId: string, password?: string) {
+    const bcrypt = require('bcrypt');
+    return await this.dataSource.transaction(async (manager) => {
+      const rfq = await manager.getRepository(BiddingEvent).findOne({
+        where: { rfq_id: rfqId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!rfq) {
+        throw new NotFoundException('ไม่พบเอกสาร RFQ');
+      }
+
+      if (rfq.bid_type !== 'SealedBid') {
+        throw new BadRequestException('โครงการประมูลนี้ไม่ใช่แบบ Sealed Bid จึงไม่ต้องทำพิธีเปิดซอง');
+      }
+
+      if (rfq.is_decrypted) {
+        throw new BadRequestException('โครงการประมูลนี้ได้รับการถอดรหัสแล้ว');
+      }
+
+      const members = rfq.committee_members || [];
+      if (!members.includes(userId)) {
+        throw new ForbiddenException('คุณไม่มีสิทธิ์เป็นคณะกรรมการสำหรับโครงการนี้');
+      }
+
+      const user = await manager.getRepository(AppUser).findOne({ where: { user_id: userId } });
+      if (!user) {
+        throw new NotFoundException('ไม่พบผู้ใช้ในระบบ');
+      }
+
+      const isMatch = await bcrypt.compare(password || '', user.password_hash);
+      if (!isMatch) {
+        throw new BadRequestException('รหัสผ่านไม่ถูกต้อง');
+      }
+
+      const keys = rfq.decryption_keys || {};
+      keys[userId] = { decrypted: true, entered_at: new Date().toISOString() };
+      rfq.decryption_keys = keys;
+
+      const decryptedCount = Object.values(keys).filter((k: any) => k.decrypted).length;
+
+      if (decryptedCount >= 2) {
+        rfq.is_decrypted = true;
+        rfq.status = BiddingStatus.UNDER_EVALUATION;
+
+        const audit = manager.getRepository(AuditLog).create({
+          user_id: userId,
+          action: 'SEALED_BID_DECRYPTION_CEREMONY',
+          entity_type: 'BiddingEvent',
+          entity_id: rfqId,
+          before_value_json: { is_decrypted: false },
+          after_value_json: { is_decrypted: true, keys },
+          timestamp: new Date(),
+        });
+        await manager.save(audit);
+      }
+
+      await manager.save(rfq);
+
+      return {
+        is_decrypted: rfq.is_decrypted,
+        decrypted_count: decryptedCount,
+        decryption_keys: rfq.decryption_keys,
+      };
+    });
+  }
+
+  async getCommitteeCandidates() {
+    const users = await this.dataSource.getRepository(AppUser).find({
+      relations: ['user_roles', 'user_roles.role'],
+    });
+
+    const candidateRoles = ['Approver', 'Buyer', 'Admin'];
+    return users.filter(user =>
+      user.user_roles && user.user_roles.some(ur => ur.role && candidateRoles.includes(ur.role.role_name))
+    ).map(u => ({
+      user_id: u.user_id,
+      username: u.username,
+      email: u.email,
+      role: u.user_roles?.[0]?.role?.role_name || 'Member',
+    }));
+  }
+
+  async recommendVendors(category?: string) {
+    const query = this.dataSource.getRepository(Vendor).createQueryBuilder('vendor')
+      .where('vendor.status = :status', { status: 'Active' });
+
+    if (category) {
+      query.andWhere('vendor.business_category LIKE :category', { category: `%${category}%` });
+    }
+
+    return await query
+      .orderBy('vendor.evaluation_score', 'DESC')
+      .getMany();
+  }
+
+  async submitShortlistForApproval(rfqId: string, approverId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const rfq = await manager.getRepository(BiddingEvent).findOne({ where: { rfq_id: rfqId } });
+      if (!rfq) throw new NotFoundException('ไม่พบเอกสาร RFQ');
+
+      rfq.shortlist_approver_id = approverId;
+      rfq.shortlist_approved = false;
+      rfq.status = BiddingStatus.PENDING_COMMITTEE_APPROVAL;
+
+      await manager.save(rfq);
+      return rfq;
+    });
+  }
+
+  async approveShortlist(rfqId: string, approverId: string, approved: boolean) {
+    return await this.dataSource.transaction(async (manager) => {
+      const rfq = await manager.getRepository(BiddingEvent).findOne({ where: { rfq_id: rfqId } });
+      if (!rfq) throw new NotFoundException('ไม่พบเอกสาร RFQ');
+
+      if (rfq.shortlist_approver_id !== approverId) {
+        throw new ForbiddenException('คุณไม่มีสิทธิ์อนุมัติ Shortlist สำหรับโครงการนี้');
+      }
+
+      if (approved) {
+        rfq.shortlist_approved = true;
+        rfq.status = BiddingStatus.OPEN_FOR_QUOTATION;
+      } else {
+        rfq.shortlist_approved = false;
+        rfq.status = BiddingStatus.REJECTED;
+      }
+
+      await manager.save(rfq);
+
+      // Create Audit Log
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: approverId,
+        action: approved ? 'SHORTLIST_APPROVED' : 'SHORTLIST_REJECTED',
+        entity_type: 'BiddingEvent',
+        entity_id: rfqId,
+        before_value_json: { shortlist_approved: false },
+        after_value_json: { shortlist_approved: rfq.shortlist_approved, status: rfq.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return rfq;
     });
   }
 }

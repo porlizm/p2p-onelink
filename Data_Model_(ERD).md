@@ -140,6 +140,10 @@ erDiagram
     vendor ||--o{ item_price : quotes
 
     item ||--o| asset : "purchased as"
+    asset ||--o{ asset_allocation : allocates
+    asset }o--|| business_unit : "owned by"
+    asset }o--|| purchase_order : "sourced from"
+    asset_allocation }o--|| business_unit : "allocated to"
 
     company {
         uuid company_id PK
@@ -216,10 +220,30 @@ erDiagram
     }
     asset {
         uuid asset_id PK
+        string asset_tag
         string asset_name
         string asset_type
-        string owner_employee_id
-        uuid po_line_id FK
+        uuid item_id FK
+        decimal unit_price
+        int total_qty
+        int distributed_qty
+        int remaining_qty
+        uuid owner_bu_id FK
+        timestamp acquisition_date
+        string license_key
+        timestamp expiry_date
+        uuid po_id FK
+        string status
+    }
+    asset_allocation {
+        uuid allocation_id PK
+        uuid asset_id FK
+        uuid to_bu_id FK
+        int allocated_qty
+        string allocation_type
+        decimal rental_rate
+        timestamp start_date
+        timestamp end_date
         string status
     }
     doa_rule {
@@ -366,11 +390,34 @@ erDiagram
 #### `asset`
 | Field | Type | Key | คำอธิบาย | TOR Ref |
 |---|---|---|---|---|
-| asset_id | uuid | PK | | No.17 |
-| asset_name / asset_type | string | | Physical / Digital | No.17 |
-| owner_employee_id | string | | ระบุเจ้าของ Sync HR | No.17 |
-| po_line_id | uuid | FK → po_line (nullable) | ที่มาการสั่งซื้อ | |
-| status | enum | | | |
+| asset_id | uuid | PK | ไอดีสินทรัพย์ | |
+| asset_tag | string | | รหัสสินทรัพย์ (Asset Tag) | |
+| asset_name | string | | ชื่อสินทรัพย์ | |
+| asset_type | enum | | Physical / Digital / Service / License | |
+| item_id | uuid | FK → item | ลิงก์อ้างอิงกับมาสเตอร์ไอเทม (nullable) | |
+| unit_price | decimal | | ราคาทุนต่อหน่วย | |
+| total_qty | int | | จำนวนจัดซื้อทั้งหมด | |
+| distributed_qty | int | | จำนวนที่ส่งมอบ/เช่าให้หน่วยงานอื่นแล้ว | |
+| remaining_qty | int | | จำนวนที่เหลืออยู่ที่ส่วนกลาง (HQ) | |
+| owner_bu_id | uuid | FK → business_unit | หน่วยงานเจ้าของสินทรัพย์หลัก | |
+| acquisition_date | timestamp | | วันที่เริ่มถือครองสินทรัพย์ | |
+| license_key | string | | คีย์ใบอนุญาตสิทธิ์การใช้งาน (nullable) | |
+| expiry_date | timestamp | | วันหมดอายุสัญญาหรือลิขสิทธิ์ (nullable) | |
+| po_id | uuid | FK → purchase_order | อ้างอิงใบสั่งซื้อ (nullable) | |
+| status | enum | | In Stock / Distributed / Rented / Scrapped | |
+
+#### `asset_allocation`
+| Field | Type | Key | คำอธิบาย | TOR Ref |
+|---|---|---|---|---|
+| allocation_id | uuid | PK | ไอดีประวัติจัดสรร | |
+| asset_id | uuid | FK → asset | สินทรัพย์ที่ถูกโอนจัดสรร | |
+| to_bu_id | uuid | FK → business_unit | หน่วยงานผู้เช่า/ผู้รับโอนสินทรัพย์ | |
+| allocated_qty | int | | จำนวนจัดสรร | |
+| allocation_type | enum | | Distribution (ส่งมอบ) / Rental (เช่าใช้งานภายใน JWD) | |
+| rental_rate | decimal | | อัตราค่าเช่าภายในเครือต่อเดือน | |
+| start_date | timestamp | | วันที่เริ่มจัดสรร/ให้เช่า | |
+| end_date | timestamp | | วันที่หมดอายุ/สิ้นสุดการจัดสรร (nullable) | |
+| status | enum | | Active / Returned / Closed | |
 
 #### `doa_rule`
 | Field | Type | Key | คำอธิบาย | TOR Ref |

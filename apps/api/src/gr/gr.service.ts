@@ -14,6 +14,7 @@ import { ReturnNote } from '../database/entities/return-note.entity';
 import { Item } from '../database/entities/item.entity';
 import { AssetRentalLog } from '../database/entities/asset-rental-log.entity';
 import { LicenseSubscription } from '../database/entities/license-subscription.entity';
+import { Asset } from '../database/entities/asset.entity';
 import { CreateGrDto, CreateClaimDto } from './dto/gr.dto';
 import { GoodsReceiptStatus, PurchaseOrderStatus, ClaimStatus, ReturnNoteStatus } from '@p2p/shared';
 
@@ -90,6 +91,11 @@ export class GrService {
           qty_received: qtyReceived,
           tolerance_percent: 5.0,
           variance_qty: varianceQty,
+          qc_passed_qty: lineDto.qc_passed_qty !== undefined ? Number(lineDto.qc_passed_qty) : qtyReceived,
+          qc_failed_qty: lineDto.qc_failed_qty !== undefined ? Number(lineDto.qc_failed_qty) : 0,
+          qc_status: lineDto.qc_status || 'Passed',
+          bin_location: lineDto.bin_location || null,
+          qc_remarks: lineDto.qc_remarks || null,
         });
         grLines.push(grLine);
 
@@ -165,6 +171,31 @@ export class GrService {
               });
               await manager.getRepository(LicenseSubscription).save(licenseSub);
             }
+
+            // Create unified Asset record (US-144)
+            const prefix = `AST-${new Date().getFullYear()}-`;
+            const count = await manager.getRepository(Asset).count({
+              where: { asset_tag: Like(`${prefix}%`) },
+            });
+            const tag = `${prefix}${(count + 1).toString().padStart(4, '0')}`;
+
+            const newAsset = manager.getRepository(Asset).create({
+              asset_tag: tag,
+              asset_name: itemObj.item_name,
+              asset_type: itemObj.item_type || 'Goods',
+              item_id: itemObj.item_id,
+              unit_price: Number(poLine.unit_price),
+              total_qty: qtyReceived,
+              distributed_qty: 0,
+              remaining_qty: qtyReceived,
+              owner_bu_id: itemObj.owner_bu_id || '00000002-0000-0000-0000-000000000001',
+              acquisition_date: new Date(),
+              expiry_date: itemObj.item_type === 'License' ? new Date(Date.now() + 86400000 * 365) : null,
+              license_key: itemObj.item_type === 'License' ? `KEY-${Math.random().toString(36).substring(2, 10).toUpperCase()}` : null,
+              po_id: po.po_id,
+              status: 'In Stock',
+            });
+            await manager.getRepository(Asset).save(newAsset);
           }
         }
       }
@@ -183,12 +214,46 @@ export class GrService {
         await manager.getRepository(GoodsReceiptAttachment).save(grAtts);
       }
 
+      // 4.5 Check QC Failed quantities to auto-create Vendor Claim & Return Note
+      let totalFailedQty = 0;
+      for (const lineDto of dto.lines) {
+        if (lineDto.qc_failed_qty && lineDto.qc_failed_qty > 0) {
+          totalFailedQty += Number(lineDto.qc_failed_qty);
+        }
+      }
+
+      let isClaimRaised = false;
+      if (totalFailedQty > 0) {
+        const claim = manager.getRepository(Claim).create({
+          gr_id: savedGr.gr_id,
+          claim_type: 'Claim',
+          description: `พบสินค้าเสียหายจากการตรวจสอบคุณภาพ (QC Failed: ${totalFailedQty} ชิ้น) ของใบตรวจรับเลขที่ ${savedGr.gr_no}`,
+          raised_by: userId,
+          status: ClaimStatus.OPEN,
+        });
+        const savedClaim = await manager.getRepository(Claim).save(claim);
+
+        const retNote = manager.getRepository(ReturnNote).create({
+          claim_id: savedClaim.claim_id,
+          gr_id: savedGr.gr_id,
+          return_qty: totalFailedQty,
+          return_reason: `พบสินค้าเสียหายจากการตรวจสอบคุณภาพ (QC Failed: ${totalFailedQty} ชิ้น) ของใบตรวจรับเลขที่ ${savedGr.gr_no}`,
+          status: ReturnNoteStatus.PENDING,
+        });
+        await manager.getRepository(ReturnNote).save(retNote);
+
+        savedGr.status = GoodsReceiptStatus.CLAIM_RAISED;
+        isClaimRaised = true;
+      }
+
       // 5. Update PO status & GR status
       const isPartial = totalReceived < totalOrdered;
       savedGr.partial_flag = isPartial;
-      savedGr.status = isPartial ? GoodsReceiptStatus.PARTIAL_RECEIPT : GoodsReceiptStatus.FULL_RECEIPT;
-      if (dto.receive_type === 'ServiceAcceptance') {
-        savedGr.status = GoodsReceiptStatus.SERVICE_ACCEPTED;
+      if (!isClaimRaised) {
+        savedGr.status = isPartial ? GoodsReceiptStatus.PARTIAL_RECEIPT : GoodsReceiptStatus.FULL_RECEIPT;
+        if (dto.receive_type === 'ServiceAcceptance') {
+          savedGr.status = GoodsReceiptStatus.SERVICE_ACCEPTED;
+        }
       }
       await manager.getRepository(GoodsReceipt).save(savedGr);
 

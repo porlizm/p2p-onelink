@@ -38,17 +38,16 @@ async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const dataSource = app.get(DataSource);
 
-  // Clear existing data in reverse order of dependencies
-  const entities = [
-    AssetRentalLog, LicenseSubscription, ProcurementItemType,
-    BankFile, PaymentRequest, PaymentProposal, Lane, IntegrationLog,
-    DOARule, ItemPrice, Item, VendorDocument, VendorBankAccount,
-    VendorAddress, VendorContact, Vendor, Permission, UserRole,
-    AppUser, Role, CostCenter, BusinessUnit, Company
-  ];
-  for (const entity of entities) {
-    await dataSource.getRepository(entity).delete({});
-  }
+  // Clear existing data using CASCADE to avoid foreign key violations
+  await dataSource.query(`
+    DO $$ DECLARE
+        r RECORD;
+    BEGIN
+        FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = 'public') LOOP
+            EXECUTE 'TRUNCATE TABLE ' || quote_ident(r.tablename) || ' CASCADE';
+        END LOOP;
+    END $$;
+  `);
 
   // 1. Seed Company
   console.log('Seeding Company...');

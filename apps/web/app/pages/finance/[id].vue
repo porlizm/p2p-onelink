@@ -62,7 +62,7 @@
           <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-slate-50/50">
             <div class="font-semibold text-slate-800 text-xs truncate">{{ line.item?.item_name || 'สินค้าอ้างอิง' }}</div>
             <div class="grid grid-cols-2 gap-2 text-xs text-slate-500">
-              <div>จำนวนสั่งซื้อ: <span class="font-bold text-slate-700">{{ line.po_line?.quantity || line.qty }}</span></div>
+              <div>จำนวนสั่งซื้อ: <span class="font-bold text-slate-700">{{ formatQuantity(line.po_line?.quantity || line.qty) }}</span></div>
               <div>ราคา/หน่วย: <span class="font-bold text-slate-700">{{ formatCurrency(line.po_line?.unit_price || line.unit_price) }}</span></div>
             </div>
             <div class="border-t pt-2 flex justify-between text-xs font-bold">
@@ -93,7 +93,7 @@
                       : 'bg-green-100 text-green-700'
                   ]"
                 >
-                  {{ line.po_line?.received_quantity || (invoice.match_status === 'Mismatch' ? 15 : line.qty) }}
+                  {{ formatQuantity(line.po_line?.received_quantity || (invoice.match_status === 'Mismatch' ? 15 : line.qty)) }}
                 </span>
               </div>
             </div>
@@ -123,7 +123,7 @@
                       : 'bg-green-100 text-green-700'
                   ]"
                 >
-                  {{ line.qty }}
+                  {{ formatQuantity(line.qty) }}
                 </span>
               </div>
               <div>ราคาเรียกเก็บ: <span class="font-bold text-slate-700">{{ formatCurrency(line.unit_price) }}</span></div>
@@ -435,8 +435,16 @@ const runMatchEngine = async () => {
   }
 };
 
-const formatCurrency = (val: number) => {
-  return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(val);
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
+
+const formatCurrency = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0.00';
+  const num = Number(val);
+  return isNaN(num) ? '0.00' : num.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
 
 const formatDate = (date: any) => {

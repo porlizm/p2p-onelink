@@ -37,23 +37,70 @@
               <th class="px-6 py-3">รายละเอียดสินค้า</th>
               <th class="px-6 py-3 text-right">จำนวนสั่งซื้อ</th>
               <th class="px-6 py-3 text-right">รับแล้วก่อนหน้า</th>
-              <th class="px-6 py-3 text-right w-40">จำนวนที่จะตรวจรับ</th>
+              <th class="px-6 py-3 text-right w-32">จำนวนตรวจรับ</th>
+              <th class="px-6 py-3 text-right w-24">QC Pass</th>
+              <th class="px-6 py-3 text-right w-24">QC Fail</th>
+              <th class="px-6 py-3 w-28">ช่องเก็บ (Bin)</th>
+              <th class="px-6 py-3">ผล / หมายเหตุ QC</th>
               <th class="px-6 py-3 text-center">หน่วยนับ</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--border)]">
             <tr v-for="(line, index) in lines" :key="line.po_line_id" class="hover:bg-slate-50/50 transition">
               <td class="px-6 py-4 font-semibold text-slate-800">{{ line.item_name }}</td>
-              <td class="px-6 py-4 text-right font-semibold text-slate-600">{{ line.quantity }}</td>
-              <td class="px-6 py-4 text-right font-medium text-slate-400">{{ line.received_quantity || 0 }}</td>
+              <td class="px-6 py-4 text-right font-semibold text-slate-600">{{ formatQuantity(line.quantity) }}</td>
+              <td class="px-6 py-4 text-right font-medium text-slate-400">{{ formatQuantity(line.received_quantity || 0) }}</td>
               <td class="px-6 py-4 text-right">
                 <UInput 
                   v-model.number="line.qty_to_receive" 
                   type="number"
                   min="0"
                   :max="line.quantity - (line.received_quantity || 0)"
-                  size="sm"
-                  class="text-right"
+                  size="xs"
+                  class="text-right font-mono"
+                  @update:model-value="() => { line.qc_passed_qty = line.qty_to_receive; line.qc_failed_qty = 0; }"
+                />
+              </td>
+              <td class="px-6 py-4 text-right">
+                <UInput 
+                  v-model.number="line.qc_passed_qty" 
+                  type="number"
+                  min="0"
+                  :max="line.qty_to_receive"
+                  size="xs"
+                  class="text-right font-mono text-green-600"
+                  @update:model-value="() => { line.qc_failed_qty = Math.max(0, line.qty_to_receive - line.qc_passed_qty); }"
+                />
+              </td>
+              <td class="px-6 py-4 text-right">
+                <UInput 
+                  v-model.number="line.qc_failed_qty" 
+                  type="number"
+                  min="0"
+                  :max="line.qty_to_receive"
+                  size="xs"
+                  class="text-right font-mono text-red-600"
+                  @update:model-value="() => { line.qc_passed_qty = Math.max(0, line.qty_to_receive - line.qc_failed_qty); }"
+                />
+              </td>
+              <td class="px-6 py-4">
+                <UInput 
+                  v-model="line.bin_location" 
+                  placeholder="เช่น BIN-A1"
+                  size="xs"
+                />
+              </td>
+              <td class="px-6 py-4 flex items-center gap-1.5 min-w-[200px]">
+                <select v-model="line.qc_status" class="px-1.5 py-1 text-xs border rounded bg-white text-slate-700">
+                  <option value="Passed">ผ่าน (Pass)</option>
+                  <option value="Failed">ตก (Fail)</option>
+                  <option value="Partial">บางส่วน</option>
+                </select>
+                <UInput 
+                  v-model="line.qc_remarks" 
+                  placeholder="เหตุผลความชำรุด..."
+                  size="xs"
+                  class="flex-1"
                 />
               </td>
               <td class="px-6 py-4 text-center text-slate-500">{{ line.uom }}</td>
@@ -220,10 +267,18 @@ const loadPo = async () => {
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
     poDetails.value = res;
-    lines.value = (res.lines || []).map((l: any) => ({
-      ...l,
-      qty_to_receive: Number(l.quantity) - Number(l.received_quantity || 0),
-    }));
+    lines.value = (res.lines || []).map((l: any) => {
+      const remaining = Number(l.quantity) - Number(l.received_quantity || 0);
+      return {
+        ...l,
+        qty_to_receive: remaining,
+        qc_passed_qty: remaining,
+        qc_failed_qty: 0,
+        qc_status: 'Passed',
+        bin_location: 'BIN-A1',
+        qc_remarks: '',
+      };
+    });
 
     // Auto-detect service vs domestic
     const hasService = lines.value.some(l => l.uom === 'เดือน' || l.uom === 'ปี' || l.item_name.includes('บริการ'));
@@ -244,6 +299,11 @@ const loadPo = async () => {
         quantity: 20,
         received_quantity: 0,
         qty_to_receive: 20,
+        qc_passed_qty: 20,
+        qc_failed_qty: 0,
+        qc_status: 'Passed',
+        bin_location: 'BIN-A1',
+        qc_remarks: '',
         uom: 'ตัว',
         unit_price: 3500,
       }
@@ -269,6 +329,11 @@ const submitGr = async () => {
         .map(l => ({
           po_line_id: l.po_line_id,
           qty_received: Number(l.qty_to_receive),
+          qc_passed_qty: Number(l.qc_passed_qty || 0),
+          qc_failed_qty: Number(l.qc_failed_qty || 0),
+          qc_status: l.qc_status || 'Passed',
+          bin_location: l.bin_location || null,
+          qc_remarks: l.qc_remarks || null,
         })),
       attachments: [
         { file_url: '/uploads/gr/receipt_photo_1.png', file_type: 'image/png' }
@@ -296,4 +361,10 @@ const submitGr = async () => {
 onMounted(() => {
   loadPo();
 });
+
+const formatQuantity = (val?: number | string) => {
+  if (val === undefined || val === null || val === '') return '0';
+  const num = Number(val);
+  return isNaN(num) ? '0' : Math.round(num).toString();
+};
 </script>

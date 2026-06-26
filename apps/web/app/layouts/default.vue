@@ -140,6 +140,7 @@ const menus = [
   { title: 'รับของ & คลังสินค้า (GR)', path: '/gr-stock', icon: 'i-heroicons-archive-box-20-solid' },
   { title: 'การบัญชี (AP)', path: '/finance', icon: 'i-heroicons-banknotes-20-solid' },
   { title: 'รายการอนุมัติ (Approval)', path: '/approval', icon: 'i-heroicons-check-badge-20-solid' },
+  { title: 'บริหารสินทรัพย์ (Asset)', path: '/admin/assets', icon: 'i-heroicons-cube-20-solid' },
   { title: 'ตั้งค่าระบบ (Admin)', path: '/admin', icon: 'i-heroicons-cog-6-tooth-20-solid' },
 ];
 

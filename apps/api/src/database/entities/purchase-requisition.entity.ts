@@ -3,6 +3,7 @@ import { AppUser } from './app-user.entity';
 import { Company } from './company.entity';
 import { PurchaseRequisitionLine } from './purchase-requisition-line.entity';
 import { PurchaseRequisitionStatus } from '@p2p/shared';
+import { PurchaseContract } from './purchase-contract.entity';
 
 @Entity('purchase_requisition')
 export class PurchaseRequisition {
@@ -51,8 +52,18 @@ export class PurchaseRequisition {
   @Column({ type: 'boolean', default: false })
   is_budget_overrun: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  is_unplanned: boolean;
+
   @Column({ type: 'varchar', length: 100, nullable: true })
   approver_role: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  contract_id: string | null;
+
+  @ManyToOne(() => PurchaseContract, { nullable: true })
+  @JoinColumn({ name: 'contract_id' })
+  contract: PurchaseContract | null;
 
   @OneToMany(() => PurchaseRequisitionLine, (line) => line.pr, { cascade: true })
   lines: PurchaseRequisitionLine[];

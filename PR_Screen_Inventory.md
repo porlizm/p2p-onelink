@@ -102,6 +102,7 @@ flowchart TD
     ADM --> H2
     ADM --> H3
     ADM --> H4
+    ADM --> H5
 
     PORTAL["Vendor Portal<br/>(แยก Subdomain/Login คนละชุด)"] --> I1 --> I2
     PORTAL --> I3
@@ -155,6 +156,7 @@ flowchart TD
 | H2 | ตั้งค่า Role และ Scope | Admin | Admin | Form/Table | ⚪ | 1 |
 | H3 | Audit Log | Admin | Admin | List | ⚪ | 1 |
 | H4 | ตรวจสอบสถานะ Integration (SAP) | Admin | Admin/IT | List/Status | 🔵 | 1 |
+| H5 | บริหารจัดการและติดตามสินทรัพย์ | Admin | Admin/IT/Exec | Dashboard/List/Form | 🔵 | 1 |
 | I1 | เข้าสู่ระบบ/ลงทะเบียน Vendor Portal | Vendor Portal | Vendor | Form | 🔵 | 1 |
 | I2 | เสนอราคา (Quotation) | Vendor Portal | Vendor | Form/List | 🔵 | 1 |
 | I3 | ตอบรับ PO + ยืนยันวันส่งมอบ | Vendor Portal | Vendor | Detail/Action | 🔵 | 1 |
@@ -856,6 +858,23 @@ flowchart TD
 | Priority | 🔵 Must (สำคัญสำหรับ Demo ว่าระบบ "เผื่อจุดเชื่อม SAP จริง" ไว้แล้ว) |
 | Phase | 1 |
 
+#### H5 — ระบบบริหารจัดการและติดตามสินทรัพย์ (Asset Management & Allocation Console)
+
+| Property | รายละเอียด |
+|---|---|
+| Persona | Admin / Asset Administrator / Executive |
+| Type | Dashboard/List/Form |
+| Entry | Sidebar "ตั้งค่าระบบ" → "บริหารสินทรัพย์ (Asset)" |
+| Exit → | จัดสรรครุภัณฑ์สำเร็จ → โหลดข้อมูลใหม่, กดดูประวัติการเช่า -> รายละเอียด allocations |
+| Components | 1. KPI Cards (สินทรัพย์ทั้งหมด, มูลค่ารวม JWD, สิทธิ์การใช้งาน, รายการเช่า Active)<br>2. Chart: กราฟสัดส่วนการกระจายแล็ปท็อป (ส่วนกลาง JWD, BU ต่างๆ, บริษัทในเครือ)<br>3. Table: รายการครุภัณฑ์ทั้งหมด (Tag, ชื่อ, ประเภท, ราคาทุน, จำนวนสั่งซื้อ, ยอดจัดสรร, ยอดเหลือ HQ, สถานะ)<br>4. Modal 1: ประวัติและรายละเอียดสินทรัพย์ (Asset Details & Inter-BU Allocations Log)<br>5. Modal 2: ฟอร์มจัดสรรและให้เช่าข้าม BU (ระบุ BU ปลายทาง, จำนวน, ประเภทการจัดสรร, อัตราค่าเช่าภายใน, ระยะเวลา)<br>6. Modal 3: ลงทะเบียนจัดซื้อสินทรัพย์ใหม่ (Manual Entry) |
+| States | Loaded, Seeding JWD Example, Submitting, Success, Filtered |
+| Data Entities | `asset`, `asset_allocation`, `business_unit`, `purchase_order` |
+| Flow Ref | User_Flow.md ส่วน 4.13 (Asset Allocation Flow) |
+| TOR Ref | Custom Scope Asset Management |
+| Mockup Reference | Inferred |
+| Priority | 🔵 Must (ตามความต้องการเพิ่มเติมของลูกค้าเรื่อง Asset Tracking) |
+| Phase | 1 |
+
 ---
 
 ## 12. กลุ่ม I: Vendor Portal (External)
@@ -991,6 +1010,7 @@ flowchart TD
 | `role`, `permission`, `scope_assignment` | H2 | H2 |
 | `audit_log` | (สร้างอัตโนมัติ) | H3 |
 | `integration_log` | (สร้างอัตโนมัติ) | H4 |
+| `asset`, `asset_allocation` | H5, E1 (Auto-Create) | H5 |
 | `notification` | (สร้างอัตโนมัติ) | Notification Bell ทุกหน้า |
 
 ---

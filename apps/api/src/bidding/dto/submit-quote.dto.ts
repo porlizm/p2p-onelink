@@ -11,12 +11,17 @@ export class SubmitQuoteLineDto {
   unit_price: number;
 
   @IsNumber()
+  @IsOptional()
   @Min(1)
-  delivery_days: number;
+  delivery_days?: number;
 
   @IsString()
   @IsOptional()
   quotation_url?: string;
+
+  @IsString()
+  @IsOptional()
+  vendor_remarks?: string;
 }
 
 export class SubmitQuoteDto {

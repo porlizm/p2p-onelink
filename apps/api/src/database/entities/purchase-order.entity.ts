@@ -4,6 +4,7 @@ import { Company } from './company.entity';
 import { PurchaseRequisition } from './purchase-requisition.entity';
 import { PurchaseOrderLine } from './purchase-order-line.entity';
 import { PurchaseOrderStatus } from '@p2p/shared';
+import { PurchaseContract } from './purchase-contract.entity';
 
 @Entity('purchase_order')
 export class PurchaseOrder {
@@ -69,6 +70,13 @@ export class PurchaseOrder {
     error_code?: string | null;
     error_message?: string | null;
   }[] | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  contract_id: string | null;
+
+  @ManyToOne(() => PurchaseContract, { nullable: true })
+  @JoinColumn({ name: 'contract_id' })
+  contract: PurchaseContract | null;
 
   @OneToMany(() => PurchaseOrderLine, (line) => line.po, { cascade: true })
   lines: PurchaseOrderLine[];

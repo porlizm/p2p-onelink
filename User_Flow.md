@@ -289,6 +289,21 @@ stateDiagram-v2
     Rejected --> [*]
 ```
 
+### 3.8 Asset Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> InStock : Goods Receipt (ประเภท Goods/License/Rental) หรือ Manual Registry
+    InStock --> Distributed : โอนจัดส่งมอบข้ามหน่วยงาน (Distribution)
+    InStock --> Rented : ให้เช่าใช้บริการข้ามหน่วยงาน (Rental)
+    Distributed --> InStock : ส่งคืนคลังส่วนกลาง
+    Rented --> InStock : สิ้นสุดสัญญาเช่า/ส่งคืนครุภัณฑ์
+    InStock --> Scrapped : ชำรุด/เลิกใช้งาน/ตัดจำหน่าย
+    Distributed --> Scrapped
+    Rented --> Scrapped
+    Scrapped --> [*]
+```
+
 ---
 
 ## 4. Flow รายโมดูล (Detailed Flow)
@@ -612,6 +627,28 @@ stateDiagram-v2
 4. Export ข้อมูลเป็น Excel/PDF ได้ตามต้องการ
 
 **TOR Reference:** Sheet 1 No.78,125,126
+
+---
+
+### 4.14 [Epic P1-M] Asset Management & BU Distribution Control Flow
+
+**Actors:** Asset Administrator, Executive, System (Auto GR) | **Trigger:** ตรวจรับสินค้าจาก PO สำเร็จ หรือซื้อลิขสิทธิ์เข้ามาส่วนกลาง
+**Screens:** H5 (Asset Management & Allocation Console), E1 (Goods Receipt)
+
+**Main Flow:**
+1. **การลงทะเบียนสินทรัพย์ (Asset Registry)**:
+   - *แบบอ้อม (Auto-Acquisition)*: เมื่อมีการรับสินค้า/ครุภัณฑ์ผ่านใบรับสินค้า (E1/GR) ที่อ้างอิง PO ประเภทครุภัณฑ์ (Goods, License, Rental) ระบบจะทำการดึงข้อมูลเข้าสู่ฐานข้อมูล `asset` ให้อัตโนมัติ โดยระบุ Owner เป็นฝ่ายจัดซื้อกลาง/ไอทีส่วนกลาง (HQ)
+   - *แบบตรง (Manual Entry)*: ผู้ดูแลระบบสามารถลงทะเบียนสินทรัพย์ใหม่ได้โดยตรงจาก Console โดยกรอกรายละเอียดครุภัณฑ์, ราคาทุน, และจำนวนจัดซื้อทั้งหมด
+2. **การจัดสรรหรือให้เช่าข้ามหน่วยงาน (Inter-BU Asset Distribution & Rental)**:
+   - ผู้ดูแลสินทรัพย์เปิดหน้าจัดการระบบและเลือกสินทรัพย์ (เช่น Lenovo ThinkPad 100 เครื่อง)
+   - กดปุ่ม "จัดสรร/ให้เช่า" เพื่อแบ่งส่วนจำนวนของสินทรัพย์ส่งต่อไปยัง Business Unit ปลายทาง หรือบริษัทในเครือ (เช่น แบ่งเช่าไป 3 BU จำนวนรวม 60 เครื่อง และส่งต่อ JWD Affiliates 30 เครื่อง)
+   - กรอกอัตราค่าเช่าภายใน (Internal Rental Rate) และวันที่เริ่มเช่า
+   - ระบบจะคำนวณและตัดลดจำนวนคงคลังคงเหลือที่ส่วนกลาง (HQ Remaining Qty) ทันที และบันทึกประวัติความเคลื่อนไหวลงในตาราง `asset_allocation`
+3. **การเข้าดูข้อมูลและวิเคราะห์สิทธิ (Asset Console & Executive Dashboard)**:
+   - ผู้บริหารหรือผู้จัดการเปิด Asset Dashboard เพื่อตรวจสอบจำนวนสิทธิคงเหลือ (License Seats), ยอดการถือครองของแต่ละ BU, และยอดรายได้จากการเช่าสินทรัพย์สะสมภายในเครือ SCGJWD
+   - แจ้งเตือนสิทธิการใช้งานหรือค่าบริการสัญญาเช่าที่ใกล้หมดอายุเพื่อให้ต่อสัญญา
+
+**TOR Reference:** Custom Scope Asset Management
 
 ---
 

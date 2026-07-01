@@ -66,9 +66,15 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <USelect 
+          <USelect
             v-model="filterStatus"
-            :options="['ทั้งหมด', 'SentToVendor', 'VendorConfirmed', 'RevisionRequested', 'FullyReceived']"
+            :options="[
+              { label: 'ทั้งหมด', value: '' },
+              { label: 'รอยืนยัน', value: 'SentToVendor' },
+              { label: 'ยืนยันแล้ว', value: 'VendorConfirmed' },
+              { label: 'ขอแก้ไขรายการ', value: 'RevisionRequested' },
+              { label: 'รับสินค้าครบถ้วน', value: 'FullyReceived' },
+            ]"
             size="md"
             class="w-44"
           />
@@ -152,7 +158,7 @@ import { useVendorAuthStore } from '~/stores/auth';
 
 const authStore = useVendorAuthStore();
 const search = ref('');
-const filterStatus = ref('ทั้งหมด');
+const filterStatus = ref('');
 const orders = ref<any[]>([]);
 
 const loadOrders = async () => {
@@ -201,7 +207,7 @@ onMounted(() => {
 
 const filteredOrders = computed(() => {
   return orders.value.filter((o) => {
-    if (filterStatus.value !== 'ทั้งหมด' && o.status !== filterStatus.value) {
+    if (filterStatus.value && o.status !== filterStatus.value) {
       return false;
     }
     if (search.value) {

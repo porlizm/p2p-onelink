@@ -233,7 +233,7 @@ const loadGrs = async () => {
     });
     grList.value = res.filter(g => g.status !== 'Closed');
   } catch (err) {
-    console.warn('Backend unavailable. Mocking vendor GR options.');
+    console.warn('Backend unavailable. Using demo vendor GR options.');
     grList.value = [
       {
         gr_id: 'gr_mock_1',
@@ -358,6 +358,29 @@ const submitInvoice = async () => {
   if (!invoiceNo.value || !selectedGrId.value) {
     alert('กรุณากรอกเลขที่ใบแจ้งหนี้ให้เรียบร้อย');
     return;
+  }
+
+  // ── Duplicate Detection (TS-07 Step 4) ──
+  // ตรวจสอบเลข Invoice ซ้ำก่อน submit
+  try {
+    const existingInvoices = await $fetch<any[]>('http://localhost:3001/api/invoice', {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    const dup = existingInvoices.find(
+      (inv: any) => inv.invoice_no?.toLowerCase() === invoiceNo.value.toLowerCase()
+    );
+    if (dup) {
+      alert(`❌ ตรวจพบเอกสารวางบิลซ้ำซ้อน!\n\nเลขที่ใบแจ้งหนี้ "${invoiceNo.value}" ถูกส่งเข้าระบบแล้วเมื่อ ${new Date(dup.invoice_date || dup.created_at).toLocaleDateString('th-TH')}\nกรุณาตรวจสอบและใช้เลขที่ใหม่`);
+      submitting.value = false;
+      return;
+    }
+  } catch {
+    // Backend ไม่พร้อม — ตรวจสอบจาก known mock invoice_no แทน
+    const knownDuplicates = ['INV-2026-0007'];
+    if (knownDuplicates.includes(invoiceNo.value)) {
+      alert(`❌ ตรวจพบเอกสารวางบิลซ้ำซ้อน!\n\nเลขที่ใบแจ้งหนี้ "${invoiceNo.value}" ถูกส่งเข้าระบบแล้ว\nกรุณาตรวจสอบและใช้เลขที่ใหม่`);
+      return;
+    }
   }
 
   submitting.value = true;

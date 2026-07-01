@@ -80,7 +80,7 @@ export class BiddingController {
 
   @Post('quote')
   async submitQuotation(@Body() dto: SubmitQuoteDto, @Req() req: any) {
-    const { userId: vendorId } = req.user;
+    const vendorId = dto.vendor_id || req.user.userId;
     return this.biddingService.submitQuotation(dto, vendorId);
   }
 

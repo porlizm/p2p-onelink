@@ -1,86 +1,209 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+Thai:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap');
+
+/* ==========================================================================
+   HILI Design System v1.1.0 — Main CSS Entry Point
+   Load order: this file → tokens.css → components.css
+   ========================================================================== */
+
+/* 1. Tailwind v4 base + @nuxt/ui */
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-:root {
-  /* Design Tokens - Source of Truth */
-  --font-size: 14px;
-  --background: #F7F9FC;
-  --foreground: #002266;
-  --card: #FFFFFF;
-  --card-foreground: #002266;
-  --popover: #FFFFFF;
-  --popover-foreground: #002266;
-  --primary: #0054FF;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F0F4F8;
-  --secondary-foreground: #002266;
-  --muted: #F1F4F9;
-  --muted-foreground: #64748B;
-  --accent: #E0F2FE;
-  --accent-foreground: #002266;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: rgba(0, 34, 102, 0.08);
-  --input: transparent;
-  --input-background: #FFFFFF;
-  --switch-background: #E2E8F0;
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --ring: #0054FF;
-  --chart-1: #0054FF;
-  --chart-2: #002266;
-  --chart-3: #EF5C23;
-  --chart-4: #34D399;
-  --chart-5: #F472B6;
-  --radius: 0.75rem;
-  
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #002266;
-  --sidebar-primary: #0054FF;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F1F5F9;
-  --sidebar-accent-foreground: #002266;
-  --sidebar-border: rgba(0, 34, 102, 0.08);
-  --sidebar-ring: #0054FF;
+/* 2. Design Tokens (all CSS custom properties) */
+@import "./tokens.css";
 
-  /* Font Family - Addendum */
-  --font-sans: 'Inter', 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
+/* 3. Component Primitives (.ds-*, .fillpage, .gridfill …) */
+@import "./components.css";
 
-  /* Semantic Status Color - Addendum */
-  --success: #34D399;
-  --success-foreground: #FFFFFF;
-  --success-soft: #ECFDF5;
-  --success-soft-foreground: #047857;
+/* ==========================================================================
+   Tailwind v4 @theme — map HILI brand tokens to Tailwind utilities
+   ========================================================================== */
+@theme {
+  /* Brand green palette → tw utilities: text-green-600, bg-green-50 etc. */
+  --color-green-50:  #F0FAF0;
+  --color-green-100: #D4EFD0;
+  --color-green-200: #A8DFA1;
+  --color-green-300: #6CCB5F;
+  --color-green-400: #56C45A;
+  --color-green-500: #39B54A;
+  --color-green-600: #009245;
+  --color-green-700: #007d3a;
+  --color-green-800: #006b32;
+  --color-green-900: #004d23;
 
-  --warning: #F59E0B;
-  --warning-foreground: #FFFFFF;
-  --warning-soft: #FFFBEB;
-  --warning-soft-foreground: #B45309;
+  /* Neutral palette */
+  --color-neutral-50:  #F9FAFB;
+  --color-neutral-100: #F3F4F6;
+  --color-neutral-200: #E5E7EB;
+  --color-neutral-300: #D1D5DB;
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-500: #6B7280;
+  --color-neutral-600: #4B5563;
+  --color-neutral-700: #374151;
+  --color-neutral-800: #1F2937;
+  --color-neutral-900: #111827;
+  --color-neutral-950: #030712;
 
-  --destructive-soft: #FEF2F2;
-  --destructive-soft-foreground: #B91C1C;
+  /* Map 'primary' → green for @nuxt/ui color="primary" */
+  --color-primary-50:  #F0FAF0;
+  --color-primary-100: #D4EFD0;
+  --color-primary-200: #A8DFA1;
+  --color-primary-300: #6CCB5F;
+  --color-primary-400: #56C45A;
+  --color-primary-500: #39B54A;
+  --color-primary-600: #009245;
+  --color-primary-700: #007d3a;
+  --color-primary-800: #006b32;
+  --color-primary-900: #004d23;
 
-  --urgent: #EF5C23;
-  --urgent-soft: #FFF1EC;
-  --urgent-soft-foreground: #C2410C;
+  /* Font families */
+  --font-sans:    'Chesna Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-display: 'Chesna Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+}
 
-  /* Elevation - Addendum */
-  --shadow-sm: 0 1px 2px rgba(0, 34, 102, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 34, 102, 0.06), 0 2px 4px -2px rgba(0, 34, 102, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 34, 102, 0.08), 0 4px 6px -4px rgba(0, 34, 102, 0.04);
+/* ==========================================================================
+   Global Resets & Base Styles
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 html {
-  font-size: var(--font-size);
+  font-size: var(--text-base);
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--background);
-  color: var(--foreground);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+  color: var(--fg-primary);
+  background-color: var(--bg-subtle);
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus-visible ring — only show for keyboard users */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+/* Default link color */
+a {
+  color: var(--fg-brand);
+  text-decoration: none;
+  transition: color var(--transition-base);
+}
+
+a:hover {
+  color: var(--interactive-primary-hover);
+}
+
+/* Headings */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-sans);
+  color: var(--fg-primary);
+  margin: 0;
+  line-height: var(--leading-tight);
+}
+
+p {
+  margin: 0;
+}
+
+/* Remove default list styles */
+ul, ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Images */
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Inputs */
+input, textarea, select, button {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+/* Table defaults */
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  text-align: left;
+  padding: 14px 20px;
+  vertical-align: middle;
+}
+
+/* Divider */
+hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: var(--space-4) 0;
+}
+
+/* ==========================================================================
+   Nuxt UI Color Override — force primary=green
+   ========================================================================== */
+:root {
+  --ui-primary: var(--color-green-600);
+
+  /* === HILI Borderless Design Override ===
+     Override Nuxt UI / Tailwind border variables system-wide
+     to achieve clean, open, modern look like Vendor Evaluation module */
+  --border:          #eff1f5;
+  --ui-border:       #eff1f5;
+  --color-border:    #eff1f5;
+  --muted:           #fafbfc;
+  --ui-bg-muted:     #fafbfc;
+}
+
+/* ── Global Table Cleanup ──
+   Force all tables that use Tailwind bg-white/border wrappers to look consistent */
+.bg-white.border.rounded-xl,
+.bg-white.border.rounded-2xl,
+.bg-white.border.rounded-lg {
+  border-color: #e9ecef !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* ── Global thead cleanup — all table headers same style ── */
+thead tr {
+  background: #fafbfc !important;
+}
+
+/* ── All table row hover should be green-tinted ── */
+tbody tr:hover {
+  background-color: #f7fffe;
+}
+
+/* ── Borderless card containers (summary stat cards) ── */
+.glass-panel {
+  border-color: #e9ecef;
+}
+
+/* ── Page separator lines ── */
+.border-b.border-\[var\(--border\)\],
+.border-b.pb-4 {
+  border-color: #eff1f5 !important;
 }

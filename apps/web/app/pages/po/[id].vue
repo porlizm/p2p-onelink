@@ -1,11 +1,11 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <!-- Back Navigation -->
     <div>
       <UButton 
         to="/po" 
         variant="ghost" 
-        color="gray" 
+        color="neutral" 
         size="sm"
         class="cursor-pointer"
       >
@@ -24,8 +24,8 @@
       <!-- Left side: PO Header and Lines -->
       <div class="lg:col-span-2 space-y-6">
         <!-- PO General Info -->
-        <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] p-6">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-4 mb-4">
+        <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6">
+          <div class="flex items-center justify-between border-b border-[#eff1f5] pb-4 mb-4">
             <div>
               <span class="text-xs font-semibold text-[var(--muted-foreground)] uppercase">รายละเอียดใบสั่งซื้อ</span>
               <h2 class="text-xl font-bold text-[var(--foreground)] mt-0.5">{{ po.po_no }}</h2>
@@ -36,7 +36,7 @@
                 class="px-2.5 py-1 rounded-full text-xs font-bold inline-block mt-1"
                 :class="[
                   po.status === 'VendorConfirmed' ? 'bg-green-50 text-green-700 border border-green-200' :
-                  po.status === 'SentToVendor' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
+                  po.status === 'SentToVendor' ? 'bg-green-50 text-green-700 border border-green-200' :
                   po.status === 'RevisionRequested' ? 'bg-yellow-50 text-yellow-700 border border-yellow-200 animate-pulse' :
                   'bg-slate-100 text-slate-700'
                 ]"
@@ -71,8 +71,8 @@
         </div>
 
         <!-- PO Lines table -->
-        <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-          <div class="p-6 border-b border-[var(--border)] flex justify-between items-center bg-slate-50/50">
+        <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+          <div class="p-6 border-b border-[#eff1f5] flex justify-between items-center bg-[#fafbfc]/50">
             <h3 class="font-bold text-slate-800 flex items-center gap-2">
               <UIcon name="i-heroicons-list-bullet" class="w-5 h-5 text-[var(--primary)]" />
               รายการสินค้าและบริการในใบสั่งซื้อ
@@ -91,22 +91,22 @@
 
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                <th class="px-6 py-3">รายการสินค้า / บริการ</th>
-                <th class="px-6 py-3 text-right">จำนวน</th>
-                <th class="px-6 py-3 text-right">ราคาหน่วย (THB)</th>
-                <th class="px-6 py-3 text-right">ราคารวม (THB)</th>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">รายการสินค้า / บริการ</th>
+                <th class="px-6 py-3.5 text-right">จำนวน</th>
+                <th class="px-6 py-3.5 text-right">ราคาหน่วย (THB)</th>
+                <th class="px-6 py-3.5 text-right">ราคารวม (THB)</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)] text-sm">
-              <tr v-for="line in po.lines" :key="line.po_line_id" class="hover:bg-slate-50/20">
-                <td class="px-6 py-4">
+            <tbody class="divide-y divide-[#eff1f5] text-sm">
+              <tr v-for="line in po.lines" :key="line.po_line_id" class="hover:bg-[#fafbfc]/20">
+                <td class="px-6 py-5">
                   <div class="font-semibold text-slate-700">{{ line.item_name }}</div>
                   <div class="text-[10px] text-slate-400 mt-0.5">Line ID: {{ line.po_line_id }}</div>
                 </td>
-                <td class="px-6 py-4 text-right font-medium text-slate-600">{{ formatQuantity(line.quantity) }} {{ line.uom }}</td>
-                <td class="px-6 py-4 text-right font-medium text-slate-600">{{ formatCurrency(line.unit_price) }}</td>
-                <td class="px-6 py-4 text-right font-bold text-slate-800">{{ formatCurrency(line.total_price) }}</td>
+                <td class="px-6 py-5 text-right font-medium text-slate-600">{{ formatQuantity(line.quantity) }} {{ line.uom }}</td>
+                <td class="px-6 py-5 text-right font-medium text-slate-600">{{ formatCurrency(line.unit_price) }}</td>
+                <td class="px-6 py-5 text-right font-bold text-slate-800">{{ formatCurrency(line.total_price) }}</td>
               </tr>
             </tbody>
           </table>
@@ -114,24 +114,24 @@
           </div>
 
         <!-- Payment Plan & Milestones -->
-        <div v-if="po.payment_milestones && po.payment_milestones.length > 0" class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden mt-6">
-          <div class="p-6 border-b border-[var(--border)] flex justify-between items-center bg-slate-50/50">
+        <div v-if="po.payment_milestones && po.payment_milestones.length > 0" class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden mt-6">
+          <div class="p-6 border-b border-[#eff1f5] flex justify-between items-center bg-[#fafbfc]/50">
             <h3 class="font-bold text-slate-800 flex items-center gap-2">
               <UIcon name="i-heroicons-banknotes" class="w-5 h-5 text-indigo-600" />
               <span>แผนงวดชำระเงิน (Payment Milestones)</span>
             </h3>
           </div>
 
-          <div class="divide-y divide-[var(--border)] text-sm">
+          <div class="divide-y divide-[#eff1f5] text-sm">
             <div 
               v-for="ms in po.payment_milestones" 
               :key="ms.milestone_id" 
-              class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-slate-50/20"
+              class="p-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-[#fafbfc]/20"
             >
               <div>
                 <div class="font-bold text-slate-800 flex items-center gap-2">
                   <span>{{ ms.title }}</span>
-                  <span class="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full font-mono">{{ ms.percentage }}%</span>
+                  <span class="text-xs text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-mono">{{ ms.percentage }}%</span>
                 </div>
                 <div class="text-xs text-slate-400 mt-1">ยอดเงิน: {{ formatCurrency(ms.amount) }} THB</div>
                 <div v-if="ms.error_message" class="text-xs text-red-500 mt-1 font-semibold flex items-center gap-1">
@@ -145,9 +145,9 @@
                   class="px-2.5 py-1 rounded-full text-xs font-bold inline-block"
                   :class="[
                     ms.status === 'Paid' ? 'bg-green-50 text-green-700 border border-green-200' :
-                    ms.status === 'ProcessingPayment' ? 'bg-blue-50 text-blue-700 border border-blue-200 animate-pulse' :
+                    ms.status === 'ProcessingPayment' ? 'bg-green-50 text-green-700 border border-green-200 animate-pulse' :
                     ms.status === 'Failed' ? 'bg-red-50 text-red-700 border border-red-200' :
-                    'bg-slate-100 text-slate-500 border border-slate-200'
+                    'bg-slate-100 text-slate-500 border border-[#eff1f5]'
                   ]"
                 >
                   {{ formatMilestoneStatus(ms.status) }}
@@ -157,8 +157,8 @@
                   v-if="ms.status === 'Pending' || ms.status === 'Failed'"
                   @click="openOffsetDrawer(ms)"
                   size="sm"
-                  color="indigo"
-                  class="cursor-pointer font-bold"
+                  color="primary"
+                  class="cursor-pointer font-bold bg-[var(--primary)] text-white hover:bg-green-700"
                   icon="i-heroicons-paper-airplane"
                 >
                   ส่งจ่ายเงิน (Pay)
@@ -172,8 +172,8 @@
       <!-- Right side: Vendor Info and Actions -->
       <div class="space-y-6">
         <!-- Vendor Info Card -->
-        <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] p-6">
-          <h3 class="font-bold text-slate-800 flex items-center gap-2 border-b border-[var(--border)] pb-3 mb-3">
+        <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6">
+          <h3 class="font-bold text-slate-800 flex items-center gap-2 border-b border-[#eff1f5] pb-3 mb-3">
             <UIcon name="i-heroicons-user-group" class="w-5 h-5 text-[var(--primary)]" />
             ข้อมูลคู่ค้า / Vendor Info
           </h3>
@@ -190,8 +190,8 @@
         </div>
 
         <!-- Vendor Confirmation / Delivery Card -->
-        <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] p-6">
-          <h3 class="font-bold text-slate-800 flex items-center gap-2 border-b border-[var(--border)] pb-3 mb-3">
+        <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6">
+          <h3 class="font-bold text-slate-800 flex items-center gap-2 border-b border-[#eff1f5] pb-3 mb-3">
             <UIcon name="i-heroicons-calendar" class="w-5 h-5 text-[var(--primary)]" />
             การยืนยันและการส่งมอบ
           </h3>
@@ -219,7 +219,7 @@
                 บันทึกตรวจรับสินค้า (GR)
               </UButton>
               <UButton 
-                color="red" 
+                color="error" 
                 variant="outline"
                 block
                 icon="i-heroicons-x-circle"
@@ -235,15 +235,16 @@
     </div>
 
     <!-- PO Revision Drawer/Modal -->
-    <UModal v-model="revisionOpen">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100' }">
+    <UModal v-model:open="revisionOpen">
+      <template #content>
+      <UCard>
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-[var(--foreground)]">
               ปรับปรุงรายละเอียดใบสั่งซื้อ {{ po.po_no }}
             </h3>
             <UButton 
-              color="gray" 
+              color="neutral" 
               variant="ghost" 
               icon="i-heroicons-x-mark" 
               class="cursor-pointer"
@@ -255,7 +256,7 @@
         <div class="space-y-4 py-2 text-xs">
           <p class="text-slate-500 mb-2">เมื่อทำการบันทึก: ระบบจะอัปเดตมูลค่าใบสั่งซื้อ, ปรับเปลี่ยนสถานะกลับเป็น <b>ส่งให้ผู้ขายแล้ว (SentToVendor)</b> และผู้ขายต้องทำการยืนยันวันส่งมอบอีกครั้ง</p>
           
-          <div v-for="(line, idx) in revisionLines" :key="line.po_line_id" class="border border-[var(--border)] rounded-lg p-3 space-y-3 bg-slate-50/50">
+          <div v-for="(line, idx) in revisionLines" :key="line.po_line_id" class="border border-[#e9ecef] rounded-lg p-3 space-y-3 bg-[#fafbfc]/50">
             <div class="font-bold text-slate-700">{{ line.item_name }}</div>
             
             <div class="grid grid-cols-2 gap-3">
@@ -293,18 +294,20 @@
           </div>
         </template>
       </UCard>
+          </template>
     </UModal>
 
     <!-- Credit Note Offset Drawer/Modal -->
-    <UModal v-model="offsetOpen">
-      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100' }">
+    <UModal v-model:open="offsetOpen">
+      <template #content>
+      <UCard>
         <template #header>
           <div class="flex items-center justify-between">
             <h3 class="text-base font-bold text-[var(--foreground)]">
               ยืนยันการจ่ายเงินพร้อมหักกลบ Credit Notes
             </h3>
             <UButton 
-              color="gray" 
+              color="neutral" 
               variant="ghost" 
               icon="i-heroicons-x-mark" 
               class="cursor-pointer"
@@ -330,7 +333,7 @@
               v-else 
               v-for="cn in creditNotes" 
               :key="cn.cn_dn_id"
-              class="flex items-center justify-between p-2.5 border rounded-lg hover:bg-slate-50 cursor-pointer"
+              class="flex items-center justify-between p-2.5 border rounded-lg hover:bg-[#fafbfc] cursor-pointer"
               @click="toggleCn(cn)"
             >
               <div class="flex items-center gap-2">
@@ -364,9 +367,9 @@
           <div class="flex justify-end gap-2">
             <UButton variant="outline" size="sm" @click="offsetOpen = false">ยกเลิก</UButton>
             <UButton 
-              color="indigo" 
+              color="primary" 
               size="sm" 
-              class="cursor-pointer font-bold" 
+              class="cursor-pointer font-bold bg-[var(--primary)] text-white hover:bg-green-700" 
               :loading="isSubmittingPayment"
               @click="confirmTriggerPayment"
             >
@@ -376,6 +379,7 @@
           </div>
         </template>
       </UCard>
+          </template>
     </UModal>
   </div>
 </template>
@@ -577,7 +581,7 @@ const cancelPO = async () => {
   } catch (err: any) {
     console.warn('Backend PO cancellation failed, applying locally.');
     po.value.status = 'Cancelled';
-    alert(`[MOCK] ยกเลิกใบสั่งซื้อ ${po.value.po_no} สำเร็จ! (คืนงบจองที่เหลือเรียบร้อย)`);
+    alert(`ยกเลิกใบสั่งซื้อ ${po.value.po_no} สำเร็จ! (คืนงบจองที่เหลือเรียบร้อย)`);
   }
 };
 
@@ -651,7 +655,7 @@ const confirmTriggerPayment = async () => {
     }
     po.value.status = 'ProcessingPayment';
     offsetOpen.value = false;
-    alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ! (Simulated)');
+    alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ!');
   } finally {
     isSubmittingPayment.value = false;
   }

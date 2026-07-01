@@ -173,7 +173,8 @@
     </div>
 
     <!-- Revision Request Modal -->
-    <UModal v-model="revisionRequestOpen">
+    <UModal v-model:open="revisionRequestOpen">
+      <template #content>
       <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100' }">
         <template #header>
           <div class="flex items-center justify-between">
@@ -210,12 +211,12 @@
               :disabled="!revisionReason"
               @click="submitRevisionRequest"
             >
-              <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4 mr-1" />
               ส่งข้อมูลเสนอขอแก้ไข
             </UButton>
           </div>
         </template>
       </UCard>
+          </template>
     </UModal>
   </div>
 </template>
@@ -328,7 +329,7 @@ const confirmOrder = async () => {
     order.value = res;
   } catch (err: any) {
     console.warn('Backend confirmation failed. Applying locally.');
-    // Local mock update
+    // Local demo update
     order.value.status = 'VendorConfirmed';
     order.value.estimated_delivery_date = new Date(deliveryDate.value);
   }

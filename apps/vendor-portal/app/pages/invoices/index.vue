@@ -30,9 +30,15 @@
           />
         </div>
         <div class="flex items-center gap-2">
-          <USelect 
+          <USelect
             v-model="filterStatus"
-            :options="['สถานะทั้งหมด', 'Created', 'Matched', 'MismatchException', 'ReadyForPayment']"
+            :options="[
+              { label: 'สถานะทั้งหมด', value: '' },
+              { label: 'ยื่นวางบิลแล้ว', value: 'Created' },
+              { label: 'จับคู่ตรงกัน', value: 'Matched' },
+              { label: 'มีข้อคลาดเคลื่อน', value: 'MismatchException' },
+              { label: 'รอจ่ายเงิน', value: 'ReadyForPayment' },
+            ]"
             size="md"
             class="w-48"
           />
@@ -109,7 +115,7 @@ import { useVendorAuthStore } from '~/stores/auth';
 
 const authStore = useVendorAuthStore();
 const search = ref('');
-const filterStatus = ref('สถานะทั้งหมด');
+const filterStatus = ref('');
 const invoicesList = ref<any[]>([]);
 
 const loadInvoices = async () => {
@@ -119,7 +125,7 @@ const loadInvoices = async () => {
     });
     invoicesList.value = res;
   } catch (err) {
-    console.warn('Backend connection failed. Mocking vendor AP invoice list.');
+    console.warn('Backend connection failed. Using demo vendor AP invoice list.');
     invoicesList.value = [
       {
         invoice_id: 'inv_1',
@@ -141,7 +147,7 @@ const filteredInvoices = computed(() => {
     const matchesSearch = inv.invoice_no.toLowerCase().includes(search.value.toLowerCase()) ||
       (inv.po?.po_no || '').toLowerCase().includes(search.value.toLowerCase());
     
-    const matchesStatus = filterStatus.value === 'สถานะทั้งหมด' || inv.status === filterStatus.value;
+    const matchesStatus = !filterStatus.value || inv.status === filterStatus.value;
     return matchesSearch && matchesStatus;
   });
 });

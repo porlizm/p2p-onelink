@@ -1,6 +1,7 @@
 import { IsString, IsNotEmpty, IsOptional, IsArray, ValidateNested, IsNumber, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
+
 export class SubmitQuoteLineDto {
   @IsString()
   @IsNotEmpty()
@@ -28,6 +29,10 @@ export class SubmitQuoteDto {
   @IsString()
   @IsNotEmpty()
   rfq_id: string;
+
+  @IsString()
+  @IsOptional()
+  vendor_id?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

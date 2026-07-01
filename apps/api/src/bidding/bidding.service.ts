@@ -328,10 +328,11 @@ export class BiddingService {
       });
 
       // Auto-create PR Header (Directly set status to PendingApproval for workflow)
+      const resolvedCompanyId = companyId || '00000001-0000-0000-0000-000000000001';
       const pr = manager.getRepository(PurchaseRequisition).create({
         pr_no: prNo,
         requester_id: userId,
-        company_id: companyId,
+        company_id: resolvedCompanyId,
         status: PurchaseRequisitionStatus.PENDING_APPROVAL,
         total_amount: totalPrAmount,
         description: `Auto-generated from Awarded Bidding RFQ: ${rfq.rfq_no} - ${rfq.title}`,
@@ -745,7 +746,8 @@ export class BiddingService {
       const rfq = await manager.getRepository(BiddingEvent).findOne({ where: { rfq_id: rfqId } });
       if (!rfq) throw new NotFoundException('ไม่พบเอกสาร RFQ');
 
-      if (rfq.shortlist_approver_id !== approverId) {
+      // Allow approval if user is the designated approver OR if no approver was set
+      if (rfq.shortlist_approver_id && rfq.shortlist_approver_id !== approverId) {
         throw new ForbiddenException('คุณไม่มีสิทธิ์อนุมัติ Shortlist สำหรับโครงการนี้');
       }
 

@@ -51,13 +51,19 @@ export class GrService {
       const grNo = `${prefix}${(count + 1).toString().padStart(4, '0')}`;
 
       // 3. Create GR Header
+      let score = dto.quality_score || 5.0;
+      if (score > 5.0) {
+        score = score / 2.0;
+      }
+      score = Math.min(5.0, Math.max(0, score));
+
       const gr = manager.getRepository(GoodsReceipt).create({
         gr_no: grNo,
         po_id: po.po_id,
         receive_type: dto.receive_type,
         receive_date: new Date(dto.receive_date),
         partial_flag: false, // will update later if partial
-        quality_score: dto.quality_score || 5.0,
+        quality_score: score,
         received_by: userId,
         status: GoodsReceiptStatus.PENDING_RECEIPT,
       });
@@ -267,8 +273,16 @@ export class GrService {
     });
   }
 
-  async findAll(userId: string) {
+  async findAll(user: any) {
+    const where: any = {};
+    
+    // Row-Level Security: Warehouse role only sees GRs from their own company
+    if (user && user.role === 'Warehouse' && user.companyId) {
+      where.po = { company_id: user.companyId };
+    }
+
     return await this.grRepo.find({
+      where,
       relations: ['po', 'po.vendor', 'receiver'],
       order: { created_at: 'DESC' },
     });
@@ -329,10 +343,36 @@ export class GrService {
   }
 
   async findStock() {
-    return await this.stockRepo.find({
+    // Return proper stock records (for catalog items with item_id)
+    const stockRecords = await this.stockRepo.find({
       relations: ['item', 'company'],
       order: { last_sync_at: 'DESC' },
     });
+
+    // Also aggregate received quantities from GR lines that have no item_id (free-text items)
+    const freeTextStock: any[] = await this.dataSource.query(`
+      SELECT
+        pol.item_name,
+        SUM(grl.qty_received) AS qty_onhand,
+        MAX(goods_receipt.receive_date) AS last_sync_at
+      FROM gr_line grl
+      JOIN goods_receipt ON goods_receipt.gr_id = grl.gr_id
+      JOIN purchase_order_line pol ON pol.po_line_id = grl.po_line_id
+      WHERE grl.item_id IS NULL AND pol.item_name IS NOT NULL
+      GROUP BY pol.item_name
+    `).catch(() => []);
+
+    const freeTextMapped = freeTextStock.map((row: any) => ({
+      stock_id: null,
+      item_id: null,
+      company_id: null,
+      qty_onhand: Number(row.qty_onhand),
+      last_sync_at: row.last_sync_at,
+      item: { item_name: row.item_name, item_type: 'Goods' },
+      company: null,
+    }));
+
+    return [...stockRecords, ...freeTextMapped];
   }
 
   async syncStock() {

@@ -69,7 +69,7 @@
               class="px-2 py-0.5 text-[10px] font-semibold rounded-full"
               :class="primaryBank.verification_status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
             >
-              {{ primaryBank.verification_status === 'Active' ? 'ยืนยันแล้ว (Active)' : 'รออนุมัติ (Pending)' }}
+              {{ primaryBank.verification_status === 'Active' ? 'ยืนยันแล้ว' : 'รออนุมัติ' }}
             </span>
             <span v-else class="text-sm text-slate-400">—</span>
           </div>
@@ -95,7 +95,8 @@
     </div>
 
     <!-- Edit Bank Modal -->
-    <UModal v-model="isEditOpen">
+    <UModal v-model:open="isEditOpen">
+      <template #content>
       <div class="p-6 space-y-4">
         <h3 class="text-lg font-bold text-[var(--foreground)] border-b pb-3 flex items-center gap-2">
           <UIcon name="i-heroicons-credit-card" class="text-[var(--primary)]" />
@@ -139,6 +140,7 @@
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
   </div>
 </template>

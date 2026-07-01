@@ -55,12 +55,10 @@
           <!-- Submission Action -->
           <NuxtLink :to="`/bids/${rfq.rfq_id}/submit`" v-if="!isClosed(rfq.close_date) && rfq.status !== 'Awarded'">
             <UButton color="primary" size="sm" class="font-semibold">
-              <UIcon name="i-heroicons-pencil-square" class="w-4 h-4 mr-1" />
-              ยื่นซองเสนอราคา (Submit Quote)
+              ยื่นซองเสนอราคา
             </UButton>
           </NuxtLink>
           <UButton v-else variant="outline" size="sm" disabled>
-            <UIcon name="i-heroicons-lock-closed" class="w-4 h-4 mr-1" />
             สิ้นสุดการเสนอราคา
           </UButton>
         </div>

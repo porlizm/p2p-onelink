@@ -1,7 +1,7 @@
-<template>
-  <div class="space-y-6 max-w-6xl mx-auto bg-white p-8 border border-[var(--border)] rounded-2xl shadow-[var(--shadow-sm)]">
+﻿<template>
+  <div class="space-y-6 max-w-6xl mx-auto bg-white p-8 border border-[#e9ecef] rounded-2xl shadow-[var(--shadow-sm)]">
     <!-- Header -->
-    <div class="border-b border-[var(--border)] pb-4 flex items-center justify-between">
+    <div class="border-b border-[#eff1f5] pb-4 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-[#002266] flex items-center gap-2">
           <UIcon name="i-heroicons-archive-box" class="w-6 h-6 text-amber-600" />
@@ -28,30 +28,24 @@
     </div>
 
     <!-- Tabs selector -->
-    <div class="flex border-b border-[var(--border)] gap-6">
-      <button 
-        @click="activeTab = 'rentals'" 
-        class="pb-3 text-sm font-bold transition-all relative"
-        :class="activeTab === 'rentals' ? 'text-[#0054FF]' : 'text-slate-500 hover:text-slate-800'"
-      >
-        <span>การเช่าครุภัณฑ์ / สินทรัพย์ข้าม BU</span>
-        <span v-if="activeTab === 'rentals'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0054FF]"></span>
-      </button>
-      <button 
-        @click="activeTab = 'licenses'" 
-        class="pb-3 text-sm font-bold transition-all relative"
-        :class="activeTab === 'licenses' ? 'text-[#0054FF]' : 'text-slate-500 hover:text-slate-800'"
-      >
-        <span>สิทธิ์ซอฟต์แวร์ไลเซนส์ (Software Licenses)</span>
-        <span v-if="activeTab === 'licenses'" class="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0054FF]"></span>
-      </button>
+    <div class="ds-tabs">
+      <button
+        class="ds-tab"
+        :class="{ 'ds-tab--active': activeTab === 'rentals' }"
+        @click="activeTab = 'rentals'"
+      >การเช่าครุภัณฑ์ / สินทรัพย์ข้าม BU</button>
+      <button
+        class="ds-tab"
+        :class="{ 'ds-tab--active': activeTab === 'licenses' }"
+        @click="activeTab = 'licenses'"
+      >สิทธิ์ซอฟต์แวร์ไลเซนส์</button>
     </div>
 
     <!-- RENTALS TAB -->
     <div v-if="activeTab === 'rentals'" class="space-y-6">
       <div class="flex flex-col lg:flex-row gap-6">
         <!-- Add Manual Log Form -->
-        <div class="w-full lg:w-1/3 bg-slate-50 p-5 rounded-2xl border border-slate-200/60 h-fit space-y-4">
+        <div class="w-full lg:w-1/3 bg-[#fafbfc] p-5 rounded-2xl border border-[#eff1f5]/60 h-fit space-y-4">
           <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
             <UIcon name="i-heroicons-plus-circle" class="w-4 h-4 text-amber-600" />
             บันทึกการเช่าข้าม BU
@@ -67,13 +61,13 @@
             </UFormField>
 
             <UFormField label="BU เจ้าของสินทรัพย์ *" name="ownerBu" required>
-              <select v-model="ownerBuId" class="w-full px-3 py-1.5 text-xs border border-[var(--border)] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-8">
+              <select v-model="ownerBuId" class="w-full px-3 py-1.5 text-xs border border-[#e9ecef] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-8">
                 <option v-for="bu in bus" :key="bu.bu_id" :value="bu.bu_id">{{ bu.bu_name }}</option>
               </select>
             </UFormField>
 
             <UFormField label="BU ที่ยืม/เช่าใช้งาน *" name="rentedToBu" required>
-              <select v-model="rentedToBuId" class="w-full px-3 py-1.5 text-xs border border-[var(--border)] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-8">
+              <select v-model="rentedToBuId" class="w-full px-3 py-1.5 text-xs border border-[#e9ecef] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-8">
                 <option v-for="bu in bus" :key="bu.bu_id" :value="bu.bu_id">{{ bu.bu_name }}</option>
               </select>
             </UFormField>
@@ -95,7 +89,7 @@
               </UFormField>
             </div>
 
-            <UButton type="submit" color="amber" size="sm" class="w-full font-semibold shadow-sm justify-center" :loading="isSubmitting">
+            <UButton type="submit" color="warning" size="sm" class="w-full font-semibold shadow-sm justify-center" :loading="isSubmitting">
               บันทึกการเช่าครุภัณฑ์
             </UButton>
           </form>
@@ -108,10 +102,10 @@
             ประวัติการเช่าครุภัณฑ์ข้ามหน่วยงาน
           </h3>
 
-          <div class="border border-[var(--border)] rounded-xl overflow-hidden shadow-sm overflow-x-auto">
+          <div class="border border-[#e9ecef] rounded-xl overflow-hidden shadow-sm overflow-x-auto">
             <table class="w-full text-left border-collapse bg-white">
               <thead>
-                <tr class="bg-slate-50 border-b border-[var(--border)] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   <th class="p-3">รหัสสินทรัพย์</th>
                   <th class="p-3">ชื่อรายการ</th>
                   <th class="p-3">เจ้าของ (Owner BU)</th>
@@ -120,10 +114,10 @@
                   <th class="p-3 text-center">สถานะ</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-[var(--border)] text-xs">
-                <tr v-for="r in rentals" :key="r.log_id" class="hover:bg-slate-50 transition-colors">
+              <tbody class="divide-y divide-[#eff1f5] text-xs">
+                <tr v-for="r in rentals" :key="r.log_id" class="hover:bg-[#f8fffe] transition-colors">
                   <td class="p-3 font-semibold text-slate-700">
-                    <span class="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
+                    <span class="px-1.5 py-0.5 rounded bg-slate-100 border border-[#eff1f5]">
                       {{ r.asset_tag }}
                     </span>
                   </td>
@@ -168,10 +162,10 @@
         รายการซื้อสิทธิ์ใช้งานซอฟต์แวร์ (License Subscriptions)
       </h3>
 
-      <div class="border border-[var(--border)] rounded-xl overflow-hidden shadow-sm overflow-x-auto bg-white">
+      <div class="border border-[#e9ecef] rounded-xl overflow-hidden shadow-sm overflow-x-auto bg-white">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
               <th class="p-3">ชื่อสิทธิ์ใช้งาน / ซอฟต์แวร์</th>
               <th class="p-3">รหัสสิทธิ์ (License Key)</th>
               <th class="p-3">ผู้จัดจำหน่าย (Vendor)</th>
@@ -180,14 +174,14 @@
               <th class="p-3 text-center">สถานะ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] text-xs">
-            <tr v-for="l in licenses" :key="l.subscription_id" class="hover:bg-slate-50 transition-colors">
+          <tbody class="divide-y divide-[#eff1f5] text-xs">
+            <tr v-for="l in licenses" :key="l.subscription_id" class="hover:bg-[#f8fffe] transition-colors">
               <td class="p-3">
                 <span class="font-bold text-slate-800 block">{{ l.license_name }}</span>
                 <span v-if="l.po" class="text-[10px] text-indigo-600 block mt-0.5">สั่งซื้อผ่าน PO: {{ l.po.po_no }}</span>
               </td>
               <td class="p-3">
-                <span class="font-mono bg-slate-50 px-2 py-0.5 border border-slate-200 rounded text-slate-600">
+                <span class="font-mono bg-[#fafbfc] px-2 py-0.5 border border-[#eff1f5] rounded text-slate-600">
                   {{ l.license_key || 'N/A' }}
                 </span>
               </td>

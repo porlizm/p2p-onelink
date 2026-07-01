@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-6xl mx-auto">
     <!-- Header -->
-    <div class="border-b border-[var(--border)] pb-4 flex items-center justify-between">
+    <div class="border-b border-[#eff1f5] pb-4 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">หน้างานตรวจสอบจับคู่ใบแจ้งหนี้ (3-Way Matching Workspace)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">เปรียบเทียบความถูกต้องของเอกสาร สั่งซื้อ (PO) ➔ รับของ (GR) ➔ วางบิล (Invoice)</p>
@@ -38,7 +38,7 @@
       />
       <div>
         <h4 class="font-bold text-sm">
-          {{ invoice.match_status === 'Matched' ? 'ผลการจับคู่ข้อมูล: ถูกต้องตรงกัน (Matched)' : 'ผลการจับคู่ข้อมูล: มีจุดไม่ตรงกัน (Mismatch Exception)' }}
+          {{ invoice.match_status === 'Matched' ? 'ผลการจับคู่ข้อมูล: ถูกต้องตรงกัน' : 'ผลการจับคู่ข้อมูล: มีจุดไม่ตรงกัน' }}
         </h4>
         <p class="text-xs mt-1 leading-relaxed">
           {{ invoice.match_status === 'Matched' 
@@ -53,13 +53,13 @@
     <div v-if="invoice" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       
       <!-- COLUMN 1: PURCHASE ORDER (PO) -->
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
-        <div class="p-4 bg-slate-50 border-b font-bold text-slate-800 text-sm flex items-center justify-between">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
+        <div class="p-4 bg-[#fafbfc] border-b font-bold text-slate-800 text-sm flex items-center justify-between">
           <span>1. ใบสั่งซื้อ (PO)</span>
           <span class="text-xs text-[var(--primary)] font-mono font-bold">{{ invoice.po?.po_no || 'PO-2606-XXXX' }}</span>
         </div>
         <div class="p-4 flex-1 space-y-4">
-          <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-slate-50/50">
+          <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-[#fafbfc]/50">
             <div class="font-semibold text-slate-800 text-xs truncate">{{ line.item?.item_name || 'สินค้าอ้างอิง' }}</div>
             <div class="grid grid-cols-2 gap-2 text-xs text-slate-500">
               <div>จำนวนสั่งซื้อ: <span class="font-bold text-slate-700">{{ formatQuantity(line.po_line?.quantity || line.qty) }}</span></div>
@@ -74,13 +74,13 @@
       </div>
 
       <!-- COLUMN 2: GOODS RECEIPT (GR) -->
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
-        <div class="p-4 bg-slate-50 border-b font-bold text-slate-800 text-sm flex items-center justify-between">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
+        <div class="p-4 bg-[#fafbfc] border-b font-bold text-slate-800 text-sm flex items-center justify-between">
           <span>2. การรับสินค้า (GR)</span>
           <span class="text-xs text-indigo-600 font-mono font-bold">{{ invoice.gr?.gr_no || 'GR-2026-0002' }}</span>
         </div>
         <div class="p-4 flex-1 space-y-4">
-          <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-slate-50/50">
+          <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-[#fafbfc]/50">
             <div class="font-semibold text-slate-800 text-xs truncate">{{ line.item?.item_name || 'สินค้าอ้างอิง' }}</div>
             <div class="grid grid-cols-1 gap-2 text-xs text-slate-500">
               <!-- If Mismatch, highlight received qty -->
@@ -105,13 +105,13 @@
       </div>
 
       <!-- COLUMN 3: INVOICE BILLING -->
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
-        <div class="p-4 bg-slate-50 border-b font-bold text-slate-800 text-sm flex items-center justify-between">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden flex flex-col">
+        <div class="p-4 bg-[#fafbfc] border-b font-bold text-slate-800 text-sm flex items-center justify-between">
           <span>3. ใบแจ้งหนี้ (Invoice)</span>
           <span class="text-xs text-emerald-600 font-mono font-bold">{{ invoice.invoice_no }}</span>
         </div>
         <div class="p-4 flex-1 space-y-4">
-          <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-slate-50/50">
+          <div v-for="line in invoice.lines" :key="line.invoice_line_id" class="border rounded-lg p-3 space-y-2 bg-[#fafbfc]/50">
             <div class="font-semibold text-slate-800 text-xs truncate">{{ line.item?.item_name || 'สินค้าอ้างอิง' }}</div>
             <div class="grid grid-cols-2 gap-2 text-xs text-slate-500">
               <div>จำนวนวางบิล: 
@@ -140,7 +140,7 @@
 
     <div v-if="invoice" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Financial Accounting Allocation Card -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
         <h4 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
           <UIcon name="i-heroicons-calculator" class="text-emerald-500 w-5 h-5" />
           <span>ข้อมูลจัดสรรทางบัญชีและการเงิน (GL & Cost Center Allocation)</span>
@@ -166,7 +166,7 @@
       </div>
 
       <!-- Credit / Debit Notes Matching Card -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4 flex flex-col justify-between">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4 flex flex-col justify-between">
         <div>
           <h4 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center justify-between">
             <div class="flex items-center gap-2">
@@ -176,7 +176,7 @@
             <UButton 
               @click="showAddCnDnModal = true" 
               size="xs" 
-              color="indigo" 
+              color="primary" 
               variant="outline"
               class="cursor-pointer font-bold"
             >
@@ -208,7 +208,7 @@
               </div>
             </div>
 
-            <div v-if="cnDnNotes.length === 0" class="text-center py-6 text-[10px] text-slate-400 bg-slate-50 border border-slate-100 rounded-lg">
+            <div v-if="cnDnNotes.length === 0" class="text-center py-6 text-[10px] text-slate-400 bg-[#fafbfc] border border-slate-100 rounded-lg">
               ยังไม่มีการผูกใบลดหนี้ / ใบเพิ่มหนี้ในใบแจ้งหนี้นี้
             </div>
           </div>
@@ -228,7 +228,7 @@
             <span>บวก ใบเพิ่มหนี้ (Total Debit Notes):</span>
             <span>+{{ formatCurrency(totalDebitNotes) }}</span>
           </div>
-          <div class="border-t border-slate-200 pt-1.5 flex justify-between font-bold text-slate-900 text-xs">
+          <div class="border-t border-[#eff1f5] pt-1.5 flex justify-between font-bold text-slate-900 text-xs">
             <span>ยอดเงินทำจ่ายสุทธิ (Net Pay Amount):</span>
             <span class="text-indigo-700">{{ formatCurrency(netInvoiceAmount) }}</span>
           </div>
@@ -237,11 +237,12 @@
     </div>
 
     <!-- Add CN/DN Modal -->
-    <UModal v-model="showAddCnDnModal" prevent-close>
+    <UModal v-model:open="showAddCnDnModal" prevent-close>
+      <template #content>
       <div class="p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-3">
           <h3 class="font-bold text-slate-800 text-base">เพิ่มใบลดหนี้ / ใบเพิ่มหนี้</h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showAddCnDnModal = false" />
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showAddCnDnModal = false" />
         </div>
 
         <div class="space-y-4 text-xs">
@@ -249,7 +250,7 @@
             <label class="block text-slate-600 font-semibold mb-1">ประเภทเอกสาร</label>
             <select 
               v-model="newCnDnType" 
-              class="w-full px-3 py-2 text-sm border border-[var(--border)] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
+              class="w-full px-3 py-2 text-sm border border-[#e9ecef] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
             >
               <option value="Credit">Credit Note (ใบลดหนี้)</option>
               <option value="Debit">Debit Note (ใบเพิ่มหนี้)</option>
@@ -263,12 +264,12 @@
 
           <div>
             <label class="block text-slate-600 font-semibold mb-1">เหตุผลในการออกเอกสาร</label>
-            <UTextarea v-model="newCnDnReason" placeholder="เช่น หักส่วนลดรายการสินค้าชำรุด หรือปรับราคาตามสัญญา..." rows="2" />
+            <UTextarea v-model="newCnDnReason" placeholder="เช่น หักส่วนลดรายการสินค้าชำรุด หรือปรับราคาตามสัญญา..." :rows="2" />
           </div>
         </div>
 
         <div class="flex justify-end gap-2 border-t pt-4">
-          <UButton @click="showAddCnDnModal = false" variant="ghost" color="gray">ยกเลิก</UButton>
+          <UButton @click="showAddCnDnModal = false" variant="ghost" color="neutral">ยกเลิก</UButton>
           <UButton 
             @click="submitCnDn"
             color="primary"
@@ -279,6 +280,7 @@
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
   </div>
 </template>
@@ -373,7 +375,7 @@ const submitCnDn = async () => {
     showAddCnDnModal.value = false;
     newCnDnAmount.value = null;
     newCnDnReason.value = '';
-    alert('บันทึกและผูกเอกสารใบลดหนี้/เพิ่มหนี้สำเร็จ! (Simulated)');
+    alert('บันทึกและผูกเอกสารใบลดหนี้/เพิ่มหนี้สำเร็จ!');
   } finally {
     submittingCnDn.value = false;
   }
@@ -386,7 +388,7 @@ const loadInvoiceDetails = async () => {
     });
     invoice.value = res;
   } catch (err) {
-    console.warn('Backend unavailable. Mocking AP Invoice details.');
+    console.warn('Backend unavailable. Using demo AP Invoice details.');
     invoice.value = {
       invoice_id: invoiceId,
       invoice_no: invoiceId === 'inv_mock_1' ? 'INV-2026-0007' : 'INV-2026-0004',

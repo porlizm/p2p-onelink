@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-4xl mx-auto">
     <!-- Header -->
-    <div class="border-b border-[var(--border)] pb-4 flex items-center justify-between">
+    <div class="border-b border-[#eff1f5] pb-4 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">สร้างใบรับสินค้า (Goods Receipt)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">อ้างอิงใบสั่งซื้อเลขที่: <span class="font-bold text-slate-800">{{ poDetails?.po_no || '-' }}</span></p>
@@ -10,7 +10,7 @@
     </div>
 
     <!-- PO summary card -->
-    <div v-if="poDetails" class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div v-if="poDetails" class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] grid grid-cols-1 md:grid-cols-3 gap-4">
       <div>
         <span class="text-xs text-[var(--muted-foreground)] uppercase font-semibold block">ผู้ขาย / Vendor</span>
         <span class="font-bold text-slate-800 block mt-1">{{ poDetails.vendor?.vendor_name || 'N/A' }}</span>
@@ -26,14 +26,14 @@
     </div>
 
     <!-- Lines Table -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-      <div class="p-4 border-b border-[var(--border)] font-bold text-slate-800 text-sm">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+      <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-800 text-sm">
         รายการสินค้าในใบสั่งซื้อที่ต้องการตรวจรับ
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
               <th class="px-6 py-3">รายละเอียดสินค้า</th>
               <th class="px-6 py-3 text-right">จำนวนสั่งซื้อ</th>
               <th class="px-6 py-3 text-right">รับแล้วก่อนหน้า</th>
@@ -45,8 +45,8 @@
               <th class="px-6 py-3 text-center">หน่วยนับ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)]">
-            <tr v-for="(line, index) in lines" :key="line.po_line_id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5]">
+            <tr v-for="(line, index) in lines" :key="line.po_line_id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-4 font-semibold text-slate-800">{{ line.item_name }}</td>
               <td class="px-6 py-4 text-right font-semibold text-slate-600">{{ formatQuantity(line.quantity) }}</td>
               <td class="px-6 py-4 text-right font-medium text-slate-400">{{ formatQuantity(line.received_quantity || 0) }}</td>
@@ -113,7 +113,7 @@
     <!-- Rating & Attachments -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
       <!-- Ratings -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
         <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
           <UIcon name="i-heroicons-star-20-solid" class="text-amber-500 w-5 h-5" />
           <span>ประเมินคุณภาพการให้บริการของผู้ขาย (Quality Score)</span>
@@ -137,7 +137,7 @@
       </div>
 
       <!-- File Attachment / AI Smart Inspector -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
         <div class="flex items-center justify-between">
           <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
             <UIcon name="i-heroicons-sparkles" class="text-indigo-600 w-5 h-5 animate-pulse" />
@@ -149,7 +149,7 @@
         <!-- Upload State -->
         <div 
           v-if="!scanning && !scanned"
-          class="border-2 border-dashed border-slate-200 rounded-lg p-6 flex flex-col items-center justify-center bg-slate-50/50 hover:bg-indigo-50/10 hover:border-indigo-300 transition cursor-pointer"
+          class="border-2 border-dashed border-[#eff1f5] rounded-lg p-6 flex flex-col items-center justify-center bg-[#fafbfc]/50 hover:bg-indigo-50/10 hover:border-indigo-300 transition cursor-pointer"
           @click="triggerScan"
         >
           <UIcon name="i-heroicons-camera" class="w-8 h-8 text-indigo-500 mb-2" />
@@ -170,11 +170,11 @@
               <UIcon name="i-heroicons-exclamation-triangle" class="w-4.5 h-4.5" />
               พบจุดผิดปกติ (Discrepancies Flagged by AI)
             </span>
-            <UButton size="xs" color="gray" variant="ghost" icon="i-heroicons-arrow-path" class="text-[9px]" @click="triggerScan">สแกนใหม่</UButton>
+            <UButton size="xs" color="neutral" variant="ghost" icon="i-heroicons-arrow-path" class="text-[9px]" @click="triggerScan">สแกนใหม่</UButton>
           </div>
 
           <!-- Mock Visual Bounding Boxes overlay -->
-          <div class="relative w-full h-32 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 flex items-center justify-center shadow-inner">
+          <div class="relative w-full h-32 rounded-lg border border-[#eff1f5] overflow-hidden bg-slate-100 flex items-center justify-center shadow-inner">
             <!-- Simulated image skeleton -->
             <div class="absolute inset-0 bg-gradient-to-br from-slate-200 to-slate-300 flex flex-col items-center justify-center">
               <UIcon name="i-heroicons-archive-box" class="w-12 h-12 text-slate-400" />
@@ -209,7 +209,7 @@
 
     <!-- Actions -->
     <div class="flex items-center justify-end gap-3 border-t border-[var(--border)] pt-6">
-      <UButton to="/po" variant="ghost" color="gray">ยกเลิก</UButton>
+      <UButton to="/po" variant="ghost" color="neutral">ยกเลิก</UButton>
       <UButton 
         @click="submitGr"
         color="primary"

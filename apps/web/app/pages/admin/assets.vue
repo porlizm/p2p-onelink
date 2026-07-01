@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
+    <div class="flex items-center justify-between border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">ระบบบริหารจัดการและติดตามสินทรัพย์ (Asset Management & Allocation Console)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">
@@ -22,7 +22,7 @@
 
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
           <UIcon name="i-heroicons-cube" class="w-6 h-6" />
         </div>
@@ -31,7 +31,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatQuantity(stats.totalAssets) }} รายการ</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
           <UIcon name="i-heroicons-currency-dollar" class="w-6 h-6" />
         </div>
@@ -40,7 +40,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatCurrency(stats.totalVal) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
           <UIcon name="i-heroicons-key" class="w-6 h-6" />
         </div>
@@ -49,7 +49,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatQuantity(stats.totalLicenseSeats) }} Seats</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
           <UIcon name="i-heroicons-arrow-path" class="w-6 h-6" />
         </div>
@@ -61,7 +61,7 @@
     </div>
 
     <!-- Allocation Flow Visual Simulation (User's Laptop Example) -->
-    <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
+    <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-4">
       <div class="flex items-center justify-between border-b pb-2">
         <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
           <UIcon name="i-heroicons-chart-pie" class="w-4 h-4 text-[var(--primary)]" />
@@ -74,7 +74,7 @@
 
       <!-- Horizontal Visual Track -->
       <div class="grid grid-cols-1 md:grid-cols-5 gap-3 pt-2">
-        <div class="bg-slate-50 border rounded-lg p-3 text-center">
+        <div class="bg-[#fafbfc] border rounded-lg p-3 text-center">
           <div class="text-[10px] text-slate-400 font-semibold">จัดซื้อส่วนกลาง</div>
           <div class="text-base font-extrabold text-slate-800 mt-1">100 เครื่อง</div>
           <div class="text-[9px] text-slate-500 mt-0.5">ราคา 35,000 THB/เครื่อง</div>
@@ -105,7 +105,7 @@
     </div>
 
     <!-- Search & Filters -->
-    <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex flex-wrap gap-4 items-center justify-between">
+    <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex flex-wrap gap-4 items-center justify-between">
       <div class="flex items-center gap-3 flex-1 min-w-[280px]">
         <UInput 
           v-model="searchQuery" 
@@ -135,8 +135,8 @@
     </div>
 
     <!-- Assets Registry Table -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-      <div class="p-4 border-b border-[var(--border)] flex items-center justify-between">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+      <div class="p-4 border-b border-[#eff1f5] flex items-center justify-between">
         <div class="font-bold text-slate-700">ทะเบียนคลังสินทรัพย์กลาง (Central Asset Registry)</div>
         <div class="text-xs text-[var(--muted-foreground)]">แสดงข้อมูลสินทรัพย์ที่จัดซื้อและสัดส่วนการส่งต่อ</div>
       </div>
@@ -144,21 +144,21 @@
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-              <th class="px-6 py-3">รหัสสินทรัพย์ (Tag)</th>
-              <th class="px-6 py-3">ชื่อสินทรัพย์</th>
-              <th class="px-6 py-3">ประเภท</th>
-              <th class="px-6 py-3 text-right">ราคาทุนต่อหน่วย</th>
-              <th class="px-6 py-3 text-center">จำนวนจัดซื้อ</th>
-              <th class="px-6 py-3 text-center">ส่งมอบ/เช่า</th>
-              <th class="px-6 py-3 text-center">คงเหลือที่ HQ</th>
-              <th class="px-6 py-3">สถานะ</th>
-              <th class="px-6 py-3 text-right">จัดการ</th>
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+              <th class="px-6 py-3.5">รหัสสินทรัพย์ (Tag)</th>
+              <th class="px-6 py-3.5">ชื่อสินทรัพย์</th>
+              <th class="px-6 py-3.5">ประเภท</th>
+              <th class="px-6 py-3.5 text-right">ราคาทุนต่อหน่วย</th>
+              <th class="px-6 py-3.5 text-center">จำนวนจัดซื้อ</th>
+              <th class="px-6 py-3.5 text-center">ส่งมอบ/เช่า</th>
+              <th class="px-6 py-3.5 text-center">คงเหลือที่ HQ</th>
+              <th class="px-6 py-3.5">สถานะ</th>
+              <th class="px-6 py-3.5 text-right">จัดการ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)]">
-            <tr v-for="asset in filteredAssets" :key="asset.asset_id" class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-mono font-bold text-slate-500 text-xs">{{ asset.asset_tag }}</td>
+          <tbody class="divide-y divide-[#eff1f5]">
+            <tr v-for="asset in filteredAssets" :key="asset.asset_id" class="hover:bg-[#f8fffe] transition">
+              <td class="px-6 py-5font-mono font-bold text-slate-500 text-xs">{{ asset.asset_tag }}</td>
               <td class="px-6 py-4">
                 <div class="font-semibold text-slate-800">{{ asset.asset_name }}</div>
                 <div class="text-[10px] text-slate-400 mt-0.5" v-if="asset.license_key">Key: {{ asset.license_key }}</div>
@@ -171,16 +171,16 @@
                     asset.asset_type === 'Goods' ? 'bg-blue-50 text-blue-700 border border-blue-200' :
                     asset.asset_type === 'License' ? 'bg-purple-50 text-purple-700 border border-purple-200' :
                     asset.asset_type === 'Rental' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
-                    'bg-slate-50 text-slate-700 border border-slate-200'
+                    'bg-[#fafbfc] text-slate-700 border border-[#eff1f5]'
                   ]"
                 >
                   {{ asset.asset_type }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-right font-medium text-slate-600">{{ formatCurrency(asset.unit_price) }}</td>
-              <td class="px-6 py-4 text-center font-bold text-slate-700">{{ formatQuantity(asset.total_qty) }}</td>
-              <td class="px-6 py-4 text-center text-indigo-600 font-extrabold">{{ formatQuantity(asset.distributed_qty) }}</td>
-              <td class="px-6 py-4 text-center font-bold text-emerald-600">{{ formatQuantity(asset.remaining_qty) }}</td>
+              <td class="px-6 py-5text-right font-medium text-slate-600">{{ formatCurrency(asset.unit_price) }}</td>
+              <td class="px-6 py-5text-center font-bold text-slate-700">{{ formatQuantity(asset.total_qty) }}</td>
+              <td class="px-6 py-5text-center text-indigo-600 font-extrabold">{{ formatQuantity(asset.distributed_qty) }}</td>
+              <td class="px-6 py-5text-center font-bold text-emerald-600">{{ formatQuantity(asset.remaining_qty) }}</td>
               <td class="px-6 py-4">
                 <span 
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold"
@@ -194,11 +194,11 @@
                   {{ asset.status === 'In Stock' ? 'พร้อมใช้งาน' : asset.status === 'Distributed' ? 'ส่งมอบแล้ว' : asset.status === 'Rented' ? 'ให้เช่าทั้งหมด' : asset.status }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-right space-x-2">
+              <td class="px-6 py-5text-right space-x-2">
                 <UButton 
                   size="xs" 
                   variant="outline" 
-                  color="gray"
+                  color="neutral"
                   class="cursor-pointer"
                   @click="openDetails(asset.asset_id)"
                 >
@@ -207,7 +207,7 @@
                 <UButton 
                   v-if="asset.remaining_qty > 0"
                   size="xs" 
-                  color="indigo" 
+                  color="primary" 
                   class="cursor-pointer font-bold"
                   @click="openAllocateForm(asset)"
                 >
@@ -224,7 +224,8 @@
     </div>
 
     <!-- MODAL 1: VIEW ASSET DETAILS & ALLOCATIONS -->
-    <UModal v-model="showDetailsModal" :ui="{ width: 'max-w-3xl' }">
+    <UModal v-model:open="showDetailsModal" :ui="{ content: 'max-w-3xl' }">
+      <template #content>
       <div class="p-6 space-y-5" v-if="selectedAsset">
         <div class="flex items-center justify-between border-b pb-3">
           <div>
@@ -232,7 +233,7 @@
             <span class="text-xs text-slate-400">Tag: {{ selectedAsset.asset_tag }}</span>
           </div>
           <UButton 
-            color="gray" 
+            color="neutral" 
             variant="ghost" 
             icon="i-heroicons-x-mark" 
             @click="showDetailsModal = false" 
@@ -241,26 +242,26 @@
 
         <!-- Details Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
-          <div class="bg-slate-50 p-2.5 rounded-lg border">
+          <div class="bg-[#fafbfc] p-2.5 rounded-lg border">
             <span class="text-slate-400 block font-semibold mb-0.5">ประเภท</span>
             <span class="font-bold text-slate-800">{{ selectedAsset.asset_type }}</span>
           </div>
-          <div class="bg-slate-50 p-2.5 rounded-lg border">
+          <div class="bg-[#fafbfc] p-2.5 rounded-lg border">
             <span class="text-slate-400 block font-semibold mb-0.5">ราคาทุนต่อหน่วย</span>
             <span class="font-bold text-slate-800">{{ formatCurrency(selectedAsset.unit_price) }} THB</span>
           </div>
-          <div class="bg-slate-50 p-2.5 rounded-lg border">
+          <div class="bg-[#fafbfc] p-2.5 rounded-lg border">
             <span class="text-slate-400 block font-semibold mb-0.5">ผู้ถือครองเจ้าของ</span>
             <span class="font-bold text-slate-800">{{ selectedAsset.owner_bu?.bu_name || 'ส่วนกลาง' }}</span>
           </div>
-          <div class="bg-slate-50 p-2.5 rounded-lg border">
+          <div class="bg-[#fafbfc] p-2.5 rounded-lg border">
             <span class="text-slate-400 block font-semibold mb-0.5">ยอดคงคลัง (HQ)</span>
             <span class="font-extrabold text-emerald-600">{{ formatQuantity(selectedAsset.remaining_qty) }} / {{ formatQuantity(selectedAsset.total_qty) }}</span>
           </div>
         </div>
 
         <!-- Technical key details if exists -->
-        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-1" v-if="selectedAsset.license_key || selectedAsset.expiry_date">
+        <div class="bg-[#fafbfc] p-3 rounded-lg border border-[#eff1f5] text-xs space-y-1" v-if="selectedAsset.license_key || selectedAsset.expiry_date">
           <div class="font-bold text-slate-700 mb-1 border-b pb-0.5">รายละเอียดสัญญา/คีย์ลิขสิทธิ์เพิ่มเติม</div>
           <div class="flex justify-between" v-if="selectedAsset.license_key">
             <span class="text-slate-500">License Activation Key:</span>
@@ -288,7 +289,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y text-slate-600">
-                <tr v-for="al in selectedAsset.allocations" :key="al.allocation_id" class="hover:bg-slate-50/50">
+                <tr v-for="al in selectedAsset.allocations" :key="al.allocation_id" class="hover:bg-[#f8fffe]">
                   <td class="px-4 py-2.5 font-semibold text-slate-800">{{ al.to_bu?.bu_name || 'บริษัทในเครือ' }}</td>
                   <td class="px-4 py-2.5">
                     <span 
@@ -320,10 +321,12 @@
           </div>
         </div>
       </div>
+          </template>
     </UModal>
 
     <!-- MODAL 2: ALLOCATE / LEASE ASSET FORM -->
-    <UModal v-model="showAllocateModal">
+    <UModal v-model:open="showAllocateModal">
+      <template #content>
       <div class="p-6 space-y-4" v-if="allocateTarget">
         <div class="flex items-center justify-between border-b pb-3">
           <div>
@@ -331,7 +334,7 @@
             <span class="text-xs text-slate-500">สินทรัพย์: {{ allocateTarget.asset_name }} (คงเหลือ: {{ formatQuantity(allocateTarget.remaining_qty) }})</span>
           </div>
           <UButton 
-            color="gray" 
+            color="neutral" 
             variant="ghost" 
             icon="i-heroicons-x-mark" 
             @click="showAllocateModal = false" 
@@ -408,7 +411,7 @@
             <UButton 
               type="button" 
               variant="outline" 
-              color="gray"
+              color="neutral"
               class="cursor-pointer"
               @click="showAllocateModal = false"
             >
@@ -425,15 +428,17 @@
           </div>
         </form>
       </div>
+          </template>
     </UModal>
 
     <!-- MODAL 3: MANUAL ACQUISITION REGISTER -->
-    <UModal v-model="showCreateModal">
+    <UModal v-model:open="showCreateModal">
+      <template #content>
       <div class="p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-3">
           <h3 class="text-base font-bold text-slate-800">ลงทะเบียนจัดซื้อสินทรัพย์ใหม่ (Manual Entry)</h3>
           <UButton 
-            color="gray" 
+            color="neutral" 
             variant="ghost" 
             icon="i-heroicons-x-mark" 
             @click="showCreateModal = false" 
@@ -525,7 +530,7 @@
             <UButton 
               type="button" 
               variant="outline" 
-              color="gray"
+              color="neutral"
               class="cursor-pointer"
               @click="showCreateModal = false"
             >
@@ -542,6 +547,7 @@
           </div>
         </form>
       </div>
+          </template>
     </UModal>
   </div>
 </template>

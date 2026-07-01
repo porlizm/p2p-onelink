@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
+    <div class="flex items-center justify-between border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">สร้างใบขอซื้อใหม่ (Create Purchase Requisition)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">กรอกรายละเอียดใบขอซื้อ ตรวจสอบงบประมาณ และแนบเอกสารใบเสนอราคา</p>
@@ -30,9 +30,9 @@
       </div>
       <UButton 
         @click="openRequestBudgetModal" 
-        color="red" 
+        color="error" 
         size="xs"
-        class="font-bold flex-shrink-0 cursor-pointer bg-red-600 hover:bg-red-700 text-white animate-pulse"
+        class="font-bold flex-shrink-0 cursor-pointer animate-pulse"
       >
         ยื่นขอเพิ่มงบประมาณ (Request Budget)
       </UButton>
@@ -54,7 +54,7 @@
       </div>
       <UButton 
         @click="openRequestBudgetModal" 
-        color="amber" 
+        color="warning" 
         size="xs"
         variant="outline"
         class="font-bold flex-shrink-0 cursor-pointer"
@@ -67,8 +67,8 @@
       <!-- Left 2 Columns: Items Form -->
       <div class="lg:col-span-2 space-y-6">
         <!-- PR Header Information -->
-        <div class="bg-white border border-[var(--border)] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
-          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[var(--border)] pb-2 flex items-center gap-2">
+        <div class="bg-white border border-[#e9ecef] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
+          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[#eff1f5] pb-2 flex items-center gap-2">
             <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-[var(--primary)]" />
             ข้อมูลทั่วไปของใบขอซื้อ
           </h3>
@@ -77,7 +77,7 @@
               <UTextarea 
                 v-model="description" 
                 placeholder="ระบุวัตถุประสงค์ในการขอจัดซื้อครั้งนี้ เช่น ขอซื้อโน้ตบุ๊คสำหรับพนักงานใหม่ ฝ่ายบัญชี..." 
-                rows="3"
+                :rows="3"
                 class="w-full mt-1.5"
               />
             </UFormField>
@@ -85,15 +85,15 @@
         </div>
 
         <!-- PR Line Items -->
-        <div class="bg-white border border-[var(--border)] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
-          <div class="flex items-center justify-between border-b border-[var(--border)] pb-2">
+        <div class="bg-white border border-[#e9ecef] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
+          <div class="flex items-center justify-between border-b border-[#eff1f5] pb-2">
             <h3 class="font-bold text-sm text-[var(--foreground)] flex items-center gap-2">
               <UIcon name="i-heroicons-list-bullet" class="w-4 h-4 text-[var(--primary)]" />
               รายการขอสั่งซื้อ (PR Line Items)
             </h3>
             <UButton 
               @click="addCustomItem"
-              color="gray"
+              color="neutral"
               variant="outline"
               size="xs"
             >
@@ -112,7 +112,7 @@
           </div>
 
           <!-- Items List -->
-          <div v-else class="space-y-4 divide-y divide-[var(--border)]">
+          <div v-else class="space-y-4 divide-y divide-[#eff1f5]">
             <div 
               v-for="(item, idx) in cartStore.items" 
               :key="idx" 
@@ -140,7 +140,7 @@
                       v-model="item.item_name"
                       type="text"
                       placeholder="ระบุชื่อสินค้า / บริการที่ต้องการขอใบเสนอราคา"
-                      class="w-full sm:w-80 px-2.5 py-1 text-sm border border-[var(--border)] rounded focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                      class="w-full sm:w-80 px-2.5 py-1 text-sm border border-[#e9ecef] rounded focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                     />
                     <span v-else class="font-bold text-sm text-[var(--foreground)]">
                       {{ item.item_name }}
@@ -170,11 +170,12 @@
                     <div>
                       <label class="text-[10px] text-[var(--muted-foreground)] block mb-1">ราคาต่อหน่วย (THB)</label>
                       <UInput 
-                        v-model.number="item.unit_price" 
-                        type="number" 
+                        :model-value="formatMoneyInput(item.unit_price)" 
+                        type="text" 
+                        inputmode="decimal"
                         :disabled="!item.is_custom"
                         size="xs"
-                        @update:model-value="val => cartStore.updateCustomItemPrice(idx, Number(val))"
+                        @update:model-value="val => updateCustomItemPriceInput(idx, val)"
                       />
                     </div>
                     <div>
@@ -191,7 +192,7 @@
                       <label class="text-[10px] text-[var(--muted-foreground)] block mb-1">ศูนย์ต้นทุน (Cost Center) *</label>
                       <select 
                         v-model="item.cost_center_id"
-                        class="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                        class="w-full px-2.5 py-1.5 text-xs border border-[#e9ecef] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                       >
                         <option value="" disabled>-- เลือกศูนย์ต้นทุน --</option>
                         <option 
@@ -219,7 +220,7 @@
                         />
                         <label 
                           :for="'quote-file-' + idx"
-                          class="px-3 py-1.5 border border-[var(--border)] hover:bg-slate-50 transition rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
+                          class="px-3 py-1.5 border border-[#e9ecef] hover:bg-[#f8fffe] transition rounded text-[11px] font-semibold flex items-center gap-1 cursor-pointer"
                         >
                           <UIcon name="i-heroicons-arrow-up-tray" class="w-3.5 h-3.5" />
                           <span>{{ item.quotation_url ? 'เปลี่ยนไฟล์' : 'อัปโหลดใบเสนอราคา' }}</span>
@@ -252,8 +253,8 @@
       <!-- Right Column: Live Budget Meter & Summary -->
       <div class="space-y-6">
         <!-- Budget Reservation Widget -->
-        <div class="bg-white border border-[var(--border)] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
-          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[var(--border)] pb-2 flex items-center gap-2">
+        <div class="bg-white border border-[#e9ecef] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
+          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[#eff1f5] pb-2 flex items-center gap-2">
             <UIcon name="i-heroicons-presentation-chart-bar" class="w-4 h-4 text-[var(--primary)]" />
             ตรวจสอบงบประมาณของหน่วยงาน
           </h3>
@@ -266,7 +267,7 @@
             <div 
               v-for="budget in affectedBudgets" 
               :key="budget.id" 
-              class="p-3 border border-[var(--border)] rounded-lg space-y-2 bg-slate-50/50"
+              class="p-3 border border-[#e9ecef] rounded-lg space-y-2 bg-[#fafbfc]/50"
             >
               <div class="flex items-center justify-between">
                 <span class="font-bold text-xs text-[var(--foreground)]">{{ budget.name }}</span>
@@ -300,16 +301,16 @@
               </div>
 
               <div class="text-[10px] text-slate-500 pt-1 flex justify-between">
-                <span>งบประมาณปี: {{ budget.annual }} THB</span>
-                <span>จอง/ใช้ไปแล้ว: {{ budget.usedAndReserved }} THB</span>
+                <span>งบประมาณปี: {{ formatCurrency(budget.annual) }} THB</span>
+                <span>จอง/ใช้ไปแล้ว: {{ formatCurrency(budget.usedAndReserved) }} THB</span>
               </div>
             </div>
           </div>
         </div>
 
         <!-- PR Summary Card -->
-        <div class="bg-white border border-[var(--border)] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
-          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[var(--border)] pb-2">
+        <div class="bg-white border border-[#e9ecef] rounded-xl p-6 shadow-[var(--shadow-sm)] space-y-4">
+          <h3 class="font-bold text-sm text-[var(--foreground)] border-b border-[#eff1f5] pb-2">
             สรุปรายการใบขอซื้อ (PR Summary)
           </h3>
 
@@ -328,25 +329,29 @@
 
           <UButton 
             @click="submitPR"
-            :color="hasHardBlockedLines ? 'red' : hasOverrunWithinTolerance ? 'amber' : 'primary'"
+            :color="hasHardBlockedLines ? 'error' : hasOverrunWithinTolerance ? 'warning' : 'primary'"
             block
             size="md"
             :loading="isSubmitting"
-            :disabled="cartStore.items.length === 0 || hasUnfilledFields || hasHardBlockedLines"
+            :disabled="cartStore.items.length === 0 || hasRequiredFieldIssues || hasHardBlockedLines"
             class="font-semibold h-10 shadow-sm cursor-pointer"
           >
             {{ hasHardBlockedLines ? 'งบประมาณเกินเกณฑ์ (ต้องขอเพิ่มงบฯ)' : hasOverrunWithinTolerance ? 'สร้างใบขอซื้อ (ส่งอนุมัติพิเศษ CFO/VP)' : 'ยืนยันสร้างใบขอซื้อ (PR)' }}
           </UButton>
+          <p v-if="submitHint" class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+            {{ submitHint }}
+          </p>
         </div>
       </div>
     </div>
 
     <!-- Request Budget Modal -->
-    <UModal v-model="showRequestBudgetModal" prevent-close>
+    <UModal v-model:open="showRequestBudgetModal" prevent-close>
+      <template #content>
       <div class="p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-3">
           <h3 class="font-bold text-slate-800 text-base">ยื่นขอเพิ่มงบประมาณ (Request Budget)</h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showRequestBudgetModal = false" />
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showRequestBudgetModal = false" />
         </div>
 
         <div class="space-y-4 text-xs">
@@ -354,7 +359,7 @@
             <label class="block text-slate-600 font-semibold mb-1">ศูนย์ต้นทุน (Cost Center) *</label>
             <select 
               v-model="requestCcId"
-              class="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none"
+              class="w-full px-2.5 py-1.5 text-xs border border-[#e9ecef] rounded bg-white focus:outline-none"
             >
               <option value="" disabled>-- เลือกศูนย์ต้นทุน --</option>
               <option 
@@ -369,7 +374,13 @@
 
           <div>
             <label class="block text-slate-600 font-semibold mb-1">จำนวนเงินที่ขอเพิ่ม (THB) *</label>
-            <UInput v-model.number="requestAmount" type="number" placeholder="0.00" />
+            <UInput
+              :model-value="formatMoneyInput(requestAmount)"
+              type="text"
+              inputmode="decimal"
+              placeholder="0.00"
+              @update:model-value="val => requestAmount = parseMoneyInput(val)"
+            />
           </div>
 
           <div>
@@ -377,24 +388,25 @@
             <UTextarea 
               v-model="requestReason" 
               placeholder="ระบุเหตุผลความจำเป็นในการขออนุมัติเพิ่มงบประมาณ เช่น โครงการด่วน..." 
-              rows="3"
+              :rows="3"
             />
           </div>
         </div>
 
         <div class="flex justify-end gap-2 border-t pt-4">
-          <UButton @click="showRequestBudgetModal = false" variant="ghost" color="gray">ยกเลิก</UButton>
+          <UButton @click="showRequestBudgetModal = false" variant="ghost" color="neutral">ยกเลิก</UButton>
           <UButton 
             @click="submitBudgetRequest"
             color="primary"
             :loading="isSubmittingRequest"
             :disabled="!requestCcId || !requestAmount || requestAmount <= 0"
-            class="px-5 cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-700"
+            class="px-5 cursor-pointer font-bold"
           >
             ส่งคำขอเพิ่มงบประมาณ
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
   </div>
 </template>
@@ -449,6 +461,7 @@ const handleFileUpload = async (event: Event, index: number) => {
   if (!target.files || target.files.length === 0) return;
   
   const file = target.files[0];
+  if (!file) return;
   const formData = new FormData();
   formData.append('file', file);
 
@@ -478,15 +491,30 @@ const affectedBudgets = computed(() => {
     }
   }
 
-  return Object.keys(groups).map((ccId) => {
+  const results: {
+    id: string;
+    name: string;
+    code: string;
+    annual: number;
+    usedAndReserved: number;
+    remaining: number;
+    totalProposed: number;
+    isSufficient: boolean;
+    isWithinTolerance: boolean;
+    overrunAmount: number;
+    tolerancePct: number;
+    toleranceAmt: number;
+  }[] = [];
+
+  for (const ccId of Object.keys(groups)) {
     const cc = costCenters.value.find((c) => c.cost_center_id === ccId);
-    if (!cc) return null;
+    if (!cc) continue;
 
     const annual = Number(cc.annual_budget_amount);
     const used = Number(cc.budget_used_amount);
     const reserved = Number(cc.budget_reserved_amount);
     const remaining = annual - used - reserved;
-    const totalProposed = groups[ccId];
+    const totalProposed = groups[ccId] || 0;
     const isSufficient = totalProposed <= remaining;
 
     const overrunAmount = totalProposed - remaining;
@@ -496,7 +524,7 @@ const affectedBudgets = computed(() => {
 
     const isWithinTolerance = isSufficient || (overrunAmount <= toleranceAmt || (remaining > 0 && overrunAmount <= pctLimit));
 
-    return {
+    results.push({
       id: ccId,
       name: cc.cc_name,
       code: cc.cc_code,
@@ -509,8 +537,10 @@ const affectedBudgets = computed(() => {
       overrunAmount,
       tolerancePct,
       toleranceAmt,
-    };
-  }).filter(Boolean);
+    });
+  }
+
+  return results;
 });
 
 const hasOverBudgetLines = computed(() => {
@@ -525,12 +555,24 @@ const hasOverrunWithinTolerance = computed(() => {
   return affectedBudgets.value.some((b) => b && !b.isSufficient && b.isWithinTolerance);
 });
 
-const hasUnfilledFields = computed(() => {
+const hasRequiredFieldIssues = computed(() => {
   return cartStore.items.some((item) => {
     if (!item.cost_center_id) return true;
-    if (item.is_custom && (!item.item_name || !item.unit_price || !item.quotation_url)) return true;
+    if (item.is_custom && (!item.item_name || !item.unit_price)) return true;
     return false;
   });
+});
+
+const hasMissingQuotation = computed(() => {
+  return cartStore.items.some((item) => item.is_custom && !item.quotation_url);
+});
+
+const submitHint = computed(() => {
+  if (cartStore.items.length === 0) return '';
+  if (hasRequiredFieldIssues.value) return 'กรุณากรอกชื่อสินค้า ราคา และศูนย์ต้นทุนให้ครบก่อนสร้างใบขอซื้อ';
+  if (hasHardBlockedLines.value) return 'งบประมาณเกินเกณฑ์ที่กำหนด กรุณายื่นคำขอเพิ่มงบประมาณก่อนสร้าง PR';
+  if (hasMissingQuotation.value) return 'ยังไม่ได้แนบใบเสนอราคา ระบบจะสร้าง PR เพื่อเก็บ feedback ได้ และระบุให้แนบเอกสารเพิ่มเติมภายหลัง';
+  return '';
 });
 
 const submitPR = async () => {
@@ -569,7 +611,7 @@ const submitPR = async () => {
     const mockPrNo = `PR${yy}${mm}999`;
     const mockStatus = hasHardBlockedLines.value ? 'BlockedOverBudget' : 'PendingApproval';
 
-    alert(`[MOCK] ส่งใบขอซื้อเรียบร้อย!\nเลขที่ใบขอซื้อ: ${mockPrNo}\nสถานะเอกสาร: ${mockStatus}`);
+    alert(`ส่งใบขอซื้อเรียบร้อย!\nเลขที่ใบขอซื้อ: ${mockPrNo}\nสถานะเอกสาร: ${mockStatus}`);
     cartStore.clearCart();
     navigateTo('/pr');
   } finally {
@@ -618,11 +660,27 @@ const submitBudgetRequest = async () => {
     await loadCostCenters();
   } catch (err) {
     console.warn('Backend connection failed. Simulating budget request submission.');
-    alert(`[MOCK] ส่งคำขอเพิ่มงบประมาณเรียบร้อย!\nจำนวนเงิน: ${formatCurrency(requestAmount.value)} THB\nรอการอนุมัติจากทางทีมบัญชี`);
+    alert(`ส่งคำขอเพิ่มงบประมาณเรียบร้อย!\nจำนวนเงิน: ${formatCurrency(requestAmount.value)} THB\nรอการอนุมัติจากทางทีมบัญชี`);
     showRequestBudgetModal.value = false;
   } finally {
     isSubmittingRequest.value = false;
   }
+};
+
+const parseMoneyInput = (value: unknown) => {
+  const normalized = String(value ?? '').replace(/,/g, '').trim();
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const formatMoneyInput = (value: unknown) => {
+  const parsed = parseMoneyInput(value);
+  if (!parsed) return '';
+  return parsed.toLocaleString('th-TH', { maximumFractionDigits: 2 });
+};
+
+const updateCustomItemPriceInput = (index: number, value: unknown) => {
+  cartStore.updateCustomItemPrice(index, parseMoneyInput(value));
 };
 
 const formatCurrency = (val?: number | string) => {

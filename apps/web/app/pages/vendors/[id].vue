@@ -1,10 +1,10 @@
-<template>
-  <div class="space-y-6 max-w-4xl mx-auto pb-12">
+﻿<template>
+  <div class="vendor-like-page max-w-4xl mx-auto pb-12">
     <!-- Header Back -->
     <div class="flex items-center gap-3">
       <UButton 
         to="/vendors" 
-        color="gray" 
+        color="neutral" 
         variant="ghost" 
         size="sm"
       >
@@ -14,7 +14,7 @@
     </div>
 
     <!-- Vendor Title Area -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">{{ vendor?.vendor_name }}</h2>
         <p class="text-xs text-[var(--muted-foreground)] mt-1">
@@ -31,9 +31,9 @@
       <!-- General and Address Info (2/3 width) -->
       <div class="md:col-span-2 space-y-6">
         <!-- Details Card -->
-        <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
+        <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[var(--border)] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
               <UIcon name="i-heroicons-building-office-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">ข้อมูลที่ตั้งและประเภทธุรกิจ</h3>
             </div>
@@ -61,9 +61,9 @@
         </UCard>
 
         <!-- Contacts Card -->
-        <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
+        <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[var(--border)] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
               <UIcon name="i-heroicons-user-group-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">ผู้ติดต่อประสานงาน</h3>
             </div>
@@ -91,14 +91,14 @@
       <!-- Financial & Documents Info (1/3 width) -->
       <div class="space-y-6">
         <!-- AI Vendor Sentiment & Insights Card -->
-        <UCard class="border-2 border-indigo-600/30 shadow-md rounded-[var(--radius-lg)] overflow-hidden bg-gradient-to-b from-indigo-50/20 to-white">
+        <UCard class="border-2 border-green-600/30 shadow-md rounded-[var(--radius-lg)] overflow-hidden bg-gradient-to-b from-green-50/20 to-white">
           <template #header>
-            <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <div class="flex items-center justify-between border-b border-[#eff1f5] pb-3">
               <div class="flex items-center gap-2">
-                <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-[#0054FF] animate-pulse" />
-                <h3 class="font-extrabold text-sm text-[#002266] uppercase tracking-wider">AI Smart Vendor Insights</h3>
+                <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-[var(--primary)] animate-pulse" />
+                <h3 class="font-extrabold text-sm text-[var(--fg-primary)] uppercase tracking-wider">AI Smart Vendor Insights</h3>
               </div>
-              <span class="text-[9px] bg-[#0054FF] text-white px-2 py-0.5 rounded-full font-bold">LIVE AUDIT</span>
+              <span class="text-[9px] bg-[var(--primary)] text-white px-2 py-0.5 rounded-full font-bold">LIVE AUDIT</span>
             </div>
           </template>
 
@@ -106,7 +106,7 @@
             <!-- Sentiment and Risk overview row -->
             <div class="grid grid-cols-2 gap-3">
               <!-- Sentiment card -->
-              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-all duration-200">
+              <div class="bg-[#fafbfc] border border-[#eff1f5] rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-all duration-200">
                 <span class="text-[10px] text-slate-400 font-semibold block uppercase">Sentiment Index</span>
                 <div class="flex items-end gap-1.5 mt-1.5">
                   <span class="text-xl font-black text-slate-800">{{ aiInsights.sentimentScore }}%</span>
@@ -118,7 +118,7 @@
               </div>
 
               <!-- Risk level card -->
-              <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-all duration-200">
+              <div class="bg-[#fafbfc] border border-[#eff1f5] rounded-xl p-3 flex flex-col justify-between hover:border-slate-300 transition-all duration-200">
                 <span class="text-[10px] text-slate-400 font-semibold block uppercase">AI Risk Level</span>
                 <div class="flex items-end gap-1.5 mt-1.5">
                   <span class="text-xl font-black text-slate-800">{{ aiInsights.riskScore }}%</span>
@@ -144,7 +144,7 @@
               </div>
               <div class="flex justify-between items-center text-[10px]">
                 <span class="text-slate-500 font-medium">ดัชนีแนวโน้มราคา (Price Trend Index):</span>
-                <span class="font-bold text-[#0054FF]">{{ aiInsights.priceIndex }}</span>
+                <span class="font-bold text-[var(--primary)]">{{ aiInsights.priceIndex }}</span>
               </div>
             </div>
 
@@ -160,9 +160,9 @@
             </div>
 
             <!-- AI Insight summary text -->
-            <div class="bg-indigo-50/50 border border-indigo-100/50 rounded-xl p-3 space-y-1.5">
-              <div class="font-bold text-indigo-900 flex items-center gap-1 text-[10px]">
-                <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-4 h-4 text-indigo-600" />
+            <div class="bg-green-50/50 border border-green-100/50 rounded-xl p-3 space-y-1.5">
+              <div class="font-bold text-green-900 flex items-center gap-1 text-[10px]">
+                <UIcon name="i-heroicons-chat-bubble-bottom-center-text" class="w-4 h-4 text-[var(--primary)]" />
                 <span>คำแนะนำเชิงกลยุทธ์จาก AI</span>
               </div>
               <p class="text-[10px] text-slate-600 leading-relaxed font-medium">
@@ -175,7 +175,7 @@
               <UButton
                 color="primary"
                 icon="i-heroicons-sparkles"
-                class="w-full text-xs font-bold text-white bg-[#0054FF] hover:bg-[#002266] justify-center cursor-pointer transition-all duration-200 shadow-sm"
+                class="w-full text-xs font-bold text-white bg-[var(--primary)] hover:bg-green-700 justify-center cursor-pointer transition-all duration-200 shadow-sm"
                 :loading="isAnalyzing"
                 @click="triggerAiAnalysis"
               >
@@ -200,9 +200,9 @@
         </UCard>
 
         <!-- Bank account -->
-        <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
+        <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[var(--border)] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
               <UIcon name="i-heroicons-credit-card-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">ข้อมูลการชำระเงิน</h3>
             </div>
@@ -225,9 +225,9 @@
         </UCard>
 
         <!-- Documents links -->
-        <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
+        <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[var(--border)] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
               <UIcon name="i-heroicons-document-arrow-down-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">เอกสารแนบ</h3>
             </div>
@@ -237,7 +237,7 @@
             <div 
               v-for="doc in vendor?.documents" 
               :key="doc.document_id"
-              class="flex flex-col p-2 bg-[var(--background)] rounded border border-[var(--border)] text-xs"
+              class="flex flex-col p-2 bg-[var(--background)] rounded border border-[#e9ecef] text-xs"
             >
               <span class="font-semibold text-[var(--foreground)]">{{ doc.document_type }}</span>
               <a 
@@ -284,40 +284,24 @@
 
         <div class="flex justify-end gap-3 pt-2">
           <template v-if="!showRejectComment">
-            <UButton 
-              color="red" 
-              variant="soft" 
-              size="md"
-              @click="showRejectComment = true"
-            >
-              ปฏิเสธ (Reject)
-            </UButton>
-            <UButton 
-              color="primary" 
-              size="md"
-              :loading="isSubmitting"
-              @click="handleApprove"
-            >
-              อนุมัติคู่ค้า (Approve)
-            </UButton>
+            <button class="vnd-btn vnd-btn--reject" @click="showRejectComment = true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              ปฏิเสธ
+            </button>
+            <button class="vnd-btn vnd-btn--approve" :disabled="isSubmitting" @click="handleApprove">
+              <svg v-if="!isSubmitting" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10"/></svg>
+              อนุมัติคู่ค้า
+            </button>
           </template>
           <template v-else>
-            <UButton 
-              color="gray" 
-              variant="solid" 
-              size="md"
-              @click="showRejectComment = false"
-            >
+            <button class="vnd-btn vnd-btn--cancel" @click="showRejectComment = false">
               ยกเลิก
-            </UButton>
-            <UButton 
-              color="red" 
-              size="md"
-              :loading="isSubmitting"
-              @click="handleReject"
-            >
+            </button>
+            <button class="vnd-btn vnd-btn--confirm-reject" :disabled="isSubmitting" @click="handleReject">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
               ยืนยันการปฏิเสธ
-            </UButton>
+            </button>
           </template>
         </div>
       </div>
@@ -492,3 +476,93 @@ const formatDate = (dateStr: string) => {
   });
 };
 </script>
+
+<style scoped>
+.vendor-like-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  font-family: var(--font-sans);
+}
+
+.vendor-like-page > .flex:first-child {
+  margin-bottom: -4px;
+}
+
+.vendor-like-page > .flex:nth-child(2) {
+  align-items: flex-start;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.vendor-like-page h2 {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.vendor-like-page p {
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--fg-tertiary);
+}
+
+.vendor-like-page :deep(.rounded-xl),
+.vendor-like-page :deep(.rounded-lg) {
+  border-color: var(--border-subtle);
+  box-shadow: var(--shadow-1);
+}
+
+.vendor-like-page h3 {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  color: var(--fg-primary);
+  letter-spacing: 0;
+}
+
+/* ── Approval action buttons ── */
+.vnd-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 9px 20px;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm); font-weight: var(--weight-semibold);
+  font-family: var(--font-sans); cursor: pointer; border: 1px solid;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+  white-space: nowrap;
+}
+.vnd-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none !important; }
+.vnd-btn:not(:disabled):hover { transform: translateY(-1px); }
+
+/* Approve — green gradient */
+.vnd-btn--approve {
+  background: var(--gradient-brand-diagonal);
+  color: white; border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0,146,69,0.28);
+}
+.vnd-btn--approve:not(:disabled):hover { box-shadow: 0 4px 14px rgba(0,146,69,0.38); }
+
+/* Reject — red outline (destructive, but not alarming) */
+.vnd-btn--reject {
+  background: transparent;
+  color: var(--color-error-600);
+  border-color: var(--color-error-300);
+}
+.vnd-btn--reject:hover { background: var(--color-error-50); }
+
+/* Cancel — neutral */
+.vnd-btn--cancel {
+  background: var(--bg-surface);
+  color: var(--fg-secondary);
+  border-color: var(--border-default);
+}
+.vnd-btn--cancel:hover { background: var(--bg-subtle); }
+
+/* Confirm reject — red solid */
+.vnd-btn--confirm-reject {
+  background: var(--color-error-600);
+  color: white; border-color: transparent;
+  box-shadow: 0 2px 6px rgba(239,68,68,0.25);
+}
+.vnd-btn--confirm-reject:not(:disabled):hover { background: var(--color-error-700); }
+</style>

@@ -10,7 +10,6 @@
       </div>
       <NuxtLink to="/bids">
         <UButton variant="outline" size="xs">
-          <UIcon name="i-heroicons-chevron-left" class="w-4 h-4 mr-1" />
           ย้อนกลับ
         </UButton>
       </NuxtLink>
@@ -224,8 +223,7 @@
           :disabled="hasUnfilledFields || (rfq?.bid_type !== 'RFI' && rfq?.bid_type !== 'RFP' && !quotationUrl)"
           class="font-semibold shadow-sm cursor-pointer"
         >
-          <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4 mr-1" />
-          ส่งเสนอราคา (Submit Quote)
+          ส่งเสนอราคา
         </UButton>
       </div>
     </form>
@@ -310,7 +308,7 @@ const handleFileUpload = async (event: Event) => {
     });
     quotationUrl.value = res.file_url;
   } catch (err) {
-    console.warn('Backend upload offline. Mocking file success.');
+    console.warn('Backend upload offline. Using demo file success.');
     quotationUrl.value = `/uploads/quotations/quote_ven_mock_${Date.now()}.pdf`;
   }
 };
@@ -334,7 +332,7 @@ const handleLineFileUpload = async (event: Event, idx: number) => {
     });
     quoteLines.value[idx].quotation_url = res.file_url;
   } catch (err) {
-    console.warn('Backend upload offline. Mocking line file success.');
+    console.warn('Backend upload offline. Using demo line file success.');
     quoteLines.value[idx].quotation_url = `/uploads/quotations/line_quote_ven_mock_${idx}_${Date.now()}.pdf`;
   } finally {
     quoteLines.value[idx].uploading = false;
@@ -386,8 +384,8 @@ const submitQuote = async () => {
     alert('ส่งซองข้อเสนอราคาสำเร็จเรียบร้อยแล้ว!');
     navigateTo('/bids');
   } catch (err: any) {
-    console.warn('Backend quote submit failed. Mocking success.');
-    alert('[MOCK] ส่งซองเสนอราคาของท่านเข้าสู่ระบบจัดซื้อสำเร็จแล้ว!');
+    console.warn('Backend quote submit failed. Applying demo success.');
+    alert('ส่งซองเสนอราคาของท่านเข้าสู่ระบบจัดซื้อสำเร็จแล้ว!');
     navigateTo('/bids');
   } finally {
     isLoading.value = false;

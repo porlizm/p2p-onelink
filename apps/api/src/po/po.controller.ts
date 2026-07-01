@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Param, Body, UseGuards, Req, Patch, UseInterceptors, UploadedFile, BadRequestException } from '@nestjs/common';
 import { PoService } from './po.service';
-import { ConfirmPoDto, RequestRevisionDto, RevisePoDto } from './dto/po.dto';
+import { ConvertPrToPoDto, ConfirmPoDto, RequestRevisionDto, RevisePoDto } from './dto/po.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('po')
@@ -9,9 +9,9 @@ export class PoController {
   constructor(private readonly poService: PoService) {}
 
   @Post('convert/:prId')
-  async convertPrToPo(@Param('prId') prId: string, @Req() req: any) {
+  async convertPrToPo(@Param('prId') prId: string, @Body() dto: ConvertPrToPoDto, @Req() req: any) {
     const { userId } = req.user;
-    return this.poService.convertPrToPo(prId, userId);
+    return this.poService.convertPrToPo(prId, userId, dto.vendor_id);
   }
 
   @Get()
@@ -65,6 +65,12 @@ export class PoController {
   async cancelPO(@Param('id') id: string, @Req() req: any) {
     const { userId } = req.user;
     return this.poService.cancelPO(id, userId);
+  }
+
+  @Patch(':id/approve')
+  async approvePO(@Param('id') id: string, @Req() req: any) {
+    const { userId } = req.user;
+    return this.poService.approvePO(id, userId);
   }
 
   @Patch(':id/reject')

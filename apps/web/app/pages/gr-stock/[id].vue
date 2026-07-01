@@ -1,31 +1,31 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-4xl mx-auto">
     <!-- Header -->
-    <div class="border-b border-[var(--border)] pb-4 flex items-center justify-between">
+    <div class="border-b border-[#eff1f5] pb-4 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">รายละเอียดใบรับสินค้า (Goods Receipt)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">เลขที่เอกสาร: <span class="font-bold text-slate-800">{{ grDetails?.gr_no || '-' }}</span></p>
       </div>
       <div class="flex gap-2">
-        <UButton to="/gr-stock" variant="outline" icon="i-heroicons-arrow-left">กลับหน้ารายการ</UButton>
-        <UButton 
+        <NuxtLink to="/gr-stock"><button class="btn-outline">← กลับหน้ารายการ</button></NuxtLink>
+        <button
           v-if="grDetails?.status !== 'ClaimRaised'"
+          class="btn-outline"
+          style="border-color: var(--destructive); color: var(--destructive);"
           @click="showClaimModal = true"
-          color="red"
-          icon="i-heroicons-exclamation-triangle"
-          class="cursor-pointer"
         >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
           แจ้งเคลมสินค้าชำรุด
-        </UButton>
+        </button>
       </div>
     </div>
 
     <!-- GR Info Cards -->
     <div v-if="grDetails" class="grid grid-cols-1 md:grid-cols-3 gap-6">
       <!-- General Info -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
         <h4 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
-          <UIcon name="i-heroicons-information-circle" class="text-[var(--primary)] w-4.5 h-4.5" />
+          <span class="text-[var(--primary)]">ℹ</span>
           <span>ข้อมูลทั่วไป</span>
         </h4>
         <div class="text-xs space-y-2.5">
@@ -45,9 +45,9 @@
       </div>
 
       <!-- PO & Vendor Info -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
         <h4 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
-          <UIcon name="i-heroicons-shopping-bag" class="text-[var(--primary)] w-4.5 h-4.5" />
+          <span class="text-[var(--primary)]">🛍</span>
           <span>อ้างอิงใบสั่งซื้อ (PO)</span>
         </h4>
         <div class="text-xs space-y-2.5">
@@ -67,16 +67,16 @@
       </div>
 
       <!-- Scoring & Attachments -->
-      <div class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
         <h4 class="font-bold text-slate-800 text-sm border-b pb-2 flex items-center gap-2">
-          <UIcon name="i-heroicons-star" class="text-[var(--primary)] w-4.5 h-4.5" />
+          <span class="text-[var(--primary)]">★</span>
           <span>การประเมินและการแนบไฟล์</span>
         </h4>
         <div class="text-xs space-y-2.5">
           <div class="flex justify-between items-center">
             <span class="text-slate-400">คะแนนบริการ:</span>
             <span class="font-bold text-amber-500 flex items-center gap-0.5">
-              ★ {{ grDetails.quality_score }} / 5.0
+              ★ {{ Number(grDetails.quality_score) > 5 ? (Number(grDetails.quality_score) / 2).toFixed(2) : Number(grDetails.quality_score).toFixed(2) }} / 5.0
             </span>
           </div>
           <div class="flex justify-between">
@@ -88,32 +88,32 @@
     </div>
 
     <!-- Items List Table -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-      <div class="p-4 border-b border-[var(--border)] font-bold text-slate-800 text-sm">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+      <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-800 text-sm">
         รายการจัดส่งสินค้าตรวจรับ
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-              <th class="px-6 py-3">รหัสสินค้า</th>
-              <th class="px-6 py-3">รายการสินค้า</th>
-              <th class="px-6 py-3 text-right">จำนวนสั่งซื้อ (Ordered)</th>
-              <th class="px-6 py-3 text-right">จำนวนที่รับจริง (Received)</th>
-              <th class="px-6 py-3 text-right">ผลต่าง (Variance)</th>
-              <th class="px-6 py-3 class-center">หน่วยนับ</th>
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+              <th class="px-6 py-3.5">รหัสสินค้า</th>
+              <th class="px-6 py-3.5">รายการสินค้า</th>
+              <th class="px-6 py-3.5 text-right">จำนวนสั่งซื้อ (Ordered)</th>
+              <th class="px-6 py-3.5 text-right">จำนวนที่รับจริง (Received)</th>
+              <th class="px-6 py-3.5 text-right">ผลต่าง (Variance)</th>
+              <th class="px-6 py-3.5 class-center">หน่วยนับ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)]">
-            <tr v-for="line in grDetails?.lines" :key="line.gr_line_id" class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-mono font-bold text-slate-500 text-xs">{{ line.item?.central_item_code || 'N/A' }}</td>
-              <td class="px-6 py-4 font-semibold text-slate-800">{{ line.item?.item_name || 'N/A' }}</td>
-              <td class="px-6 py-4 text-right font-semibold text-slate-600">{{ formatQuantity(line.qty_ordered) }}</td>
-              <td class="px-6 py-4 text-right font-extrabold text-blue-600">{{ formatQuantity(line.qty_received) }}</td>
-              <td class="px-6 py-4 text-right font-extrabold" :class="[line.variance_qty < 0 ? 'text-red-500' : 'text-slate-400']">
+          <tbody class="divide-y divide-[#eff1f5]">
+            <tr v-for="line in grDetails?.lines" :key="line.gr_line_id" class="hover:bg-[#f8fffe] transition">
+              <td class="px-6 py-5font-mono font-bold text-slate-500 text-xs">{{ line.item?.central_item_code || 'N/A' }}</td>
+              <td class="px-6 py-5font-semibold text-slate-800">{{ line.item?.item_name || 'N/A' }}</td>
+              <td class="px-6 py-5text-right font-semibold text-slate-600">{{ formatQuantity(line.qty_ordered) }}</td>
+              <td class="px-6 py-5text-right font-extrabold text-blue-600">{{ formatQuantity(line.qty_received) }}</td>
+              <td class="px-6 py-5text-right font-extrabold" :class="[line.variance_qty < 0 ? 'text-red-500' : 'text-slate-400']">
                 {{ line.variance_qty > 0 ? '+' : '' }}{{ formatQuantity(line.variance_qty) }}
               </td>
-              <td class="px-6 py-4 text-center text-slate-500">{{ line.item?.uom || 'ชิ้น' }}</td>
+              <td class="px-6 py-5text-center text-slate-500">{{ line.item?.uom || 'ชิ้น' }}</td>
             </tr>
           </tbody>
         </table>
@@ -121,14 +121,14 @@
     </div>
 
     <!-- Evidence photo view -->
-    <div v-if="grDetails?.attachments && grDetails.attachments.length > 0" class="bg-white border border-[var(--border)] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
+    <div v-if="grDetails?.attachments && grDetails.attachments.length > 0" class="bg-white border border-[#e9ecef] rounded-xl p-5 shadow-[var(--shadow-sm)] space-y-3">
       <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-        <UIcon name="i-heroicons-photo" class="text-blue-500 w-5 h-5" />
+        <span class="text-blue-500">🖼</span>
         <span>รูปภาพหลักฐานการตรวจรับ</span>
       </h4>
       <div class="flex flex-wrap gap-4 pt-2">
-        <div v-for="att in grDetails.attachments" :key="att.attachment_id" class="relative group border border-slate-200 rounded-lg overflow-hidden w-40 h-28 bg-slate-50 flex items-center justify-center">
-          <UIcon name="i-heroicons-document-text" class="w-12 h-12 text-slate-300" />
+        <div v-for="att in grDetails.attachments" :key="att.attachment_id" class="relative group border border-[#eff1f5] rounded-lg overflow-hidden w-40 h-28 bg-[#fafbfc] flex items-center justify-center">
+          <svg class="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
           <div class="absolute inset-0 bg-slate-900/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             <span class="text-[10px] text-white font-semibold">ดูไฟล์หลักฐาน</span>
           </div>
@@ -137,11 +137,12 @@
     </div>
 
     <!-- Claim Registration Modal -->
-    <UModal v-model="showClaimModal">
+    <UModal v-model:open="showClaimModal">
+      <template #content>
       <div class="p-6 space-y-4">
         <div class="flex items-center gap-3 border-b pb-3">
-          <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
-            <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6" />
+          <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center text-xl">
+            ⚠
           </div>
           <div>
             <h3 class="font-bold text-slate-800 text-base">แจ้งรายละเอียดการเคลมสินค้าชำรุด</h3>
@@ -165,7 +166,7 @@
             <UTextarea 
               v-model="claimDescription"
               placeholder="กรุณากรอกข้อมูลปัญหา เช่น พบการชำรุดของเก้าอี้ขณะขนส่ง แขนเบาะฉีกขาด..."
-              rows="3"
+              :rows="3"
             />
           </div>
 
@@ -187,17 +188,19 @@
         </div>
 
         <div class="flex justify-end gap-2 border-t pt-4 mt-2">
-          <UButton @click="showClaimModal = false" variant="ghost" color="gray">ยกเลิก</UButton>
-          <UButton 
+          <button class="btn-outline" @click="showClaimModal = false">ยกเลิก</button>
+          <button
+            class="btn-outline"
+            style="border-color: var(--destructive); color: var(--destructive); background: var(--destructive); color: white;"
+            :disabled="submittingClaim"
             @click="submitClaim"
-            color="red"
-            :loading="submittingClaim"
-            class="px-5 cursor-pointer"
           >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
             ยืนยันแจ้งเคลม
-          </UButton>
+          </button>
         </div>
       </div>
+          </template>
     </UModal>
   </div>
 </template>

@@ -16,8 +16,7 @@ export class GrController {
 
   @Get()
   async findAll(@Req() req: any) {
-    const { userId } = req.user;
-    return this.grService.findAll(userId);
+    return this.grService.findAll(req.user);
   }
 
   @Get('stock')

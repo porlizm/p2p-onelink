@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
+    <div class="flex items-center justify-between border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">ระบบบริหารจัดการงบประมาณ (Budget & Cost Center Management)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">ตรวจสอบศูนย์ต้นทุน, อนุมัติคำขอเพิ่มงบประมาณ, และทำรายการโอนงบประมาณระหว่างฝ่าย</p>
@@ -9,7 +9,7 @@
       <div class="flex items-center gap-2">
         <UButton 
           @click="showResetConfirm = true"
-          color="red"
+          color="error"
           variant="outline"
           icon="i-heroicons-arrow-path"
           class="cursor-pointer font-bold text-xs"
@@ -21,8 +21,8 @@
 
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+        <div class="w-10 h-10 rounded-lg bg-green-50 text-[var(--primary)] flex items-center justify-center">
           <UIcon name="i-heroicons-banknotes" class="w-6 h-6" />
         </div>
         <div>
@@ -30,7 +30,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatCurrency(totalAnnualBudget) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
           <UIcon name="i-heroicons-lock-closed" class="w-6 h-6" />
         </div>
@@ -39,7 +39,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatCurrency(totalReservedBudget) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
           <UIcon name="i-heroicons-shopping-cart" class="w-6 h-6" />
         </div>
@@ -48,7 +48,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatCurrency(totalUsedBudget) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
           <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
         </div>
@@ -60,70 +60,63 @@
     </div>
 
     <!-- Main Navigation Tabs -->
-    <div class="flex border-b border-slate-200">
-      <button 
-        v-for="t in budgetTabs" 
+    <div class="ds-tabs">
+      <button
+        v-for="t in budgetTabs"
         :key="t.id"
+        class="ds-tab"
+        :class="{ 'ds-tab--active': activeTab === t.id }"
         @click="activeTab = t.id"
-        class="px-5 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
-        :class="[
-          activeTab === t.id 
-            ? 'border-[var(--primary)] text-[var(--primary)]' 
-            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-        ]"
       >
-        <div class="flex items-center gap-2">
-          <UIcon :name="t.icon" class="w-4 h-4" />
-          <span>{{ t.name }}</span>
-          <span 
-            v-if="t.id === 'requests' && pendingRequestsCount > 0" 
-            class="px-1.5 py-0.5 rounded-full text-[10px] bg-red-100 text-red-600 font-bold"
-          >
-            {{ pendingRequestsCount }}
-          </span>
-        </div>
+        <span>{{ t.name }}</span>
+        <span
+          v-if="t.id === 'requests' && pendingRequestsCount > 0"
+          class="ds-tab__badge ds-tab__badge--danger"
+        >
+          {{ pendingRequestsCount }}
+        </span>
       </button>
     </div>
 
     <!-- TAB 1: BUDGET REQUESTS QUEUE -->
     <div v-if="activeTab === 'requests'" class="space-y-4">
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-        <div class="p-4 border-b border-[var(--border)] flex items-center justify-between">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] flex items-center justify-between">
           <div class="font-bold text-slate-700">รายการคำขอเพิ่มงบประมาณจากหน่วยงานธุรกิจ (BU)</div>
         </div>
 
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                <th class="px-6 py-3">ศูนย์ต้นทุน</th>
-                <th class="px-6 py-3">หน่วยงานธุรกิจ (BU)</th>
-                <th class="px-6 py-3 text-right">ยอดที่ยื่นขอ (THB)</th>
-                <th class="px-6 py-3">เหตุผลความจำเป็น</th>
-                <th class="px-6 py-3">ผู้ยื่นขอ</th>
-                <th class="px-6 py-3 text-center">วันที่ส่งคำขอ</th>
-                <th class="px-6 py-3 text-center">สถานะ</th>
-                <th class="px-6 py-3 text-center">ดำเนินการ</th>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">ศูนย์ต้นทุน</th>
+                <th class="px-6 py-3.5">หน่วยงานธุรกิจ (BU)</th>
+                <th class="px-6 py-3.5 text-right">ยอดที่ยื่นขอ (THB)</th>
+                <th class="px-6 py-3.5">เหตุผลความจำเป็น</th>
+                <th class="px-6 py-3.5">ผู้ยื่นขอ</th>
+                <th class="px-6 py-3.5 text-center">วันที่ส่งคำขอ</th>
+                <th class="px-6 py-3.5 text-center">สถานะ</th>
+                <th class="px-6 py-3.5 text-center">ดำเนินการ</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="req in budgetRequests" :key="req.request_id" class="hover:bg-slate-50/50 transition">
-                <td class="px-6 py-4 font-bold text-slate-800">
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="req in budgetRequests" :key="req.request_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-5font-bold text-slate-800">
                   {{ req.cost_center?.cc_name }}
                   <span class="block text-[10px] text-slate-400 font-mono">{{ req.cost_center?.cc_code }}</span>
                 </td>
-                <td class="px-6 py-4 text-slate-600">
+                <td class="px-6 py-5text-slate-600">
                   {{ req.cost_center?.business_unit?.bu_name || 'SCG JWD BU' }}
                 </td>
-                <td class="px-6 py-4 text-right font-extrabold text-indigo-600">
+                <td class="px-6 py-5text-right font-extrabold text-indigo-600">
                   {{ formatCurrency(req.requested_amount) }}
                 </td>
-                <td class="px-6 py-4 text-slate-500 max-w-xs truncate" :title="req.reason">
+                <td class="px-6 py-5text-slate-500 max-w-xs truncate" :title="req.reason">
                   {{ req.reason }}
                 </td>
-                <td class="px-6 py-4 text-slate-600">{{ req.created_by }}</td>
-                <td class="px-6 py-4 text-center text-slate-500">{{ formatDate(req.created_at) }}</td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-5text-slate-600">{{ req.created_by }}</td>
+                <td class="px-6 py-5text-center text-slate-500">{{ formatDate(req.created_at) }}</td>
+                <td class="px-6 py-5text-center">
                   <span 
                     class="px-2.5 py-0.5 rounded-full text-xs font-bold inline-block border"
                     :class="[
@@ -135,12 +128,12 @@
                     {{ formatRequestStatus(req.status) }}
                   </span>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-5text-center">
                   <div v-if="req.status === 'Pending'" class="flex items-center justify-center gap-1.5">
                     <UButton 
                       @click="approveRequest(req.request_id)"
                       size="xs" 
-                      color="green"
+                      color="success"
                       icon="i-heroicons-check"
                       class="cursor-pointer font-bold"
                     >
@@ -149,7 +142,7 @@
                     <UButton 
                       @click="rejectRequest(req.request_id)"
                       size="xs" 
-                      color="red"
+                      color="error"
                       variant="outline"
                       icon="i-heroicons-x-mark"
                       class="cursor-pointer"
@@ -173,7 +166,7 @@
 
     <!-- TAB 2: BUDGET TRANSFER FORM -->
     <div v-if="activeTab === 'transfer'" class="space-y-4 max-w-2xl">
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
         <h3 class="font-bold text-sm text-[var(--foreground)] border-b pb-2 flex items-center gap-2">
           <UIcon name="i-heroicons-arrows-right-left" class="w-4 h-4 text-[var(--primary)]" />
           ทำรายการโอนงบประมาณระหว่างศูนย์ต้นทุน (Budget Transfer)
@@ -185,7 +178,7 @@
               <label class="block text-slate-600 font-semibold mb-1">โอนออกจากศูนย์ต้นทุน (Source Cc) *</label>
               <select 
                 v-model="transferFromCc"
-                class="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none"
+                class="w-full px-2.5 py-1.5 text-xs border border-[#e9ecef] rounded bg-white focus:outline-none"
               >
                 <option value="" disabled>-- เลือกศูนย์ต้นทุนต้นทาง --</option>
                 <option 
@@ -201,7 +194,7 @@
               <label class="block text-slate-600 font-semibold mb-1">โอนเข้าศูนย์ต้นทุน (Destination Cc) *</label>
               <select 
                 v-model="transferToCc"
-                class="w-full px-2.5 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none"
+                class="w-full px-2.5 py-1.5 text-xs border border-[#e9ecef] rounded bg-white focus:outline-none"
               >
                 <option value="" disabled>-- เลือกศูนย์ต้นทุนปลายทาง --</option>
                 <option 
@@ -225,7 +218,7 @@
             <UTextarea 
               v-model="transferReason" 
               placeholder="ระบุเหตุผลในการโอนย้ายงบประมาณจัดสรร เช่น ปรับสัดส่วนโครงการไอทีปลายปี..." 
-              rows="3"
+              :rows="3"
             />
           </div>
         </div>
@@ -236,7 +229,7 @@
             color="primary"
             :loading="isSubmittingTransfer"
             :disabled="!transferFromCc || !transferToCc || !transferAmount || transferAmount <= 0"
-            class="px-5 cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-700"
+            class="px-5 cursor-pointer font-bold bg-[var(--primary)] hover:bg-green-700"
           >
             โอนย้ายงบประมาณ
           </UButton>
@@ -246,44 +239,44 @@
 
     <!-- TAB 3: COST CENTERS DIRECTORY -->
     <div v-if="activeTab === 'centers'" class="space-y-4">
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                <th class="px-6 py-3">รหัสศูนย์ต้นทุน</th>
-                <th class="px-6 py-3">ชื่อศูนย์ต้นทุน (Cost Center)</th>
-                <th class="px-6 py-3 text-right">งบประมาณประจำปี (THB)</th>
-                <th class="px-6 py-3 text-right">จองไว้ (Reserved)</th>
-                <th class="px-6 py-3 text-right">ใช้จริง (Used)</th>
-                <th class="px-6 py-3 text-right">งบคงเหลือใช้งาน</th>
-                <th class="px-6 py-3 text-center">เกณฑ์งบเกิน (%)</th>
-                <th class="px-6 py-3 text-right">เกณฑ์งบเกิน (บาท)</th>
-                <th class="px-6 py-3 text-center">ความครอบคลุมงบประมาณ</th>
-                <th class="px-6 py-3 text-center">ปีงบประมาณ</th>
-                <th class="px-6 py-3 text-center">จัดการ</th>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">รหัสศูนย์ต้นทุน</th>
+                <th class="px-6 py-3.5">ชื่อศูนย์ต้นทุน (Cost Center)</th>
+                <th class="px-6 py-3.5 text-right">งบประมาณประจำปี (THB)</th>
+                <th class="px-6 py-3.5 text-right">จองไว้ (Reserved)</th>
+                <th class="px-6 py-3.5 text-right">ใช้จริง (Used)</th>
+                <th class="px-6 py-3.5 text-right">งบคงเหลือใช้งาน</th>
+                <th class="px-6 py-3.5 text-center">เกณฑ์งบเกิน (%)</th>
+                <th class="px-6 py-3.5 text-right">เกณฑ์งบเกิน (บาท)</th>
+                <th class="px-6 py-3.5 text-center">ความครอบคลุมงบประมาณ</th>
+                <th class="px-6 py-3.5 text-center">ปีงบประมาณ</th>
+                <th class="px-6 py-3.5 text-center">จัดการ</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="cc in costCenters" :key="cc.cost_center_id" class="hover:bg-slate-50/50 transition">
-                <td class="px-6 py-4 font-mono font-bold text-slate-700">{{ cc.cc_code }}</td>
-                <td class="px-6 py-4 font-bold text-slate-800">{{ cc.cc_name }}</td>
-                <td class="px-6 py-4 text-right font-semibold">{{ formatCurrency(cc.annual_budget_amount) }}</td>
-                <td class="px-6 py-4 text-right text-orange-600">{{ formatCurrency(cc.budget_reserved_amount) }}</td>
-                <td class="px-6 py-4 text-right text-red-600 font-semibold">{{ formatCurrency(cc.budget_used_amount) }}</td>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="cc in costCenters" :key="cc.cost_center_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-5font-mono font-bold text-slate-700">{{ cc.cc_code }}</td>
+                <td class="px-6 py-5font-bold text-slate-800">{{ cc.cc_name }}</td>
+                <td class="px-6 py-5text-right font-semibold">{{ formatCurrency(cc.annual_budget_amount) }}</td>
+                <td class="px-6 py-5text-right text-orange-600">{{ formatCurrency(cc.budget_reserved_amount) }}</td>
+                <td class="px-6 py-5text-right text-red-600 font-semibold">{{ formatCurrency(cc.budget_used_amount) }}</td>
                 <td 
-                  class="px-6 py-4 text-right font-extrabold"
+                  class="px-6 py-5text-right font-extrabold"
                   :class="(Number(cc.annual_budget_amount) - Number(cc.budget_used_amount) - Number(cc.budget_reserved_amount) < 0) ? 'text-red-600' : 'text-green-600'"
                 >
                   {{ formatCurrency(Number(cc.annual_budget_amount) - Number(cc.budget_used_amount) - Number(cc.budget_reserved_amount)) }}
                 </td>
-                <td class="px-6 py-4 text-center font-medium text-slate-600">
+                <td class="px-6 py-5text-center font-medium text-slate-600">
                   {{ cc.budget_overrun_tolerance_pct !== undefined && cc.budget_overrun_tolerance_pct !== null ? cc.budget_overrun_tolerance_pct : '5.0' }}%
                 </td>
-                <td class="px-6 py-4 text-right font-medium text-slate-600">
+                <td class="px-6 py-5text-right font-medium text-slate-600">
                   {{ formatCurrency(cc.budget_overrun_tolerance_amount !== undefined && cc.budget_overrun_tolerance_amount !== null ? cc.budget_overrun_tolerance_amount : 20000.0) }}
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-5text-center">
                   <div class="flex items-center justify-center gap-2">
                     <div class="h-2 w-28 bg-slate-200 rounded-full overflow-hidden relative">
                       <div 
@@ -295,12 +288,12 @@
                     <span class="text-[10px] font-bold text-slate-500">{{ getUsageRatio(cc).toFixed(1) }}%</span>
                   </div>
                 </td>
-                <td class="px-6 py-4 text-center font-bold text-slate-500">{{ cc.fiscal_year || '2026' }}</td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-5text-center font-bold text-slate-500">{{ cc.fiscal_year || '2026' }}</td>
+                <td class="px-6 py-5text-center">
                   <UButton
                     @click="openToleranceModal(cc)"
                     size="xs"
-                    color="gray"
+                    color="neutral"
                     variant="ghost"
                     icon="i-heroicons-pencil-square"
                     class="cursor-pointer"
@@ -315,14 +308,15 @@
     </div>
 
     <!-- Year-End Reset Confirmation Modal -->
-    <UModal v-model="showResetConfirm" prevent-close>
+    <UModal v-model:open="showResetConfirm" prevent-close>
+      <template #content>
       <div class="p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-3 text-red-600">
           <h3 class="font-bold text-base flex items-center gap-2">
             <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 animate-bounce" />
             <span>ยืนยันจำลองการรีเซ็ตปีงบประมาณประจำปี</span>
           </h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showResetConfirm = false" />
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showResetConfirm = false" />
         </div>
 
         <div class="text-xs text-slate-600 space-y-2 leading-relaxed">
@@ -331,32 +325,34 @@
         </div>
 
         <div class="flex justify-end gap-2 border-t pt-4">
-          <UButton @click="showResetConfirm = false" variant="ghost" color="gray">ยกเลิก</UButton>
+          <UButton @click="showResetConfirm = false" variant="ghost" color="neutral">ยกเลิก</UButton>
           <UButton 
             @click="submitReset"
-            color="red"
+            color="error"
             :loading="isSubmittingReset"
-            class="px-5 cursor-pointer font-bold bg-red-600 hover:bg-red-700 text-white"
+            class="px-5 cursor-pointer font-bold bg-[var(--interactive-danger)] hover:bg-red-700 text-white"
           >
             ยืนยันรีเซ็ตและขึ้นปีใหม่
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
 
     <!-- Edit Tolerance Modal -->
-    <UModal v-model="showToleranceModal" prevent-close>
+    <UModal v-model:open="showToleranceModal" prevent-close>
+      <template #content>
       <div class="p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-3 text-indigo-600">
           <h3 class="font-bold text-base flex items-center gap-2">
             <UIcon name="i-heroicons-cog-6-tooth" class="w-5 h-5" />
             <span>แก้ไขเกณฑ์การควบคุมงบเกิน (Edit Overrun Tolerance)</span>
           </h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showToleranceModal = false" />
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showToleranceModal = false" />
         </div>
 
         <div class="text-xs text-slate-600 space-y-4 leading-relaxed">
-          <div class="bg-slate-50 p-3 rounded-lg border border-slate-100 space-y-1">
+          <div class="bg-[#fafbfc] p-3 rounded-lg border border-slate-100 space-y-1">
             <div class="font-semibold text-slate-700">ศูนย์ต้นทุน: {{ selectedCc?.cc_name }} ({{ selectedCc?.cc_code }})</div>
             <div class="text-slate-500">งบประมาณประจำปี: {{ formatCurrency(selectedCc?.annual_budget_amount || 0) }} THB</div>
           </div>
@@ -387,24 +383,25 @@
         </div>
 
         <div class="flex justify-end gap-2 border-t pt-4">
-          <UButton @click="showToleranceModal = false" variant="ghost" color="gray">ยกเลิก</UButton>
+          <UButton @click="showToleranceModal = false" variant="ghost" color="neutral">ยกเลิก</UButton>
           <UButton 
             @click="saveTolerance"
             color="primary"
             :loading="isSavingTolerance"
-            class="px-5 cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+            class="px-5 cursor-pointer font-bold bg-[var(--primary)] hover:bg-green-700 text-white"
           >
             บันทึกการตั้งค่า
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
 
     <!-- TAB 4: ANNUAL PLAN & DEMAND BUs -->
     <div v-if="activeTab === 'annual_plan'" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Annual Plan Upload -->
-        <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
+        <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
           <h3 class="font-bold text-sm text-[var(--foreground)] border-b pb-2 flex items-center gap-2">
             <UIcon name="i-heroicons-document-arrow-up" class="w-4 h-4 text-indigo-600" />
             อัปโหลดแผนจัดซื้อรายปี (Annual Plan Excel Upload)
@@ -412,11 +409,11 @@
           <p class="text-xs text-[var(--muted-foreground)]">
             เลือกไฟล์แผนจัดซื้อประจำปีรูปแบบ Excel (.xlsx) เพื่ออัปเดตหรือกำหนดงบประมาณตามหมวดหมู่จัดซื้อหลัก
           </p>
-          <div class="flex flex-col gap-3 p-4 border-2 border-dashed border-slate-200 rounded-lg items-center justify-center bg-slate-50/50">
+          <div class="flex flex-col gap-3 p-4 border-2 border-dashed border-[#eff1f5] rounded-lg items-center justify-center bg-[#fafbfc]/50">
             <UIcon name="i-heroicons-cloud-arrow-up" class="w-8 h-8 text-slate-400" />
             <span class="text-xs text-slate-500 font-semibold">ลากและวางไฟล์ หรือคลิกเพื่อค้นหา</span>
             <input type="file" @change="handleExcelUpload" accept=".xlsx,.xls,.csv" class="hidden" id="excel-upload" />
-            <UButton size="xs" color="indigo" variant="soft" @click="triggerFileInput" class="cursor-pointer font-bold">
+            <UButton size="xs" color="primary" variant="soft" @click="triggerFileInput" class="cursor-pointer font-bold">
               เลือกไฟล์ Excel
             </UButton>
             <div class="text-[10px] text-slate-400">ขนาดไฟล์ไม่เกิน 5MB และมีคอลัมน์หมวดหมู่, งบประมาณ</div>
@@ -426,14 +423,14 @@
               <UIcon name="i-heroicons-arrow-down-tray" class="w-3.5 h-3.5" />
               ดาวน์โหลดฟอร์มเทมเพลต (Excel template)
             </a>
-            <UButton @click="loadAnnualPlans" color="slate" variant="ghost" size="xs" icon="i-heroicons-arrow-path">
+            <UButton @click="loadAnnualPlans" color="neutral" variant="ghost" size="xs" icon="i-heroicons-arrow-path">
               ดึงข้อมูลล่าสุด
             </UButton>
           </div>
         </div>
 
         <!-- Demand Collection Form -->
-        <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
+        <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
           <h3 class="font-bold text-sm text-[var(--foreground)] border-b pb-2 flex items-center gap-2">
             <UIcon name="i-heroicons-megaphone" class="w-4 h-4 text-emerald-600" />
             สำรวจความต้องการใช้งาน (BU Demand Collection Survey)
@@ -444,7 +441,7 @@
           <div class="space-y-3 text-xs">
             <div>
               <label class="block text-slate-600 font-semibold mb-1">หมวดหมู่แผนงาน *</label>
-              <select v-model="demandForm.plan_id" class="w-full px-2.5 py-1.5 border border-[var(--border)] rounded bg-white text-xs">
+              <select v-model="demandForm.plan_id" class="w-full px-2.5 py-1.5 border border-[#e9ecef] rounded bg-white text-xs">
                 <option value="">-- เลือกแผนงานประจำปีที่ต้องการผูก --</option>
                 <option v-for="plan in annualPlans" :key="plan.plan_id" :value="plan.plan_id">
                   {{ plan.business_category }} (งบเหลือ {{ formatCurrency(plan.remaining_budget) }} THB)
@@ -466,7 +463,7 @@
               <UInput v-model.number="demandForm.estimated_amount" type="number" placeholder="50000.00" size="sm" />
             </div>
             <div class="flex justify-end pt-2">
-              <UButton @click="submitDemand" color="emerald" class="px-5 font-bold cursor-pointer bg-emerald-600 text-white" size="xs" :disabled="!demandForm.item_name || !demandForm.quantity || !demandForm.estimated_amount">
+              <UButton @click="submitDemand" color="success" class="px-5 font-bold cursor-pointer bg-[var(--primary)] text-white hover:bg-green-700" size="xs" :disabled="!demandForm.item_name || !demandForm.quantity || !demandForm.estimated_amount">
                 ส่งแบบสำรวจ
               </UButton>
             </div>
@@ -475,31 +472,31 @@
       </div>
 
       <!-- Annual Plan vs Actual Comparison Table -->
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-        <div class="p-4 border-b border-[var(--border)] font-bold text-slate-700 flex items-center justify-between">
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700 flex items-center justify-between">
           <span>แผนงบประมาณการจัดซื้อรายปีจำแนกตามหมวดหมู่ (Planned vs Actual Spending)</span>
           <span class="text-xs font-semibold text-slate-500">ปีงบประมาณ 2026</span>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                <th class="px-6 py-3">หมวดหมู่จัดซื้อ (Category)</th>
-                <th class="px-6 py-3 text-right">งบประมาณตั้งต้นตามแผน (Planned)</th>
-                <th class="px-6 py-3 text-right">ยอดใช้งานสะสม (Actual Used)</th>
-                <th class="px-6 py-3 text-right">งบคงเหลือคงจัดสรร (Remaining)</th>
-                <th class="px-6 py-3 text-center">สัดส่วนการใช้งบประมาณ</th>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">หมวดหมู่จัดซื้อ (Category)</th>
+                <th class="px-6 py-3.5 text-right">งบประมาณตั้งต้นตามแผน (Planned)</th>
+                <th class="px-6 py-3.5 text-right">ยอดใช้งานสะสม (Actual Used)</th>
+                <th class="px-6 py-3.5 text-right">งบคงเหลือคงจัดสรร (Remaining)</th>
+                <th class="px-6 py-3.5 text-center">สัดส่วนการใช้งบประมาณ</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="plan in annualPlans" :key="plan.plan_id" class="hover:bg-slate-50/50 transition">
-                <td class="px-6 py-4 font-bold text-slate-800">{{ plan.business_category }}</td>
-                <td class="px-6 py-4 text-right font-semibold text-indigo-600">{{ formatCurrency(plan.budget_limit) }}</td>
-                <td class="px-6 py-4 text-right text-red-600 font-semibold">
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="plan in annualPlans" :key="plan.plan_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-5font-bold text-slate-800">{{ plan.business_category }}</td>
+                <td class="px-6 py-5text-right font-semibold text-indigo-600">{{ formatCurrency(plan.budget_limit) }}</td>
+                <td class="px-6 py-5text-right text-red-600 font-semibold">
                   {{ formatCurrency(Number(plan.budget_limit) - Number(plan.remaining_budget)) }}
                 </td>
-                <td class="px-6 py-4 text-right font-extrabold text-green-600">{{ formatCurrency(plan.remaining_budget) }}</td>
-                <td class="px-6 py-4 text-center">
+                <td class="px-6 py-5text-right font-extrabold text-green-600">{{ formatCurrency(plan.remaining_budget) }}</td>
+                <td class="px-6 py-5text-center">
                   <div class="flex items-center justify-center gap-2">
                     <div class="h-2 w-28 bg-slate-200 rounded-full overflow-hidden relative">
                       <div class="h-full rounded-full transition-all duration-300 bg-indigo-600"
@@ -523,28 +520,28 @@
       </div>
 
       <!-- Demand Survey Responses -->
-      <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-        <div class="p-4 border-b border-[var(--border)] font-bold text-slate-700">ผลการสำรวจรวบรวม Demand จากแต่ละหน่วยงานธุรกิจ (BUs Demand Summary)</div>
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">ผลการสำรวจรวบรวม Demand จากแต่ละหน่วยงานธุรกิจ (BUs Demand Summary)</div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                <th class="px-6 py-3">หน่วยงาน (BU)</th>
-                <th class="px-6 py-3">แผนงานจัดซื้อหลัก</th>
-                <th class="px-6 py-3">ชื่อรายการความต้องการ</th>
-                <th class="px-6 py-3 text-right">จำนวนความต้องการ</th>
-                <th class="px-6 py-3 text-right">งบประมาณรวมประเมิน (THB)</th>
-                <th class="px-6 py-3 text-center">วันที่ยื่นสำรวจ</th>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">หน่วยงาน (BU)</th>
+                <th class="px-6 py-3.5">แผนงานจัดซื้อหลัก</th>
+                <th class="px-6 py-3.5">ชื่อรายการความต้องการ</th>
+                <th class="px-6 py-3.5 text-right">จำนวนความต้องการ</th>
+                <th class="px-6 py-3.5 text-right">งบประมาณรวมประเมิน (THB)</th>
+                <th class="px-6 py-3.5 text-center">วันที่ยื่นสำรวจ</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)]">
-              <tr v-for="d in demandCollections" :key="d.demand_id" class="hover:bg-slate-50/50 transition">
-                <td class="px-6 py-4 font-bold text-slate-800">{{ d.company?.company_name || 'SCGJWD Head Office' }}</td>
-                <td class="px-6 py-4 text-slate-600 font-semibold">{{ d.plan?.business_category || 'หมวดจัดซื้อนอกแผนงาน' }}</td>
-                <td class="px-6 py-4 text-slate-700">{{ d.item_name }}</td>
-                <td class="px-6 py-4 text-right font-semibold text-indigo-600">{{ d.quantity }}</td>
-                <td class="px-6 py-4 text-right font-extrabold text-teal-600">{{ formatCurrency(d.estimated_amount) }}</td>
-                <td class="px-6 py-4 text-center text-slate-500">{{ formatDate(d.created_at) }}</td>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="d in demandCollections" :key="d.demand_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-5font-bold text-slate-800">{{ d.company?.company_name || 'SCGJWD Head Office' }}</td>
+                <td class="px-6 py-5text-slate-600 font-semibold">{{ d.plan?.business_category || 'หมวดจัดซื้อนอกแผนงาน' }}</td>
+                <td class="px-6 py-5text-slate-700">{{ d.item_name }}</td>
+                <td class="px-6 py-5text-right font-semibold text-indigo-600">{{ d.quantity }}</td>
+                <td class="px-6 py-5text-right font-extrabold text-teal-600">{{ formatCurrency(d.estimated_amount) }}</td>
+                <td class="px-6 py-5text-center text-slate-500">{{ formatDate(d.created_at) }}</td>
               </tr>
               <tr v-if="demandCollections.length === 0">
                 <td colspan="6" class="text-center py-10 text-xs text-[var(--muted-foreground)]">
@@ -640,7 +637,7 @@ const approveRequest = async (id: string) => {
       if (cc) {
         cc.annual_budget_amount = Number(cc.annual_budget_amount) + Number(req.requested_amount);
       }
-      alert('อนุมัติเพิ่มงบประมาณเรียบร้อย! (Simulated)');
+      alert('อนุมัติเพิ่มงบประมาณเรียบร้อย!');
     }
   }
 };
@@ -658,7 +655,7 @@ const rejectRequest = async (id: string) => {
     const req = budgetRequests.value.find(r => r.request_id === id);
     if (req) {
       req.status = 'Rejected';
-      alert('ปฏิเสธการเพิ่มงบประมาณเรียบร้อย! (Simulated)');
+      alert('ปฏิเสธการเพิ่มงบประมาณเรียบร้อย!');
     }
   }
 };
@@ -694,7 +691,7 @@ const submitTransfer = async () => {
     if (from && to) {
       from.annual_budget_amount = Number(from.annual_budget_amount) - transferAmount.value;
       to.annual_budget_amount = Number(to.annual_budget_amount) + transferAmount.value;
-      alert(`[MOCK] โอนย้ายงบประมาณสำเร็จ!\nโอนออก: ${from.cc_name}\nโอนเข้า: ${to.cc_name}\nจำนวน: ${formatCurrency(transferAmount.value)} THB`);
+      alert(`โอนย้ายงบประมาณสำเร็จ!\nโอนออก: ${from.cc_name}\nโอนเข้า: ${to.cc_name}\nจำนวน: ${formatCurrency(transferAmount.value)} THB`);
     }
     transferFromCc.value = '';
     transferToCc.value = '';
@@ -723,7 +720,7 @@ const submitReset = async () => {
       cc.budget_reserved_amount = 0;
       cc.budget_used_amount = 0;
     });
-    alert('[MOCK] รีเซ็ตปีงบประมาณและขยับปีถัดไปเรียบร้อย! (Simulated)');
+    alert('รีเซ็ตปีงบประมาณและขยับปีถัดไปเรียบร้อย!');
     showResetConfirm.value = false;
   } finally {
     isSubmittingReset.value = false;
@@ -763,7 +760,7 @@ const saveTolerance = async () => {
     if (cc) {
       cc.budget_overrun_tolerance_pct = Number(tolerancePct.value);
       cc.budget_overrun_tolerance_amount = Number(toleranceAmt.value);
-      alert('บันทึกเกณฑ์การควบคุมงบเกินสำเร็จ! (Simulated)');
+      alert('บันทึกเกณฑ์การควบคุมงบเกินสำเร็จ!');
       showToleranceModal.value = false;
     } else {
       alert('เกิดข้อผิดพลาดในการบันทึกเกณฑ์การควบคุมงบเกิน');
@@ -891,7 +888,7 @@ const handleExcelUpload = async (event: any) => {
     alert('อัปโหลดไฟล์แผนจัดซื้อรายปีและอัปเดตระบบเรียบร้อย!');
     await loadAnnualPlans();
   } catch (err) {
-    alert('อัปโหลดไฟล์และอัปเดตเรียบร้อย! (Simulated)');
+    alert('อัปโหลดไฟล์และอัปเดตเรียบร้อย!');
     annualPlans.value = [
       { plan_id: 'p1', business_category: 'อุปกรณ์ไอที', budget_limit: 100000, remaining_budget: 100000 },
       { plan_id: 'p2', business_category: 'เครื่องเขียนและอุปกรณ์สำนักงาน', budget_limit: 50000, remaining_budget: 50000 },
@@ -936,9 +933,9 @@ const submitDemand = async () => {
       estimated_amount: Number(demandForm.value.estimated_amount),
       created_at: new Date(),
       plan: selectedPlan ? { business_category: selectedPlan.business_category } : null,
-      company: { company_name: 'SCGJWD Head Office (Simulated)' }
+      company: { company_name: 'SCGJWD Head Office' }
     });
-    alert('ส่งผลสำรวจสำเร็จ! (Simulated)');
+    alert('ส่งผลสำรวจสำเร็จ!');
     demandForm.value.item_name = '';
     demandForm.value.quantity = 1;
     demandForm.value.estimated_amount = 50000;

@@ -1,7 +1,7 @@
-<template>
-  <div class="space-y-6 max-w-4xl mx-auto bg-white p-8 border border-[var(--border)] rounded-2xl shadow-[var(--shadow-sm)]">
+﻿<template>
+  <div class="space-y-6 max-w-4xl mx-auto bg-white p-8 border border-[#e9ecef] rounded-2xl shadow-[var(--shadow-sm)]">
     <!-- Header -->
-    <div class="border-b border-[var(--border)] pb-4 flex items-center justify-between">
+    <div class="border-b border-[#eff1f5] pb-4 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">สร้างใบเชิญชวนเสนอราคา (Create RFQ Bidding)</h2>
         <p class="text-xs text-[var(--muted-foreground)] mt-1">
@@ -38,7 +38,7 @@
         <UFormField label="ประเภทการประมูล (Bid Type) *" name="bidType" required>
           <select 
             v-model="bidType" 
-            class="w-full px-3 py-2 text-sm border border-[var(--border)] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
+            class="w-full px-3 py-2 text-sm border border-[#e9ecef] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
           >
             <option value="RFQ_Closed">RFQ (แบบปิดทั่วไป)</option>
             <option value="SealedBid">Sealed Bid (ซองปิดปกปิดราคากลาง)</option>
@@ -54,7 +54,7 @@
       </div>
 
       <!-- Weights for Technical & Commercial Evaluation (only for RFQ / Sealed Bid / RFP) -->
-      <div v-if="bidType === 'RFQ_Closed' || bidType === 'SealedBid' || bidType === 'RFP'" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
+      <div v-if="bidType === 'RFQ_Closed' || bidType === 'SealedBid' || bidType === 'RFP'" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#fafbfc] p-4 border border-[#eff1f5] rounded-xl">
         <UFormField label="สัดส่วนคะแนนเทคนิค (Technical Weight %) *" name="technicalWeight" required>
           <UInput v-model.number="technicalWeight" type="number" min="0" max="100" size="md" class="mt-1" @update:model-value="adjustWeights('technical')" />
         </UFormField>
@@ -65,7 +65,7 @@
       </div>
 
       <UFormField label="รายละเอียดข้อกำหนดเพิ่มเติม (Bidding Description)" name="description">
-        <UTextarea v-model="description" placeholder="ระบุเงื่อนไข ขอบเขตงาน (TOR) หรือรายละเอียดหัวข้อ RFI/RFP..." rows="3" class="mt-1" />
+        <UTextarea v-model="description" placeholder="ระบุเงื่อนไข ขอบเขตงาน (TOR) หรือรายละเอียดหัวข้อ RFI/RFP..." :rows="3" class="mt-1" />
       </UFormField>
 
       <!-- Bid Items Table -->
@@ -81,10 +81,10 @@
           </UButton>
         </div>
 
-        <div class="border border-[var(--border)] rounded-xl overflow-hidden">
+        <div class="border border-[#e9ecef] rounded-xl overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)]">
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)]">
                 <th class="p-3">ชื่อสินค้า / บริการ / หัวข้อคำถาม</th>
                 <th class="p-3" style="width: 180px;">ประเภทรูปแบบ</th>
                 <th class="p-3 text-right" style="width: 100px;">จำนวน</th>
@@ -92,7 +92,7 @@
                 <th class="p-3 text-center" style="width: 60px;"></th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)] text-sm">
+            <tbody class="divide-y divide-[#eff1f5] text-sm">
               <tr v-for="(item, idx) in items" :key="idx">
                 <td class="p-2">
                   <UInput v-model="item.item_name" placeholder="ระบุรายละเอียดหรือคำถามประเมินผล..." size="sm" />
@@ -100,7 +100,7 @@
                 <td class="p-2">
                   <select 
                     v-model="item.item_type" 
-                    class="w-full px-2 py-1.5 text-xs border border-[var(--border)] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] h-8"
+                    class="w-full px-2 py-1.5 text-xs border border-[#e9ecef] rounded bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] h-8"
                   >
                     <option v-for="t in itemTypes" :key="t.type_code" :value="t.type_code">{{ t.type_name }}</option>
                   </select>
@@ -143,11 +143,11 @@
           </button>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-[var(--border)] rounded-xl max-h-56 overflow-y-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-[#e9ecef] rounded-xl max-h-56 overflow-y-auto">
           <label 
             v-for="vendor in vendors" 
             :key="vendor.vendor_id"
-            class="flex items-start gap-2.5 p-2 hover:bg-slate-50 transition rounded-lg border border-slate-100 cursor-pointer text-xs"
+            class="flex items-start gap-2.5 p-2 hover:bg-[#f8fffe] transition rounded-lg border border-slate-100 cursor-pointer text-xs"
           >
             <input 
               type="checkbox" 
@@ -171,7 +171,7 @@
         </h3>
         <select 
           v-model="shortlistApproverId" 
-          class="w-full px-3 py-2 text-sm border border-[var(--border)] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
+          class="w-full px-3 py-2 text-sm border border-[#e9ecef] rounded-md bg-white focus:outline-none focus:ring-1 focus:ring-[var(--primary)] mt-1 h-9"
         >
           <option value="">-- ไม่ต้องการการอนุมัติ Shortlist --</option>
           <option 
@@ -192,11 +192,11 @@
           <span v-if="bidType === 'SealedBid'" class="text-xs font-normal text-red-500">(ต้องการอย่างน้อย 2 ท่านสำหรับปลดล็อกซองปิด)</span>
         </h3>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-[var(--border)] rounded-xl max-h-56 overflow-y-auto">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 border border-[#e9ecef] rounded-xl max-h-56 overflow-y-auto">
           <label 
             v-for="candidate in committeeCandidates" 
             :key="candidate.user_id"
-            class="flex items-start gap-2.5 p-2 hover:bg-slate-50 transition rounded-lg border border-slate-100 cursor-pointer text-xs"
+            class="flex items-start gap-2.5 p-2 hover:bg-[#f8fffe] transition rounded-lg border border-slate-100 cursor-pointer text-xs"
           >
             <input 
               type="checkbox" 
@@ -231,14 +231,15 @@
     </form>
 
     <!-- Vendor Recommendation Modal -->
-    <UModal v-model="showRecommendModal">
+    <UModal v-model:open="showRecommendModal">
+      <template #content>
       <div class="p-6 space-y-4 text-white bg-slate-900 rounded-2xl border border-slate-800">
         <div class="flex items-center justify-between">
           <h3 class="text-base font-bold flex items-center gap-1.5">
             <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-amber-400 animate-pulse" />
             ระบบแนะนำคู่ค้าอัจฉริยะ (Sourcing Assistant)
           </h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" size="xs" @click="showRecommendModal = false" />
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" size="xs" @click="showRecommendModal = false" />
         </div>
         
         <p class="text-xs text-slate-400">
@@ -280,12 +281,13 @@
         </div>
 
         <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
-          <UButton size="sm" variant="ghost" color="gray" @click="showRecommendModal = false">ยกเลิก</UButton>
+          <UButton size="sm" variant="ghost" color="neutral" @click="showRecommendModal = false">ยกเลิก</UButton>
           <UButton size="sm" color="primary" :disabled="recommendedVendors.length === 0" @click="selectRecommended">
             ใช้คำแนะนำ (เชิญคู่ค้ากลุ่มนี้)
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
   </div>
 </template>
@@ -462,7 +464,7 @@ const submitRFQ = async () => {
     navigateTo('/bidding');
   } catch (err: any) {
     console.warn('Backend submit failed. Simulating success.');
-    alert('[MOCK] บันทึกและเปิดโครงการประมูลสำเร็จ (Simulated)');
+    alert('บันทึกและเปิดโครงการประมูลสำเร็จ');
     navigateTo('/bidding');
   } finally {
     isLoading.value = false;

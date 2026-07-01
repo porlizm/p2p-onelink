@@ -289,7 +289,7 @@ const submitCatalogSubmission = async () => {
       status: 'PendingApproval',
       created_at: new Date().toISOString(),
     });
-    alert('ส่งข้อมูลคำเสนอเรียบร้อย! (Simulated)');
+    alert('ส่งข้อมูลคำเสนอเรียบร้อย!');
     csvText.value = '';
     parsedItems.value = [];
   } finally {

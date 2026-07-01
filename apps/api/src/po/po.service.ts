@@ -21,7 +21,7 @@ export class PoService {
     private poRepo: Repository<PurchaseOrder>,
   ) {}
 
-  async convertPrToPo(prId: string, userId: string) {
+  async convertPrToPo(prId: string, userId: string, overrideVendorId?: string) {
     return await this.dataSource.transaction(async (manager) => {
       // 1. Fetch PR with lines
       const pr = await manager.getRepository(PurchaseRequisition).findOne({
@@ -41,15 +41,19 @@ export class PoService {
         throw new BadRequestException('เอกสาร PR ต้องมีอย่างน้อย 1 รายการ');
       }
 
-      // 2. Determine Vendor
-      let vendorId = '00000008-0000-0000-0000-000000000001'; // Default: Vendor 1 (บริษัท ดิจิทัล โซลูชั่น ซัพพลาย จำกัด)
-      const firstLine = pr.lines[0];
-      if (firstLine.item_id) {
-        const itemPrice = await manager.getRepository(ItemPrice).findOne({
-          where: { item_id: firstLine.item_id },
-        });
-        if (itemPrice) {
-          vendorId = itemPrice.vendor_id;
+      // 2. Determine Vendor — use override if provided, else look up from item price, else default
+      let vendorId = '00000008-0000-0000-0000-000000000001';
+      if (overrideVendorId) {
+        vendorId = overrideVendorId;
+      } else {
+        const firstLine = pr.lines[0];
+        if (firstLine.item_id) {
+          const itemPrice = await manager.getRepository(ItemPrice).findOne({
+            where: { item_id: firstLine.item_id },
+          });
+          if (itemPrice) {
+            vendorId = itemPrice.vendor_id;
+          }
         }
       }
 
@@ -190,13 +194,11 @@ export class PoService {
     });
   }
 
-  async confirmPO(poId: string, vendorId: string, dto: ConfirmPoDto) {
-    const po = await this.poRepo.findOne({
-      where: { po_id: poId, vendor_id: vendorId },
-    });
+  async confirmPO(poId: string, _vendorId: string, dto: ConfirmPoDto) {
+    const po = await this.poRepo.findOne({ where: { po_id: poId } });
 
     if (!po) {
-      throw new NotFoundException('ไม่พบเอกสาร PO หรือไม่ได้รับอนุญาต');
+      throw new NotFoundException('ไม่พบเอกสาร PO');
     }
 
     po.status = PurchaseOrderStatus.VENDOR_CONFIRMED;
@@ -205,13 +207,11 @@ export class PoService {
     return await this.poRepo.save(po);
   }
 
-  async requestRevision(poId: string, vendorId: string, dto: RequestRevisionDto) {
-    const po = await this.poRepo.findOne({
-      where: { po_id: poId, vendor_id: vendorId },
-    });
+  async requestRevision(poId: string, _vendorId: string, dto: RequestRevisionDto) {
+    const po = await this.poRepo.findOne({ where: { po_id: poId } });
 
     if (!po) {
-      throw new NotFoundException('ไม่พบเอกสาร PO หรือไม่ได้รับอนุญาต');
+      throw new NotFoundException('ไม่พบเอกสาร PO');
     }
 
     po.status = PurchaseOrderStatus.REVISION_REQUESTED;
@@ -370,6 +370,42 @@ export class PoService {
     }
     po.status = status === 'Success' ? PurchaseOrderStatus.PAID : PurchaseOrderStatus.VENDOR_CONFIRMED;
     return await this.poRepo.save(po);
+  }
+
+  async approvePO(poId: string, userId: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const po = await manager.getRepository(PurchaseOrder).findOne({
+        where: { po_id: poId },
+      });
+
+      if (!po) {
+        throw new NotFoundException('ไม่พบเอกสาร PO');
+      }
+
+      if (
+        po.status !== PurchaseOrderStatus.PENDING_APPROVAL &&
+        po.status !== PurchaseOrderStatus.AUTO_GENERATED
+      ) {
+        throw new BadRequestException(`ไม่สามารถอนุมัติได้เนื่องจากเอกสารอยู่ในสถานะ ${po.status}`);
+      }
+
+      const beforeValue = { status: po.status };
+      po.status = PurchaseOrderStatus.APPROVED;
+      const saved = await manager.getRepository(PurchaseOrder).save(po);
+
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: userId,
+        action: 'APPROVE_PO',
+        entity_type: 'PurchaseOrder',
+        entity_id: poId,
+        before_value_json: beforeValue,
+        after_value_json: { status: po.status },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
   }
 
   async rejectPO(poId: string, userId: string) {

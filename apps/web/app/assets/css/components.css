@@ -1,0 +1,965 @@
+/* ==========================================================================
+   HILI Design System v1.1.0 — Component CSS Primitives
+   Global CSS classes — no component wrapper required
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Form Primitives
+   -------------------------------------------------------------------------- */
+
+/** .ds-field — Column flex container for label + input */
+.ds-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/** .ds-label — Standard field label */
+.ds-label {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--fg-secondary);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-normal);
+}
+
+/** .ds-label--upper — Overline/uppercase variant */
+.ds-label--upper {
+  font-size: 9px;
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--fg-tertiary);
+}
+
+/** .ds-input — Base text input */
+.ds-input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  color: var(--fg-primary);
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  line-height: var(--leading-normal);
+  outline: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  appearance: none;
+}
+
+.ds-input::placeholder {
+  color: var(--fg-tertiary);
+}
+
+.ds-input:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.ds-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+/** .ds-input--error — Error border state */
+.ds-input--error {
+  border-color: var(--color-error-500);
+}
+
+.ds-input--error:focus {
+  border-color: var(--color-error-600);
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25);
+}
+
+/** .ds-input--mono — Monospace input (codes, SKUs, IDs) */
+.ds-input--mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-wide);
+}
+
+/** .ds-input--disabled — Disabled state */
+.ds-input--disabled,
+.ds-input:disabled {
+  background-color: var(--bg-surface);
+  color: var(--fg-disabled);
+  border-color: var(--border-subtle);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/** .ds-select — Styled <select> with chevron */
+.ds-select {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  color: var(--fg-primary);
+  background-color: var(--bg-elevated);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-3) center;
+  background-size: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-10) var(--space-2) var(--space-3);
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+}
+
+.ds-select:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.ds-select:focus {
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus);
+}
+
+.ds-select:disabled {
+  background-color: var(--bg-surface);
+  color: var(--fg-disabled);
+  cursor: not-allowed;
+}
+
+/** .ds-hint — Helper text below input */
+.ds-hint {
+  font-size: var(--text-xs);
+  color: var(--fg-tertiary);
+  line-height: var(--leading-normal);
+}
+
+/** .ds-error-msg — Error message below input */
+.ds-error-msg {
+  font-size: var(--text-xs);
+  color: var(--fg-error);
+  line-height: var(--leading-normal);
+}
+
+/** .ds-search — Search field wrapper with icon */
+.ds-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ds-search .ds-input {
+  padding-left: var(--space-10);
+}
+
+.ds-search::before {
+  content: '';
+  position: absolute;
+  left: var(--space-3);
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'%3E%3C/line%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Skeleton Loaders
+   -------------------------------------------------------------------------- */
+
+/** .ds-skeleton — Base shimmer animation */
+.ds-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-surface) 25%,
+    var(--color-neutral-200) 50%,
+    var(--bg-surface) 75%
+  );
+  background-size: 200% 100%;
+  animation: ds-shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-md);
+}
+
+/** .ds-skeleton--text — Text-line skeleton */
+.ds-skeleton--text {
+  height: 12px;
+  border-radius: var(--radius-full);
+}
+
+/** .ds-skeleton--line — Compact text-line skeleton */
+.ds-skeleton--line {
+  height: 10px;
+  border-radius: var(--radius-full);
+}
+
+@keyframes ds-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* --------------------------------------------------------------------------
+   Page Layout Classes
+   -------------------------------------------------------------------------- */
+
+/** .fillpage — Full-height flex column page with Glassmorphism */
+.fillpage {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/** .page — Glassmorphism page wrapper */
+.page {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  min-height: 100%;
+}
+
+/** .hpage — Glassmorphism Header-page (flex column with gap) */
+.hpage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  min-height: 100%;
+}
+
+/** .gridfill — Makes DataGrid fill remaining vertical space */
+.gridfill {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.gridfill > * {
+  flex: 1;
+  overflow: hidden;
+}
+
+/** .gridsearch — Search input override for DataGrid */
+.gridsearch input {
+  background-color: var(--bg-base) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Custom Scrollbar (global)
+   -------------------------------------------------------------------------- */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(155, 155, 155, 0.35);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(155, 155, 155, 0.55);
+}
+
+/* --------------------------------------------------------------------------
+   Typography Semantic Classes
+   -------------------------------------------------------------------------- */
+
+.text-display {
+  font-family: var(--font-display);
+  font-size: var(--text-6xl);
+  font-weight: var(--weight-black);
+  line-height: var(--leading-tight);
+}
+
+.text-h1 {
+  font-family: var(--font-sans);
+  font-size: var(--text-4xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.text-h2 {
+  font-family: var(--font-sans);
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+.text-h3 {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-snug);
+}
+
+.text-h4 {
+  font-family: var(--font-sans);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-normal);
+}
+
+.text-body-lg {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+}
+
+.text-body {
+  font-size: var(--text-base);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+}
+
+.text-body-sm {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-normal);
+}
+
+.text-label {
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-wide);
+}
+
+.text-overline {
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+}
+
+.text-mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-regular);
+}
+
+/* ==========================================================================
+   Nuxt UI — UButton Global Overrides
+   ========================================================================== */
+
+/* ── Solid primary (green) — gradient + shadow ── */
+.btn-solid-primary,
+button.bg-primary-600,
+button.bg-primary-500,
+button.bg-primary,
+a.bg-primary-600,
+a.bg-primary-500,
+a.bg-primary {
+  background-image: var(--gradient-brand-diagonal) !important;
+  background-color: transparent !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0, 146, 69, 0.28), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.btn-solid-primary:hover,
+button.bg-primary-600:hover,
+button.bg-primary-500:hover,
+button.bg-primary:hover,
+a.bg-primary-600:hover,
+a.bg-primary-500:hover,
+a.bg-primary:hover {
+  box-shadow: 0 4px 14px rgba(0, 146, 69, 0.36), 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ── Solid neutral — subtle shadow ── */
+.btn-solid-neutral,
+button.bg-neutral-900,
+button.bg-neutral-800,
+button.bg-neutral,
+a.bg-neutral-900,
+a.bg-neutral-800,
+a.bg-neutral {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Outline + Ghost — crisper border, hover lift ── */
+button.btn-outline,
+button.btn-ghost,
+.app-btn--outline {
+  transition: all 0.15s ease;
+}
+button.btn-outline:hover,
+button.btn-ghost:hover,
+.app-btn--outline:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+/* ── All UButtons: tighten letter-spacing, sharpen text ── */
+[class*="rounded-lg"] {
+  letter-spacing: -0.01em;
+}
+
+/* ── AppButton primary: gradient + shadow (ใช้ใน login, forms) ── */
+.app-btn--primary {
+  background: var(--gradient-brand-diagonal) !important;
+  box-shadow: 0 2px 8px rgba(0, 146, 69, 0.28);
+  border-radius: var(--radius-lg) !important;
+  font-weight: var(--weight-semibold) !important;
+}
+.app-btn--primary:hover:not(:disabled) {
+  box-shadow: 0 4px 14px rgba(0, 146, 69, 0.36);
+  transform: translateY(-1px);
+}
+
+/* ── AppButton secondary/outline ── */
+.app-btn--secondary,
+.app-btn--outline {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.app-btn--secondary:hover:not(:disabled),
+.app-btn--outline:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+/* ── AppButton danger ── */
+.app-btn--danger {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.2);
+}
+
+/* ── All AppButtons: larger radius ── */
+.app-btn {
+  border-radius: var(--radius-lg);
+  transition: all 0.15s ease !important;
+}
+
+/* ==========================================================================
+   Global Action Button Utilities
+   Use these classes on <button> or <a> tags anywhere in the app
+   to get consistent semantic colors for table row actions.
+   ========================================================================== */
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: none;
+  white-space: nowrap;
+  text-decoration: none;
+  font-family: var(--font-sans);
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+  user-select: none;
+  line-height: 1.5;
+}
+.action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* View / Detail — green tinted */
+.action-btn--view {
+  background: #e8f7ee;
+  color: #076b35;
+}
+.action-btn--view:hover { background: #cfeedd; }
+
+/* Review / Approve — amber solid */
+.action-btn--review {
+  background: #f59e0b;
+  color: #ffffff;
+}
+.action-btn--review:hover {
+  background: #d97706;
+  box-shadow: 0 2px 8px rgba(217, 119, 6, 0.25);
+}
+
+/* Compare / Select — indigo tinted */
+.action-btn--compare {
+  background: #eef2ff;
+  color: #3730a3;
+}
+.action-btn--compare:hover { background: #e0e7ff; }
+
+/* Danger / Reject — red tinted */
+.action-btn--danger {
+  background: #fff1f2;
+  color: #be123c;
+}
+.action-btn--danger:hover { background: #ffe4e6; }
+
+/* Neutral — gray tinted */
+.action-btn--neutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+.action-btn--neutral:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+/* Success — green solid */
+.action-btn--success {
+  background: #009245;
+  color: #ffffff;
+}
+.action-btn--success:hover {
+  background: #007d3a;
+  box-shadow: 0 2px 8px rgba(0, 146, 69, 0.25);
+}
+
+/* ==========================================================================
+   Page Header Utility (shared across all list pages)
+   ========================================================================== */
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.page-header__title {
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  color: var(--fg-primary);
+  letter-spacing: var(--tracking-tight);
+}
+
+.page-header__subtitle {
+  margin-top: 4px;
+  font-size: var(--text-sm);
+  color: var(--fg-tertiary);
+}
+
+/* Primary button — solid green, professional */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 20px;
+  background: #009245;
+  color: #ffffff;
+  border: 1px solid #007d3a;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+  box-shadow: 0 1px 3px rgba(0, 146, 69, 0.20), inset 0 1px 0 rgba(255,255,255,0.12);
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1.45;
+  user-select: none;
+}
+.btn-primary:hover {
+  background: #007d3a;
+  box-shadow: 0 3px 10px rgba(0, 146, 69, 0.28), inset 0 1px 0 rgba(255,255,255,0.10);
+}
+.btn-primary:active {
+  background: #006830;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.15);
+}
+
+/* Outline button — borderless, neutral bg */
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 18px;
+  background: #f4f6f8;
+  color: #374151;
+  border: none;
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+  transition: background-color 0.12s ease, box-shadow 0.12s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  line-height: 1.45;
+  user-select: none;
+}
+.btn-outline:hover {
+  background: #e8ecf0;
+  color: #111827;
+}
+.btn-outline:active { background: #dde3ea; }
+.btn-outline:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ==========================================================================
+   DS Table System — HILI Design System v1.2
+   Usage: <table class="ds-table"> ... </table>
+   Wrap in: <div class="ds-table-wrap"> for border/shadow/radius
+   ========================================================================== */
+
+/* Container — replaces bg-white border rounded-xl overflow-hidden */
+.ds-table-wrap {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+/* Table base */
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-family: var(--font-sans, inherit);
+}
+
+/* Header row */
+.ds-table thead tr {
+  background: #f8f9fa;
+  border-bottom: 1.5px solid #e9ecef;
+}
+
+/* Header cells */
+.ds-table th {
+  padding: 12px 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Body rows */
+.ds-table tbody tr {
+  border-bottom: 1px solid #f1f3f5;
+  transition: background-color 0.1s ease;
+}
+.ds-table tbody tr:last-child {
+  border-bottom: none;
+}
+.ds-table tbody tr:hover {
+  background-color: #f8fffe;
+}
+
+/* Body cells */
+.ds-table td {
+  padding: 16px 20px;
+  vertical-align: middle;
+  font-size: 13.5px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+/* Avatar cell — first column that has an avatar, needs extra room */
+.ds-table td.ds-col-avatar {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+/* Compact variant — for dense data tables */
+.ds-table--compact th { padding: 10px 16px; }
+.ds-table--compact td { padding: 11px 16px; font-size: 12.5px; }
+
+/* Text alignment helpers */
+.ds-table th.text-right,
+.ds-table td.text-right { text-align: right; }
+.ds-table th.text-center,
+.ds-table td.text-center { text-align: center; }
+
+/* ==========================================================================
+   Legacy .table-card / .data-table (backward compat)
+   ========================================================================== */
+
+.table-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table thead tr {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.data-table th {
+  padding: 12px var(--space-5);
+  font-size: 11px;
+  font-weight: var(--weight-bold);
+  color: var(--fg-tertiary);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wider);
+  white-space: nowrap;
+}
+
+.data-table td {
+  padding: 16px var(--space-5);
+  vertical-align: middle;
+  font-size: var(--text-sm);
+  color: var(--fg-secondary);
+  line-height: 1.5;
+}
+
+.data-table tbody tr {
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background-color 0.12s ease;
+}
+
+.data-table tbody tr:last-child { border-bottom: none; }
+.data-table tbody tr:hover { background-color: var(--bg-surface); }
+
+/* ==========================================================================
+   Glassmorphism & Harmonized Badges
+   ========================================================================== */
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(120%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  transition: transform 0.2s var(--ease-default), box-shadow 0.2s var(--ease-default);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Glass Tables */
+.glass-table {
+  border-collapse: collapse;
+  width: 100%;
+  background: transparent;
+}
+.glass-table th {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.dark .glass-table th {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* Harmonized Status Badges & Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  line-height: 1;
+}
+
+.status-pill--success {
+  background-color: var(--color-success-50);
+  border-color: var(--color-success-100);
+  color: var(--color-success-700);
+}
+
+.status-pill--warning {
+  background-color: var(--color-warning-50);
+  border-color: var(--color-warning-100);
+  color: var(--color-warning-700);
+}
+
+.status-pill--error {
+  background-color: var(--color-error-50);
+  border-color: var(--color-error-100);
+  color: var(--color-error-700);
+}
+
+.status-pill--info {
+  background-color: var(--color-info-50);
+  border-color: var(--color-info-100);
+  color: var(--color-info-700);
+}
+
+.status-pill--neutral {
+  background-color: var(--color-neutral-100);
+  border-color: var(--color-neutral-200);
+  color: var(--color-neutral-700);
+}
+
+/* --------------------------------------------------------------------------
+   DS Tab System (HILI Design System v1.1.0)
+   Usage:
+     <div class="ds-tabs">
+       <button class="ds-tab" :class="{ 'ds-tab--active': active === 'x' }" @click="active='x'">
+         <svg class="ds-tab__icon">...</svg>
+         Label
+         <span class="ds-tab__badge">3</span>
+       </button>
+     </div>
+   -------------------------------------------------------------------------- */
+
+.ds-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--color-neutral-100, #f1f5f9);
+  border-radius: 12px;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.ds-tabs::-webkit-scrollbar { display: none; }
+
+/* Full-width variant */
+.ds-tabs--full {
+  width: 100%;
+}
+.ds-tabs--full .ds-tab {
+  flex: 1;
+  justify-content: center;
+}
+
+.ds-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  font-family: var(--font-sans, inherit);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-neutral-500, #64748b);
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease, color 120ms ease, box-shadow 120ms ease;
+  position: relative;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.ds-tab:hover:not(.ds-tab--active) {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--color-neutral-700, #374151);
+}
+
+.ds-tab--active {
+  background: #ffffff;
+  color: var(--color-green-700, #007d3a);
+  font-weight: 600;
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.10),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* Badge / count inside tab */
+.ds-tab__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.07);
+  color: var(--color-neutral-600, #475569);
+  transition: background 120ms ease, color 120ms ease;
+}
+.ds-tab--active .ds-tab__badge {
+  background: var(--color-green-100, #d4efd0);
+  color: var(--color-green-700, #007d3a);
+}
+
+/* Danger badge (e.g. pending count) */
+.ds-tab__badge--danger {
+  background: var(--color-error-100, #fee2e2);
+  color: var(--color-error-700, #b91c1c);
+}
+.ds-tab--active .ds-tab__badge--danger {
+  background: var(--color-error-600, #dc2626);
+  color: #ffffff;
+}
+
+/* Subtle bottom-accent variant — for inline page sections (no bg pill wrapper) */
+.ds-tabs--line {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  border-bottom: 2px solid var(--color-neutral-200, #e2e8f0);
+  gap: 0;
+}
+.ds-tabs--line .ds-tab {
+  border-radius: 0;
+  padding: 10px 20px;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  background: transparent;
+}
+.ds-tabs--line .ds-tab:hover:not(.ds-tab--active) {
+  background: transparent;
+  color: var(--color-neutral-700, #374151);
+  border-bottom-color: var(--color-neutral-300, #d1d5db);
+}
+.ds-tabs--line .ds-tab--active {
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-green-700, #007d3a);
+  border-bottom-color: var(--color-green-600, #009245);
+  font-weight: 600;
+}
+.ds-tabs--line .ds-tab--active .ds-tab__badge {
+  background: var(--color-green-100, #d4efd0);
+  color: var(--color-green-700, #007d3a);
+}
+
+

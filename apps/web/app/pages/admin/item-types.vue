@@ -1,7 +1,7 @@
-<template>
-  <div class="space-y-6 max-w-4xl mx-auto bg-white p-8 border border-[var(--border)] rounded-2xl shadow-[var(--shadow-sm)]">
+﻿<template>
+  <div class="space-y-6 max-w-4xl mx-auto bg-white p-8 border border-[#e9ecef] rounded-2xl shadow-[var(--shadow-sm)]">
     <!-- Header -->
-    <div class="border-b border-[var(--border)] pb-4 flex items-center justify-between">
+    <div class="border-b border-[#eff1f5] pb-4 flex items-center justify-between">
       <div>
         <h2 class="text-xl font-bold text-[#002266] flex items-center gap-2">
           <UIcon name="i-heroicons-squares-plus" class="w-6 h-6 text-emerald-600" />
@@ -29,7 +29,7 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Left Column: Add New Type Form -->
-      <div class="space-y-4 bg-slate-50 p-5 rounded-2xl border border-slate-200/60 h-fit">
+      <div class="space-y-4 bg-[#fafbfc] p-5 rounded-2xl border border-[#eff1f5]/60 h-fit">
         <h3 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
           <UIcon name="i-heroicons-plus-circle" class="w-4 h-4 text-emerald-600" />
           เพิ่มรูปแบบใหม่
@@ -58,14 +58,14 @@
             <UTextarea 
               v-model="newDesc" 
               placeholder="เงื่อนไขหรือข้อมูลของรูปแบบนี้..." 
-              rows="3" 
+              :rows="3" 
               class="mt-1 bg-white" 
             />
           </UFormField>
 
           <UButton 
             type="submit" 
-            color="emerald" 
+            color="success" 
             size="sm" 
             class="w-full font-semibold shadow-sm justify-center"
             :loading="isSubmitting"
@@ -82,20 +82,20 @@
           รายการรูปแบบทั้งหมดในระบบ
         </h3>
 
-        <div class="border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
+        <div class="border border-[#e9ecef] rounded-xl overflow-hidden shadow-sm">
           <table class="w-full text-left border-collapse bg-white">
             <thead>
-              <tr class="bg-slate-50 border-b border-[var(--border)] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                 <th class="p-3">รหัส</th>
                 <th class="p-3">ชื่อรูปแบบ</th>
                 <th class="p-3">ประเภทระบบ</th>
                 <th class="p-3 text-center" style="width: 80px;">จัดการ</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[var(--border)] text-xs">
-              <tr v-for="t in types" :key="t.type_id" class="hover:bg-slate-50 transition-colors">
+            <tbody class="divide-y divide-[#eff1f5] text-xs">
+              <tr v-for="t in types" :key="t.type_id" class="hover:bg-[#f8fffe] transition-colors">
                 <td class="p-3 font-semibold text-slate-700">
-                  <span class="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200">
+                  <span class="px-1.5 py-0.5 rounded bg-slate-100 border border-[#eff1f5]">
                     {{ t.type_code }}
                   </span>
                 </td>

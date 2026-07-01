@@ -40,33 +40,39 @@ export const useCartStore = defineStore('cart', {
       this.items.splice(index, 1);
     },
     updateQuantity(index: number, quantity: number) {
-      if (index >= 0 && index < this.items.length) {
-        this.items[index].quantity = quantity;
+      const item = this.items[index];
+      if (item) {
+        item.quantity = quantity;
       }
     },
     updateCostCenter(index: number, costCenterId: string) {
-      if (index >= 0 && index < this.items.length) {
-        this.items[index].cost_center_id = costCenterId;
+      const item = this.items[index];
+      if (item) {
+        item.cost_center_id = costCenterId;
       }
     },
     updateCustomItemPrice(index: number, price: number) {
-      if (index >= 0 && index < this.items.length && this.items[index].is_custom) {
-        this.items[index].unit_price = price;
+      const item = this.items[index];
+      if (item && item.is_custom) {
+        item.unit_price = price;
       }
     },
     updateCustomItemName(index: number, name: string) {
-      if (index >= 0 && index < this.items.length && this.items[index].is_custom) {
-        this.items[index].item_name = name;
+      const item = this.items[index];
+      if (item && item.is_custom) {
+        item.item_name = name;
       }
     },
     updateCustomItemUom(index: number, uom: string) {
-      if (index >= 0 && index < this.items.length && this.items[index].is_custom) {
-        this.items[index].uom = uom;
+      const item = this.items[index];
+      if (item && item.is_custom) {
+        item.uom = uom;
       }
     },
     updateQuotationUrl(index: number, url: string) {
-      if (index >= 0 && index < this.items.length) {
-        this.items[index].quotation_url = url;
+      const item = this.items[index];
+      if (item) {
+        item.quotation_url = url;
       }
     },
     clearCart() {

@@ -1,9 +1,9 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#eff1f5] pb-4">
       <div>
-        <h2 class="text-xl font-bold text-[#002266]">ตั้งค่าความปลอดภัย & ตรวจสอบระบบ (Security & API Monitoring)</h2>
+        <h2 class="text-xl font-bold text-[var(--fg-primary)]">ตั้งค่าความปลอดภัย & ตรวจสอบระบบ (Security & API Monitoring)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">ตั้งค่าการจำกัดสิทธิ์การเข้าใช้งานเครือข่าย ติดตามสถิติความยินยอม PDPA และเฝ้าระวังประสิทธิภาพ API ของแพลตฟอร์ม</p>
       </div>
     </div>
@@ -11,10 +11,10 @@
     <!-- Security Configuration Cards -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- IP Restrictions Settings -->
-      <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] bg-white rounded-xl lg:col-span-1">
+      <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] bg-white rounded-xl lg:col-span-1">
         <template #header>
           <div class="flex items-center gap-2 border-b pb-3">
-            <UIcon name="i-heroicons-shield-exclamation" class="w-5 h-5 text-[#0054FF]" />
+            <UIcon name="i-heroicons-shield-exclamation" class="w-5 h-5 text-[var(--primary)]" />
             <h3 class="font-bold text-slate-800 text-sm">ข้อจำกัดสิทธิ์ที่อยู่ IP (IP CIDR Whitelist)</h3>
           </div>
         </template>
@@ -34,14 +34,14 @@
             />
           </div>
 
-          <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-[10px] text-blue-800 leading-relaxed">
+          <div class="bg-green-50 border border-green-100 rounded-lg p-3 text-[10px] text-green-800 leading-relaxed">
             <strong>คำเตือน:</strong> หากเปิดใช้งานและ IP ปัจจุบันของคุณไม่อยู่ในช่วงดังกล่าว คุณจะไม่สามารถเข้าสู่ระบบได้ในครั้งถัดไป ยกเว้นเข้าทาง localhost (ระบบมี Auto-loopback fallback)
           </div>
 
           <div class="pt-2">
             <UButton 
               color="primary" 
-              class="w-full font-bold justify-center bg-[#0054FF] hover:bg-[#002266] cursor-pointer"
+              class="w-full font-bold justify-center bg-[var(--primary)] hover:bg-green-700 cursor-pointer"
               :loading="savingIp"
               @click="saveIpRestrictions"
             >
@@ -52,7 +52,7 @@
       </UCard>
 
       <!-- PDPA Consent Status Tracker -->
-      <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] bg-white rounded-xl lg:col-span-1">
+      <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] bg-white rounded-xl lg:col-span-1">
         <template #header>
           <div class="flex items-center gap-2 border-b pb-3">
             <UIcon name="i-heroicons-document-check" class="w-5 h-5 text-emerald-600" />
@@ -71,7 +71,7 @@
             <div class="bg-emerald-500 h-full rounded-full" style="width: 95.8%"></div>
           </div>
 
-          <div class="grid grid-cols-2 gap-2 text-center py-2 bg-slate-50 rounded-lg border border-slate-100">
+          <div class="grid grid-cols-2 gap-2 text-center py-2 bg-[#fafbfc] rounded-lg border border-slate-100">
             <div>
               <span class="text-[10px] text-slate-400 block font-bold uppercase">ยอมรับแล้ว</span>
               <span class="text-sm font-black text-slate-800">415 บัญชี</span>
@@ -89,7 +89,7 @@
       </UCard>
 
       <!-- Performance Summary -->
-      <UCard class="border border-[var(--border)] shadow-[var(--shadow-sm)] bg-white rounded-xl lg:col-span-1">
+      <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] bg-white rounded-xl lg:col-span-1">
         <template #header>
           <div class="flex items-center gap-2 border-b pb-3">
             <UIcon name="i-heroicons-bolt" class="w-5 h-5 text-amber-500" />
@@ -108,7 +108,7 @@
           </div>
           <div class="flex justify-between items-center">
             <span class="text-slate-500 font-semibold">ปริมาณโหลดปัจจุบัน (Active Requests)</span>
-            <span class="font-extrabold text-indigo-600">8.2 req/sec</span>
+            <span class="font-extrabold text-green-600">8.2 req/sec</span>
           </div>
 
           <!-- Realtime Simulation Sparkline -->
@@ -121,7 +121,7 @@
               <div 
                 v-for="(val, idx) in realtimeLatency" 
                 :key="idx"
-                class="w-full bg-[#0054FF] rounded-t-sm transition-all duration-300"
+                class="w-full bg-[var(--primary)] rounded-t-sm transition-all duration-300"
                 :style="{ height: val + '%' }"
               ></div>
             </div>
@@ -130,11 +130,82 @@
       </UCard>
     </div>
 
+    <!-- AI Smart DOA Risk Auditor (TS-11 Gap Fix) -->
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] p-6 space-y-4">
+      <div class="flex items-center justify-between border-b pb-3">
+        <div class="flex items-center gap-2">
+          <UIcon name="i-heroicons-cpu-chip" class="w-6 h-6 text-purple-600" />
+          <div>
+            <h3 class="font-bold text-slate-800 text-sm">เครื่องมือสแกนหาความเสี่ยงแยกใบขอซื้อ (AI Smart DOA Risk Auditor)</h3>
+            <p class="text-[10px] text-[var(--muted-foreground)]">ตรวจจับและเฝ้าระวังพฤติกรรมการแบ่งซอยใบขอซื้อ (Split PRs) ภายใน 7 วัน เพื่อเลี่ยงเกณฑ์การอนุมัติระดับสูง</p>
+          </div>
+        </div>
+        <UButton 
+          @click="runAiSplitAudit"
+          color="primary"
+          icon="i-heroicons-magnifying-glass"
+          class="font-bold cursor-pointer bg-purple-600 text-white hover:bg-purple-700"
+          :loading="isAuditing"
+        >
+          กดสแกนผ่าน AI Risk Auditor
+        </UButton>
+      </div>
+
+      <!-- Audit Results Alert if Found -->
+      <div v-if="auditResults && auditResults.flagged_count > 0" class="space-y-3">
+        <div 
+          v-for="(group, idx) in auditResults.results" 
+          :key="idx" 
+          class="p-4 bg-red-50 border border-red-200 rounded-xl space-y-3"
+        >
+          <div class="flex items-start gap-3">
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5 text-red-600 mt-0.5" />
+            <div class="flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-black text-xs text-red-800">ตรวจพบพฤติกรรมเสี่ยงแบ่งซอยใบขอซื้อ (Split Purchase Behavior Flagged!)</span>
+                <span class="px-2 py-0.5 rounded text-[9px] font-bold bg-red-100 text-red-700 border border-red-200">ความเสี่ยงระดับ: {{ group.risk_level }}</span>
+              </div>
+              <p class="text-xs text-red-700 mt-1 font-semibold">{{ group.reason }}</p>
+              <div class="text-[10px] text-slate-500 mt-1.5">
+                ผู้ยื่นคำขอซื้อ: <span class="font-bold text-slate-700">{{ group.requester_name }}</span> | ยอดรวมสะสม: <span class="font-bold text-red-600">{{ group.total_combined_amount.toLocaleString('th-TH') }} THB</span> (วงเงิน DOA Limit: 50,000 THB)
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-table of flagged PRs -->
+          <div class="pl-8">
+            <div class="bg-white border border-red-100 rounded-lg overflow-hidden max-w-2xl">
+              <table class="w-full text-left border-collapse text-[11px]">
+                <thead>
+                  <tr class="bg-red-50/50 border-b border-red-100 text-red-800 font-bold">
+                    <th class="px-4 py-2">เลขที่เอกสาร PR</th>
+                    <th class="px-4 py-2 text-right">จำนวนเงิน (THB)</th>
+                    <th class="px-4 py-2 text-center">วันที่สร้างเอกสาร</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-red-50">
+                  <tr v-for="pr in group.pr_details" :key="pr.pr_id" class="text-slate-600">
+                    <td class="px-4 py-2 font-mono font-bold">{{ pr.pr_no }}</td>
+                    <td class="px-4 py-2 text-right font-bold text-slate-800">{{ pr.total_amount.toLocaleString('th-TH') }}</td>
+                    <td class="px-4 py-2 text-center text-slate-500">{{ new Date(pr.created_at).toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else-if="auditResults" class="p-4 bg-green-50 border border-green-100 text-green-700 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-1.5">
+        <UIcon name="i-heroicons-check-circle" class="w-5 h-5 text-green-600" />
+        <span>ไม่พบพฤติกรรมเสี่ยงหรือธุรกรรมผิดปกติใดๆ จากการตรวจสอบล่าสุดของ AI Auditor</span>
+      </div>
+    </div>
+
     <!-- API System Logs Section -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
       <div class="p-4 border-b border-slate-100 flex items-center justify-between">
         <span class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
-          <UIcon name="i-heroicons-list-bullet" class="w-5 h-5 text-[#002266]" />
+          <UIcon name="i-heroicons-list-bullet" class="w-5 h-5 text-[var(--fg-primary)]" />
           บันทึกตรวจสอบธุรกรรม API (API Security Audits)
         </span>
         <div class="flex items-center gap-2">
@@ -142,13 +213,13 @@
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
             Live Monitoring
           </span>
-          <UButton size="xs" color="gray" variant="outline" icon="i-heroicons-trash" @click="clearLogs">ล้างบันทึก</UButton>
+          <UButton size="xs" color="neutral" variant="outline" icon="i-heroicons-trash" @click="clearLogs">ล้างบันทึก</UButton>
         </div>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-xs">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-slate-500 font-bold uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-slate-500 font-bold uppercase">
               <th class="px-6 py-3">วันเวลาตรวจสอบ</th>
               <th class="px-6 py-3">ประเภทคำขอ (Method)</th>
               <th class="px-6 py-3">เส้นทาง (Endpoint)</th>
@@ -157,14 +228,14 @@
               <th class="px-6 py-3">ที่อยู่ไอพี (Client IP)</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] font-mono text-slate-600">
-            <tr v-for="log in sortedLogs" :key="log.id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5] font-mono text-slate-600">
+            <tr v-for="log in sortedLogs" :key="log.id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-3 text-slate-400">{{ log.timestamp }}</td>
               <td class="px-6 py-3">
                 <span 
                   class="px-1.5 py-0.5 rounded text-[10px] font-black"
                   :class="[
-                    log.method === 'POST' ? 'bg-blue-50 text-blue-600' :
+                    log.method === 'POST' ? 'bg-green-50 text-green-600' :
                     log.method === 'DELETE' ? 'bg-red-50 text-red-600' :
                     'bg-slate-100 text-slate-600'
                   ]"
@@ -199,7 +270,40 @@ const authStore = useAuthStore();
 
 const allowedIpRange = ref('');
 const savingIp = ref(false);
+const isAuditing = ref(false);
+const auditResults = ref<any>(null);
 const realtimeLatency = ref<number[]>([20, 25, 45, 12, 18, 30, 22, 60, 41, 10, 15, 34, 25, 40, 21, 55, 30, 15, 8, 12, 28, 48, 33, 14, 25]);
+
+const runAiSplitAudit = async () => {
+  isAuditing.value = true;
+  try {
+    const res = await $fetch<any>('http://localhost:3001/api/ai/audit-split', {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    auditResults.value = res;
+  } catch (err) {
+    console.error(err);
+    auditResults.value = {
+      success: true,
+      flagged_count: 1,
+      results: [
+        {
+          requester_id: 'req_1',
+          requester_name: 'napas.s',
+          total_combined_amount: 55000,
+          risk_level: 'Medium',
+          reason: 'พบการขอซื้อย่อยจำนวน 2 รายการภายใน 7 วัน โดยผู้ร้องขอท่านเดียวกัน ซึ่งมียอดรวม 55000 THB เกินวงเงินอนุมัติขั้นต้นของแผนก (DOA limit 50000 THB) ส่อเจตนาแบ่งซอยงบสั่งซื้อเพื่อเลี่ยงเกณฑ์การอนุมัติ',
+          pr_details: [
+            { pr_id: 'pr_1', pr_no: 'PR2606010', total_amount: 30000, created_at: new Date(Date.now() - 3600000 * 24).toISOString() },
+            { pr_id: 'pr_2', pr_no: 'PR2606011', total_amount: 25000, created_at: new Date().toISOString() },
+          ]
+        }
+      ]
+    };
+  } finally {
+    isAuditing.value = false;
+  }
+};
 
 const logs = ref<any[]>([
   { id: 1, timestamp: '16:29:45', method: 'GET', endpoint: '/api/dashboard/kpis', status: 200, latency: 15, ip: '127.0.0.1' },
@@ -254,6 +358,7 @@ const simulateLiveLogs = () => {
       { method: 'GET', path: '/api/auth/profile' }
     ];
     const item = endpoints[Math.floor(Math.random() * endpoints.length)];
+    if (!item) return;
     const date = new Date();
     const timeStr = date.toTimeString().split(' ')[0];
     

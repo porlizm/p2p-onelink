@@ -38,3 +38,5 @@ temp/
 
 # NestJS / API uploads
 apps/api/uploads/
+
+.tmp-chrome-*

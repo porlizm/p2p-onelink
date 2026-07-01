@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">ตรวจสอบสถานะการเชื่อมต่อระบบ (SAP Integration Monitor)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">ติดตามสถานะการส่งข้อมูล Interface ระหว่างระบบ P2P OneLink, SAP B1, ธนาคาร และกรมสรรพากร</p>
@@ -9,7 +9,7 @@
       <div>
         <UButton 
           @click="loadLogs"
-          color="gray"
+          color="neutral"
           variant="outline"
           icon="i-heroicons-arrow-path"
           class="cursor-pointer"
@@ -20,7 +20,7 @@
     </div>
 
     <!-- Filter bar -->
-    <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="relative w-full sm:max-w-xs">
         <UInput 
           v-model="search" 
@@ -38,11 +38,11 @@
     </div>
 
     <!-- Logs Table -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
               <th class="px-6 py-3">ระบบเป้าหมาย</th>
               <th class="px-6 py-3">ประเภทเอกสาร</th>
               <th class="px-6 py-3">ID อ้างอิงเอกสาร</th>
@@ -52,11 +52,11 @@
               <th class="px-6 py-3 text-center">การจัดการ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] text-sm">
-            <tr v-for="log in filteredLogs" :key="log.log_id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5] text-sm">
+            <tr v-for="log in filteredLogs" :key="log.log_id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-4 font-bold text-slate-700">
                 <div class="flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full" :class="log.target_system === 'SAP_B1' ? 'bg-blue-600' : 'bg-slate-500'"></span>
+                  <span class="w-2.5 h-2.5 rounded-full" :class="log.target_system === 'SAP_B1' ? 'bg-blue-600' : 'bg-[#fafbfc]0'"></span>
                   <span>{{ log.target_system }}</span>
                 </div>
               </td>
@@ -91,7 +91,7 @@
                   v-if="log.status === 'Failed'"
                   @click="retryLog(log.log_id)"
                   size="xs" 
-                  color="amber"
+                  color="warning"
                   icon="i-heroicons-arrow-path"
                   class="cursor-pointer"
                 >

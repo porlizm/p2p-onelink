@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6">
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">รายงานข้อยกเว้น & เอกสารคงค้าง (Exception Reports)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">ตรวจสอบรายการเอกสารที่ติดขัดในกระบวนการจัดซื้อและการเงินเพื่อดำเนินการแก้ไข</p>
@@ -18,33 +18,27 @@
       </div>
     </div>
 
-    <!-- Custom Tabs Navigation -->
-    <div class="flex border-b border-slate-200">
-      <button 
-        v-for="tab in tabs" 
+    <!-- Tabs Navigation -->
+    <div class="ds-tabs">
+      <button
+        v-for="tab in tabs"
         :key="tab.id"
+        class="ds-tab"
+        :class="{ 'ds-tab--active': activeTab === tab.id }"
         @click="activeTab = tab.id"
-        class="px-5 py-3 text-sm font-semibold border-b-2 transition-colors cursor-pointer"
-        :class="[
-          activeTab === tab.id 
-            ? 'border-[var(--primary)] text-[var(--primary)]' 
-            : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-        ]"
       >
-        <div class="flex items-center gap-2">
-          <UIcon :name="tab.icon" class="w-4 h-4" />
-          <span>{{ tab.name }}</span>
-        </div>
+        <UIcon :name="tab.icon" class="ds-tab__icon" />
+        <span>{{ tab.name }}</span>
       </button>
     </div>
 
     <!-- Tab Contents -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
       <!-- 1. Pending Approvals -->
       <div v-if="activeTab === 'approvals'" class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
               <th class="px-6 py-3">เลขที่เอกสาร</th>
               <th class="px-6 py-3">ประเภทเอกสาร</th>
               <th class="px-6 py-3">ผู้ขอ / ผู้สร้าง</th>
@@ -53,8 +47,8 @@
               <th class="px-6 py-3 text-center">ระยะเวลาคงค้าง</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] text-sm">
-            <tr v-for="item in pendingApprovals" :key="item.id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5] text-sm">
+            <tr v-for="item in pendingApprovals" :key="item.id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-4 font-bold text-[var(--primary)]">{{ item.no }}</td>
               <td class="px-6 py-4">
                 <span class="px-2 py-0.5 rounded text-xs font-semibold" :class="item.type === 'PR' ? 'bg-blue-50 text-blue-700' : 'bg-indigo-50 text-indigo-700'">
@@ -74,7 +68,7 @@
       <div v-if="activeTab === 'gr'" class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
               <th class="px-6 py-3">เลขที่ PO</th>
               <th class="px-6 py-3">คู่ค้า / Vendor</th>
               <th class="px-6 py-3">วันที่อนุมัติ PO</th>
@@ -83,8 +77,8 @@
               <th class="px-6 py-3 text-center">ระยะเวลาค้างส่งมอบ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] text-sm">
-            <tr v-for="item in pendingGr" :key="item.id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5] text-sm">
+            <tr v-for="item in pendingGr" :key="item.id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-4 font-bold text-[var(--primary)]">{{ item.po_no }}</td>
               <td class="px-6 py-4 text-slate-700 font-semibold">{{ item.vendor }}</td>
               <td class="px-6 py-4 text-slate-500">{{ formatDate(item.date) }}</td>
@@ -100,7 +94,7 @@
       <div v-if="activeTab === 'invoices'" class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
               <th class="px-6 py-3">เลขที่ GR (ตรวจรับแล้ว)</th>
               <th class="px-6 py-3">เลขที่ PO อ้างอิง</th>
               <th class="px-6 py-3">คู่ค้า / Vendor</th>
@@ -110,8 +104,8 @@
               <th class="px-6 py-3 text-center">ค้างคอยการวางบิล</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] text-sm">
-            <tr v-for="item in pendingInvoices" :key="item.id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5] text-sm">
+            <tr v-for="item in pendingInvoices" :key="item.id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-4 font-bold text-[var(--primary)]">{{ item.gr_no }}</td>
               <td class="px-6 py-4 text-slate-600 font-medium">{{ item.po_no }}</td>
               <td class="px-6 py-4 text-slate-700 font-semibold">{{ item.vendor }}</td>
@@ -128,7 +122,7 @@
       <div v-if="activeTab === 'payments'" class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
               <th class="px-6 py-3">เลขที่ใบแจ้งหนี้</th>
               <th class="px-6 py-3">คู่ค้า / Vendor</th>
               <th class="px-6 py-3">วันครบกำหนด (Due Date)</th>
@@ -137,8 +131,8 @@
               <th class="px-6 py-3 text-center">เกินกำหนดชำระ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)] text-sm">
-            <tr v-for="item in overduePayments" :key="item.id" class="hover:bg-slate-50/50 transition">
+          <tbody class="divide-y divide-[#eff1f5] text-sm">
+            <tr v-for="item in overduePayments" :key="item.id" class="hover:bg-[#f8fffe] transition">
               <td class="px-6 py-4 font-bold text-red-600">{{ item.inv_no }}</td>
               <td class="px-6 py-4 text-slate-700 font-semibold">{{ item.vendor }}</td>
               <td class="px-6 py-4 text-red-600 font-semibold">{{ formatDate(item.date) }}</td>

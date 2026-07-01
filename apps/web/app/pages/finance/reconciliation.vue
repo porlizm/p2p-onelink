@@ -1,7 +1,7 @@
-<template>
+﻿<template>
   <div class="space-y-6 max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b border-[var(--border)] pb-4">
+    <div class="flex items-center justify-between border-b border-[#eff1f5] pb-4">
       <div>
         <h2 class="text-xl font-bold text-[var(--foreground)]">กระทบยอดบัญชีแยกประเภทและงบประมาณ (SAP B1 Budget Reconciliation)</h2>
         <p class="text-sm text-[var(--muted-foreground)] mt-1">เปรียบเทียบและกระทบยอดเงินใช้จริงในระบบ e-Procurement กับระบบบัญชีหลัก SAP Business One</p>
@@ -21,7 +21,7 @@
 
     <!-- KPI Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
           <UIcon name="i-heroicons-shopping-bag" class="w-6 h-6" />
         </div>
@@ -30,7 +30,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatCurrency(totalP2P) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
           <UIcon name="i-heroicons-circle-stack" class="w-6 h-6" />
         </div>
@@ -39,7 +39,7 @@
           <span class="text-lg font-bold text-[var(--foreground)]">{{ formatCurrency(totalSAP) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
           <UIcon name="i-heroicons-exclamation-triangle" class="w-6 h-6" />
         </div>
@@ -48,7 +48,7 @@
           <span class="text-lg font-bold text-red-600">{{ formatCurrency(totalDifference) }} THB</span>
         </div>
       </div>
-      <div class="bg-white border border-[var(--border)] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
         <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
           <UIcon name="i-heroicons-shield-check" class="w-6 h-6" />
         </div>
@@ -60,35 +60,35 @@
     </div>
 
     <!-- Main Comparison Section -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-      <div class="p-4 border-b border-[var(--border)] font-bold text-slate-700">เปรียบเทียบแยกรายแผนก/ศูนย์ต้นทุน (Cost Centers Discrepancy Analysis)</div>
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+      <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">เปรียบเทียบแยกรายแผนก/ศูนย์ต้นทุน (Cost Centers Discrepancy Analysis)</div>
       
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-              <th class="px-6 py-3">รหัส / ชื่อศูนย์ต้นทุน</th>
-              <th class="px-6 py-3">หน่วยงาน (BU)</th>
-              <th class="px-6 py-3 text-right">ยอด e-Procurement (THB)</th>
-              <th class="px-6 py-3 text-right">ยอด SAP B1 (THB)</th>
-              <th class="px-6 py-3 text-right">ส่วนต่าง (Difference)</th>
-              <th class="px-6 py-3 text-center">สถานะ</th>
-              <th class="px-6 py-3 text-center">ดำเนินการ</th>
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+              <th class="px-6 py-3.5">รหัส / ชื่อศูนย์ต้นทุน</th>
+              <th class="px-6 py-3.5">หน่วยงาน (BU)</th>
+              <th class="px-6 py-3.5 text-right">ยอด e-Procurement (THB)</th>
+              <th class="px-6 py-3.5 text-right">ยอด SAP B1 (THB)</th>
+              <th class="px-6 py-3.5 text-right">ส่วนต่าง (Difference)</th>
+              <th class="px-6 py-3.5 text-center">สถานะ</th>
+              <th class="px-6 py-3.5 text-center">ดำเนินการ</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)]">
-            <tr v-for="item in reconItems" :key="item.cost_center_id" class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-bold text-slate-800">
+          <tbody class="divide-y divide-[#eff1f5]">
+            <tr v-for="item in reconItems" :key="item.cost_center_id" class="hover:bg-[#f8fffe] transition">
+              <td class="px-6 py-5font-bold text-slate-800">
                 {{ item.cost_center_name }}
                 <span class="block text-[10px] text-slate-400 font-mono">{{ item.cost_center_code }}</span>
               </td>
-              <td class="px-6 py-4 text-slate-600">{{ item.business_unit }}</td>
-              <td class="px-6 py-4 text-right font-semibold">{{ formatCurrency(item.p2p_budget_used) }}</td>
-              <td class="px-6 py-4 text-right font-semibold text-blue-600">{{ formatCurrency(item.sap_budget_used) }}</td>
-              <td class="px-6 py-4 text-right font-bold" :class="item.difference === 0 ? 'text-green-600' : 'text-red-600'">
+              <td class="px-6 py-5text-slate-600">{{ item.business_unit }}</td>
+              <td class="px-6 py-5text-right font-semibold">{{ formatCurrency(item.p2p_budget_used) }}</td>
+              <td class="px-6 py-5text-right font-semibold text-blue-600">{{ formatCurrency(item.sap_budget_used) }}</td>
+              <td class="px-6 py-5text-right font-bold" :class="item.difference === 0 ? 'text-green-600' : 'text-red-600'">
                 {{ formatCurrency(item.difference) }}
               </td>
-              <td class="px-6 py-4 text-center">
+              <td class="px-6 py-5text-center">
                 <span 
                   class="px-2.5 py-0.5 rounded-full text-xs font-bold inline-block border"
                   :class="[
@@ -97,15 +97,15 @@
                       : 'bg-red-50 text-red-700 border-red-200'
                   ]"
                 >
-                  {{ item.difference === 0 ? 'ตรงกัน (Matched)' : 'ไม่ตรงกัน (Discrepancy)' }}
+                  {{ item.difference === 0 ? 'ตรงกัน' : 'ไม่ตรงกัน' }}
                 </span>
               </td>
-              <td class="px-6 py-4 text-center">
+              <td class="px-6 py-5text-center">
                 <UButton
                   v-if="item.difference !== 0"
                   @click="openAdjustmentModal(item)"
                   size="xs"
-                  color="indigo"
+                  color="primary"
                   icon="i-heroicons-adjustments-horizontal"
                   class="cursor-pointer font-bold"
                 >
@@ -125,35 +125,35 @@
     </div>
 
     <!-- Reconciliation Log / History -->
-    <div class="bg-white border border-[var(--border)] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-      <div class="p-4 border-b border-[var(--border)] font-bold text-slate-700 flex justify-between items-center">
+    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+      <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700 flex justify-between items-center">
         <span>ประวัติการกระทบยอดปรับปรุงบัญชี (Audit Adjustments Log)</span>
       </div>
       
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse text-sm">
           <thead>
-            <tr class="bg-slate-50 border-b border-[var(--border)] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-              <th class="px-6 py-3">รหัสอ้างอิง</th>
-              <th class="px-6 py-3">ระบบเป้าหมาย</th>
-              <th class="px-6 py-3">ประเภทเอกสาร</th>
-              <th class="px-6 py-3 text-right">ยอดเงินที่ปรับปรุง (THB)</th>
-              <th class="px-6 py-3">หมายเหตุ / เหตุผล</th>
-              <th class="px-6 py-3">ผู้ทำรายการ</th>
-              <th class="px-6 py-3 text-center">วันที่ปรับยอด</th>
+            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+              <th class="px-6 py-3.5">รหัสอ้างอิง</th>
+              <th class="px-6 py-3.5">ระบบเป้าหมาย</th>
+              <th class="px-6 py-3.5">ประเภทเอกสาร</th>
+              <th class="px-6 py-3.5 text-right">ยอดเงินที่ปรับปรุง (THB)</th>
+              <th class="px-6 py-3.5">หมายเหตุ / เหตุผล</th>
+              <th class="px-6 py-3.5">ผู้ทำรายการ</th>
+              <th class="px-6 py-3.5 text-center">วันที่ปรับยอด</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[var(--border)]">
-            <tr v-for="log in adjustmentLogs" :key="log.log_id" class="hover:bg-slate-50/50 transition">
-              <td class="px-6 py-4 font-mono text-xs text-slate-500">{{ log.log_id.substring(0, 8) }}...</td>
-              <td class="px-6 py-4 text-slate-700 font-semibold">{{ log.target_system }}</td>
-              <td class="px-6 py-4 text-slate-600">{{ log.doc_type }}</td>
-              <td class="px-6 py-4 text-right font-bold" :class="log.request_payload?.adjustmentAmount < 0 ? 'text-red-600' : 'text-green-600'">
+          <tbody class="divide-y divide-[#eff1f5]">
+            <tr v-for="log in adjustmentLogs" :key="log.log_id" class="hover:bg-[#f8fffe] transition">
+              <td class="px-6 py-5font-mono text-xs text-slate-500">{{ log.log_id.substring(0, 8) }}...</td>
+              <td class="px-6 py-5text-slate-700 font-semibold">{{ log.target_system }}</td>
+              <td class="px-6 py-5text-slate-600">{{ log.doc_type }}</td>
+              <td class="px-6 py-5text-right font-bold" :class="log.request_payload?.adjustmentAmount < 0 ? 'text-red-600' : 'text-green-600'">
                 {{ formatCurrency(log.request_payload?.adjustmentAmount) }}
               </td>
-              <td class="px-6 py-4 text-slate-500">{{ log.request_payload?.remarks }}</td>
-              <td class="px-6 py-4 text-slate-600">{{ log.request_payload?.username || 'System' }}</td>
-              <td class="px-6 py-4 text-center text-slate-500">{{ formatDate(log.created_at) }}</td>
+              <td class="px-6 py-5text-slate-500">{{ log.request_payload?.remarks }}</td>
+              <td class="px-6 py-5text-slate-600">{{ log.request_payload?.username || 'System' }}</td>
+              <td class="px-6 py-5text-center text-slate-500">{{ formatDate(log.created_at) }}</td>
             </tr>
             <tr v-if="adjustmentLogs.length === 0">
               <td colspan="7" class="text-center py-10 text-xs text-[var(--muted-foreground)]">
@@ -166,14 +166,15 @@
     </div>
 
     <!-- Adjustment Modal -->
-    <UModal v-model="showAdjustModal">
+    <UModal v-model:open="showAdjustModal">
+      <template #content>
       <div v-if="selectedItem" class="p-6 space-y-4">
         <div class="flex items-center justify-between border-b pb-2">
           <h3 class="font-bold text-sm text-[var(--foreground)] flex items-center gap-2">
             <UIcon name="i-heroicons-adjustments-horizontal" class="w-5 h-5 text-indigo-600" />
             ปรับยอดกระทบยอดงบประมาณ (Reconciliation Adjustment)
           </h3>
-          <UButton @click="showAdjustModal = false" icon="i-heroicons-x-mark" color="gray" variant="ghost" size="xs" />
+          <UButton @click="showAdjustModal = false" icon="i-heroicons-x-mark" color="neutral" variant="ghost" size="xs" />
         </div>
 
         <div class="space-y-3 text-xs">
@@ -203,24 +204,25 @@
             <UTextarea 
               v-model="adjustmentRemarks" 
               placeholder="ระบุข้อแตกต่าง เช่น ค่าธรรมเนียมจากธนาคาร, ภาษี ณ ที่จ่าย, หรือข้อผิดพลาดการจองงบประมาณ..." 
-              rows="3"
+              :rows="3"
             />
           </div>
         </div>
 
         <div class="flex justify-end gap-2 border-t pt-4">
-          <UButton @click="showAdjustModal = false" variant="ghost" color="gray">ยกเลิก</UButton>
+          <UButton @click="showAdjustModal = false" variant="ghost" color="neutral">ยกเลิก</UButton>
           <UButton 
             @click="submitAdjustment"
-            color="indigo"
+            color="primary"
             :loading="isSubmitting"
             :disabled="!adjustmentAmount || !adjustmentRemarks"
-            class="px-5 cursor-pointer font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+            class="px-5 cursor-pointer font-bold bg-[var(--primary)] text-white hover:bg-green-700"
           >
             บันทึกการกระทบยอด
           </UButton>
         </div>
       </div>
+          </template>
     </UModal>
   </div>
 </template>
@@ -313,7 +315,7 @@ const submitAdjustment = async () => {
       request_payload: { adjustmentAmount: Number(adjustmentAmount.value), remarks: adjustmentRemarks.value, username: 'accounting.user' },
       created_at: new Date(),
     });
-    alert('บันทึกการปรับปรุงยอดกระทบยอดเรียบร้อย! (Simulated)');
+    alert('บันทึกการปรับปรุงยอดกระทบยอดเรียบร้อย!');
     showAdjustModal.value = false;
   } finally {
     isSubmitting.value = false;

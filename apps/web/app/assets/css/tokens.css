@@ -1,0 +1,471 @@
+/* ==========================================================================
+   HILI Design System v1.1.0 — Design Tokens
+   Source of truth for all CSS Custom Properties
+
+   PRIMARY TYPEFACE : Chesna Grotesk (custom licensed — 10 weights, local OTF)
+   MONOSPACE        : IBM Plex Mono (CDN woff2, weights 400/500/600)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   CHESNA GROTESK @font-face  (primary brand typeface)
+   -------------------------------------------------------------------------- */
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 100; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Thin.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 200; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-ExtraLight.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 300; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Light.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 350; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Book.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 400; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Regular.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 500; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Medium.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 600; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-SemiBold.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 700; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Bold.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 800; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-ExtraBold.otf') format('opentype'); }
+@font-face { font-family: 'Chesna Grotesk'; font-weight: 900; font-style: normal; font-display: swap; src: url('fonts/ChesnaGrotesk-Black.otf') format('opentype'); }
+
+/* --------------------------------------------------------------------------
+   IBM PLEX MONO @font-face  (codes / SKUs / IDs — CDN woff2)
+   -------------------------------------------------------------------------- */
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 400; font-style: normal; font-display: swap; src: url('https://fonts.gstatic.com/s/ibmplexmono/v19/-F63fjptAgt5VM-kVkqdyU8n1iIq131nj-otFQ.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 500; font-style: normal; font-display: swap; src: url('https://fonts.gstatic.com/s/ibmplexmono/v19/-F63fjptAgt5VM-kVkqdyU8n1iIq1xFsj-otFQ.woff2') format('woff2'); }
+@font-face { font-family: 'IBM Plex Mono'; font-weight: 600; font-style: normal; font-display: swap; src: url('https://fonts.gstatic.com/s/ibmplexmono/v19/-F63fjptAgt5VM-kVkqdyU8n1iIq10dvj-otFQ.woff2') format('woff2'); }
+
+/* --------------------------------------------------------------------------
+   :root — Light Mode (Default)
+   -------------------------------------------------------------------------- */
+:root {
+
+  /* ----------------------------------------------------------------------- */
+  /* 1. Brand Green Palette                                                    */
+  /* ----------------------------------------------------------------------- */
+  --color-green-900: #004d23;
+  --color-green-800: #006b32;
+  --color-green-700: #007d3a;
+  --color-green-600: #009245;   /* Brand Dark Green — logo, primary */
+  --color-green-500: #39B54A;   /* Brand Mid Green — hover, accent */
+  --color-green-400: #56C45A;
+  --color-green-300: #6CCB5F;   /* Brand Light Green — gradient end */
+  --color-green-200: #A8DFA1;
+  --color-green-100: #D4EFD0;
+  --color-green-50:  #F0FAF0;
+
+  /* Brand Gradients */
+  --gradient-brand-vertical:   linear-gradient(180deg, #009245 0%, #6CCB5F 100%);
+  --gradient-brand-horizontal: linear-gradient(90deg,  #009245 0%, #6CCB5F 100%);
+  --gradient-brand-diagonal:   linear-gradient(135deg, #009245 0%, #6CCB5F 100%);
+  /* Aliases matching the downloaded design system */
+  --gradient-brand:            var(--gradient-brand-vertical);
+  --gradient-brand-h:          var(--gradient-brand-horizontal);
+  --gradient-brand-135:        var(--gradient-brand-diagonal);
+
+  /* ----------------------------------------------------------------------- */
+  /* 2. Neutral Scale                                                          */
+  /* ----------------------------------------------------------------------- */
+  --color-neutral-950: #030712;
+  --color-neutral-900: #111827;   /* Near Black — primary text */
+  --color-neutral-800: #1F2937;   /* Dark UI surface */
+  --color-neutral-700: #374151;   /* Secondary text, dark borders */
+  --color-neutral-600: #4B5563;
+  --color-neutral-500: #6B7280;   /* Muted labels, placeholders */
+  --color-neutral-400: #9CA3AF;
+  --color-neutral-300: #D1D5DB;   /* Dividers, table borders */
+  --color-neutral-200: #E5E7EB;   /* Card borders light mode */
+  --color-neutral-100: #F3F4F6;   /* Surface gray, table rows */
+  --color-neutral-50:  #F9FAFB;
+  --color-white: #FFFFFF;
+  --color-black: #000000;
+
+  /* ----------------------------------------------------------------------- */
+  /* 3. Semantic Status Colors                                                  */
+  /* ----------------------------------------------------------------------- */
+  /* Success (Green) */
+  --color-success-700: #005c2b;
+  --color-success-600: #009245;
+  --color-success-500: #39B54A;
+  --color-success-100: #D4EFD0;
+  --color-success-50:  #F0FAF0;
+
+  /* Warning (Amber) */
+  --color-warning-700: #B45309;
+  --color-warning-600: #D97706;
+  --color-warning-500: #F59E0B;
+  --color-warning-100: #FEF3C7;
+  --color-warning-50:  #FFFBEB;
+
+  /* Error (Red) */
+  --color-error-700: #B91C1C;
+  --color-error-600: #DC2626;
+  --color-error-500: #EF4444;
+  --color-error-100: #FEE2E2;
+  --color-error-50:  #FFF5F5;
+
+  /* Info (Blue) */
+  --color-info-700: #1D4ED8;
+  --color-info-600: #2563EB;
+  --color-info-500: #3B82F6;
+  --color-info-100: #DBEAFE;
+  --color-info-50:  #EFF6FF;
+
+  /* ----------------------------------------------------------------------- */
+  /* 4. Semantic Alias Tokens — Backgrounds                                    */
+  /* ----------------------------------------------------------------------- */
+  --bg-base:     #FFFFFF;
+  --bg-subtle:   var(--color-neutral-50);
+  --bg-surface:  var(--color-neutral-100);
+  --bg-elevated: #FFFFFF;
+  --bg-overlay:  rgba(17, 24, 39, 0.5);
+
+  /* ----------------------------------------------------------------------- */
+  /* 5. Semantic Alias Tokens — Foreground / Text                              */
+  /* ----------------------------------------------------------------------- */
+  --fg-primary:   var(--color-neutral-900);
+  --fg-secondary: var(--color-neutral-700);
+  --fg-tertiary:  var(--color-neutral-500);
+  --fg-disabled:  var(--color-neutral-400);
+  --fg-inverse:   var(--color-white);
+  --fg-brand:     var(--color-green-600);
+  --fg-success:   var(--color-success-600);
+  --fg-warning:   var(--color-warning-600);
+  --fg-error:     var(--color-error-600);
+  --fg-info:      var(--color-info-600);
+
+  /* ----------------------------------------------------------------------- */
+  /* 6. Semantic Alias Tokens — Borders                                        */
+  /* ----------------------------------------------------------------------- */
+  --border-subtle:  var(--color-neutral-200);
+  --border-default: var(--color-neutral-300);
+  --border-strong:  var(--color-neutral-400);
+  --border-brand:   var(--color-green-600);
+  --border-focus:   var(--color-green-600);
+
+  /* ----------------------------------------------------------------------- */
+  /* 7. Semantic Alias Tokens — Interactive                                    */
+  /* ----------------------------------------------------------------------- */
+  --interactive-primary:            var(--color-green-600);
+  --interactive-primary-hover:      var(--color-green-700);
+  --interactive-primary-text:       var(--color-white);
+  --interactive-secondary:          var(--color-neutral-100);
+  --interactive-secondary-hover:    var(--color-neutral-200);
+  --interactive-destructive:        var(--color-error-600);
+  --interactive-destructive-hover:  var(--color-error-700);
+  --interactive-focus-ring:         rgba(0, 146, 69, 0.3);
+
+  /* ----------------------------------------------------------------------- */
+  /* 8. Typography — Font Families                                             */
+  /* ----------------------------------------------------------------------- */
+  --font-sans:    'Chesna Grotesk', 'IBM Plex Sans Thai', 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Chesna Grotesk', 'IBM Plex Sans Thai', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:    'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+
+  /* ----------------------------------------------------------------------- */
+  /* 9. Typography — Font Size Scale (8pt-based)                               */
+  /* ----------------------------------------------------------------------- */
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 15px;   /* Default UI text */
+  --text-md:   16px;
+  --text-lg:   17px;
+  --text-xl:   19px;
+  --text-2xl:  22px;
+  --text-3xl:  26px;
+  --text-4xl:  34px;
+  --text-5xl:  43px;
+  --text-6xl:  52px;
+
+  /* ----------------------------------------------------------------------- */
+  /* 10. Typography — Font Weights                                              */
+  /* ----------------------------------------------------------------------- */
+  --weight-light:     300;
+  --weight-regular:   400;
+  --weight-medium:    500;
+  --weight-semibold:  600;
+  --weight-bold:      700;
+  --weight-extrabold: 800;
+  --weight-black:     900;
+
+  /* ----------------------------------------------------------------------- */
+  /* 11. Typography — Line Heights                                              */
+  /* ----------------------------------------------------------------------- */
+  --leading-none:    1;
+  --leading-tight:   1.2;
+  --leading-snug:    1.35;
+  --leading-normal:  1.5;
+  --leading-relaxed: 1.625;
+
+  /* ----------------------------------------------------------------------- */
+  /* 12. Typography — Letter Spacing                                            */
+  /* ----------------------------------------------------------------------- */
+  --tracking-tight:   -0.025em;
+  --tracking-normal:   0em;
+  --tracking-wide:     0.025em;
+  --tracking-wider:    0.05em;
+  --tracking-widest:   0.1em;
+
+  /* ----------------------------------------------------------------------- */
+  /* 13. Semantic Type Styles                                                   */
+  /* ----------------------------------------------------------------------- */
+  /* Display */
+  --type-display-size:    var(--text-6xl);
+  --type-display-weight:  var(--weight-black);
+  --type-display-leading: var(--leading-tight);
+  --type-display-font:    var(--font-display);
+
+  /* H1 */
+  --type-h1-size:    var(--text-4xl);
+  --type-h1-weight:  var(--weight-bold);
+  --type-h1-leading: var(--leading-tight);
+
+  /* H2 */
+  --type-h2-size:    var(--text-3xl);
+  --type-h2-weight:  var(--weight-semibold);
+  --type-h2-leading: var(--leading-snug);
+
+  /* H3 */
+  --type-h3-size:    var(--text-2xl);
+  --type-h3-weight:  var(--weight-semibold);
+  --type-h3-leading: var(--leading-snug);
+
+  /* H4 */
+  --type-h4-size:    var(--text-lg);
+  --type-h4-weight:  var(--weight-semibold);
+  --type-h4-leading: var(--leading-normal);
+
+  /* Body */
+  --type-body-lg-size: var(--text-lg);
+  --type-body-size:    var(--text-base);
+  --type-body-sm-size: var(--text-sm);
+  --type-body-weight:  var(--weight-regular);
+  --type-body-leading: var(--leading-normal);
+
+  /* Label / Caption */
+  --type-label-size:     var(--text-sm);
+  --type-label-weight:   var(--weight-medium);
+  --type-label-tracking: var(--tracking-wide);
+
+  /* Overline */
+  --type-overline-size:     var(--text-xs);
+  --type-overline-weight:   var(--weight-semibold);
+  --type-overline-tracking: var(--tracking-widest);
+
+  /* Mono */
+  --type-mono-size:   var(--text-sm);
+  --type-mono-weight: var(--weight-regular);
+  --type-mono-font:   var(--font-mono);
+
+  /* ----------------------------------------------------------------------- */
+  /* 14. Spacing — 8pt Grid                                                    */
+  /* ----------------------------------------------------------------------- */
+  --space-0:    0px;
+  --space-px:   1px;
+  --space-0-5:  2px;
+  --space-1:    4px;
+  --space-1-5:  6px;
+  --space-2:    8px;
+  --space-2-5:  10px;
+  --space-3:    12px;
+  --space-4:    16px;
+  --space-5:    20px;
+  --space-6:    24px;
+  --space-8:    32px;
+  --space-10:   40px;
+  --space-12:   48px;
+  --space-16:   64px;
+  --space-20:   80px;
+  --space-24:   96px;
+  --space-32:   128px;
+
+  /* ----------------------------------------------------------------------- */
+  /* 15. Border Radius                                                          */
+  /* ----------------------------------------------------------------------- */
+  --radius-none: 0px;
+  --radius-xs:   2px;    /* badges, tags in dense tables */
+  --radius-sm:   3px;    /* compact inputs */
+  --radius-md:   4px;    /* default inputs, buttons */
+  --radius-lg:   6px;    /* cards, panels */
+  --radius-xl:   8px;    /* modals, drawers */
+  --radius-2xl:  12px;   /* large modals */
+  --radius-full: 9999px; /* status pills */
+
+  /* ----------------------------------------------------------------------- */
+  /* 16. Elevation & Shadows                                                    */
+  /* ----------------------------------------------------------------------- */
+  --shadow-0:     none;
+  --shadow-1:     0 1px 2px 0 rgba(0,0,0,.05);
+  --shadow-2:     0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
+  --shadow-3:     0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
+  --shadow-4:     0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
+  --shadow-5:     0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1);
+  --shadow-inner: inset 0 2px 4px rgba(0,0,0,.06);
+  --shadow-focus: 0 0 0 3px var(--interactive-focus-ring);
+
+  /* Semantic elevation aliases */
+  --elevation-card:     var(--shadow-1);
+  --elevation-dropdown: var(--shadow-3);
+  --elevation-modal:    var(--shadow-4);
+  --elevation-overlay:  var(--shadow-5);
+
+  /* ----------------------------------------------------------------------- */
+  /* 17. Motion — Durations                                                     */
+  /* ----------------------------------------------------------------------- */
+  --duration-instant: 50ms;
+  --duration-fast:    100ms;
+  --duration-base:    150ms;
+  --duration-slow:    200ms;
+  --duration-slower:  300ms;
+  --duration-slowest: 500ms;
+
+  /* ----------------------------------------------------------------------- */
+  /* 18. Motion — Easing                                                        */
+  /* ----------------------------------------------------------------------- */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in:      cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --ease-enter:   cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit:    cubic-bezier(0.4, 0, 1, 1);
+
+  /* Transition shorthands */
+  --transition-base:  150ms var(--ease-default);
+  --transition-enter: 200ms var(--ease-enter);
+  --transition-exit:  100ms var(--ease-exit);
+
+  /* ----------------------------------------------------------------------- */
+  /* 19. Z-Index                                                                */
+  /* ----------------------------------------------------------------------- */
+  --z-below:    -1;
+  --z-base:      0;
+  --z-raised:    10;
+  --z-dropdown:  100;
+  --z-sticky:    200;
+  --z-fixed:     300;
+  --z-overlay:   400;
+  --z-modal:     500;
+  --z-toast:     600;
+  --z-tooltip:   700;
+  --z-top:       999;
+
+  /* ----------------------------------------------------------------------- */
+  /* 20. Layout & Grid                                                          */
+  /* ----------------------------------------------------------------------- */
+  --sidebar-width:      240px;
+  --sidebar-collapsed:  64px;
+  --topbar-height:      56px;
+  --content-max-width:  1440px;
+  --panel-width:        380px;
+
+  /* ----------------------------------------------------------------------- */
+  /* 21. Legacy bridge — keep UButton/UCard working via @nuxt/ui color map      */
+  /* ----------------------------------------------------------------------- */
+  --color-primary-50:  var(--color-green-50);
+  --color-primary-100: var(--color-green-100);
+  --color-primary-200: var(--color-green-200);
+  --color-primary-300: var(--color-green-300);
+  --color-primary-400: var(--color-green-400);
+  --color-primary-500: var(--color-green-500);
+  --color-primary-600: var(--color-green-600);
+  --color-primary-700: var(--color-green-700);
+  --color-primary-800: var(--color-green-800);
+  --color-primary-900: var(--color-green-900);
+
+  /* Glassmorphism Tokens - Light Mode */
+  --glass-bg: rgba(255, 255, 255, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.3);
+  --glass-border-inner: rgba(255, 255, 255, 0.6);
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
+[data-theme="dark"],
+.dark {
+  /* Glassmorphism Tokens - Dark Mode */
+  --glass-bg: rgba(17, 24, 39, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-border-inner: rgba(255, 255, 255, 0.15);
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+
+  --bg-base:     #111827;
+  --bg-subtle:   #0D1117;
+  --bg-surface:  #1F2937;
+  --bg-elevated: #293548;
+  --bg-overlay:  rgba(0, 0, 0, 0.7);
+
+  --fg-primary:   #F9FAFB;
+  --fg-secondary: #D1D5DB;
+  --fg-tertiary:  #9CA3AF;
+  --fg-disabled:  #6B7280;
+  --fg-inverse:   #111827;
+  --fg-brand:     var(--color-green-300);
+
+  --border-subtle:  rgba(255,255,255,0.06);
+  --border-default: rgba(255,255,255,0.12);
+  --border-strong:  rgba(255,255,255,0.2);
+
+  --interactive-primary:            var(--color-green-500);
+  --interactive-primary-hover:      var(--color-green-400);
+  --interactive-secondary:          rgba(255,255,255,0.08);
+  --interactive-secondary-hover:    rgba(255,255,255,0.12);
+  --interactive-focus-ring:         rgba(108, 203, 95, 0.3);
+
+  --shadow-1: 0 1px 2px 0 rgba(0,0,0,.3);
+  --shadow-2: 0 1px 3px 0 rgba(0,0,0,.4), 0 1px 2px -1px rgba(0,0,0,.4);
+  --shadow-3: 0 4px 6px -1px rgba(0,0,0,.4), 0 2px 4px -2px rgba(0,0,0,.4);
+  --shadow-4: 0 10px 15px -3px rgba(0,0,0,.5), 0 4px 6px -4px rgba(0,0,0,.4);
+
+  /* Tint surfaces — -50/-100 become translucent dark-friendly tints */
+  --color-green-50:    rgba(57, 181, 74, 0.16);
+  --color-green-100:   rgba(57, 181, 74, 0.24);
+  --color-green-200:   rgba(108, 203, 95, 0.45);
+  --color-green-700:   #6CCB5F;
+  --color-success-50:  rgba(57, 181, 74, 0.16);
+  --color-success-100: rgba(57, 181, 74, 0.24);
+  --color-success-700: #6CCB5F;
+  --color-warning-50:  rgba(245, 158, 11, 0.16);
+  --color-warning-100: rgba(245, 158, 11, 0.26);
+  --color-warning-700: #FBBF24;
+  --color-error-50:    rgba(239, 68, 68, 0.16);
+  --color-error-100:   rgba(239, 68, 68, 0.26);
+  --color-error-700:   #F87171;
+  --color-info-50:     rgba(59, 130, 246, 0.16);
+  --color-info-100:    rgba(59, 130, 246, 0.26);
+  --color-info-700:    #60A5FA;
+}
+
+/* ==========================================================================
+   Control Tower Theme (High-contrast operational dashboard)
+   ========================================================================== */
+[data-theme="control-tower"] {
+  --bg-base:     #0A0E14;
+  --bg-subtle:   #060A0F;
+  --bg-surface:  #0F1823;
+  --bg-elevated: #162232;
+
+  --fg-primary:    #E2E8F0;
+  --fg-secondary:  #94A3B8;
+  --fg-tertiary:   #64748B;
+  --fg-brand:      var(--color-green-300);
+
+  --border-subtle:  rgba(255,255,255,0.05);
+  --border-default: rgba(255,255,255,0.1);
+
+  --interactive-primary:            var(--color-green-400);
+  --interactive-primary-hover:      var(--color-green-300);
+  --interactive-focus-ring:         rgba(108, 203, 95, 0.4);
+
+  /* Same dark-friendly tints as dark mode */
+  --color-green-50:    rgba(57, 181, 74, 0.16);
+  --color-green-100:   rgba(57, 181, 74, 0.24);
+  --color-green-200:   rgba(108, 203, 95, 0.45);
+  --color-green-700:   #6CCB5F;
+  --color-success-50:  rgba(57, 181, 74, 0.16);
+  --color-success-100: rgba(57, 181, 74, 0.24);
+  --color-success-700: #6CCB5F;
+  --color-warning-50:  rgba(245, 158, 11, 0.16);
+  --color-warning-100: rgba(245, 158, 11, 0.26);
+  --color-warning-700: #FBBF24;
+  --color-error-50:    rgba(239, 68, 68, 0.16);
+  --color-error-100:   rgba(239, 68, 68, 0.26);
+  --color-error-700:   #F87171;
+  --color-info-50:     rgba(59, 130, 246, 0.16);
+  --color-info-100:    rgba(59, 130, 246, 0.26);
+  --color-info-700:    #60A5FA;
+}

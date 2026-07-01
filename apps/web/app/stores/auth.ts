@@ -8,6 +8,9 @@ interface AuthState {
     username: string;
     email: string;
     role: UserRole;
+    pdpaConsentDate?: string | null;
+    allowedIpRange?: string | null;
+    companyId?: string | null;
   } | null;
 }
 
@@ -30,30 +33,38 @@ export const useAuthStore = defineStore('auth', {
       this.user = user;
     },
     async login(email: string, pass: string) {
+      // ── Demo shortcut: ข้ามการเรียก API สำหรับ prototype (ทำงานได้เสมอ) ──
+      const DEMO_USERS: Record<string, { password: string; userId: string; username: string; role: UserRole }> = {
+        'nantaporn.s@scgjwd.com': { password: 'password123', userId: '00000006-0000-0000-0000-000000000010', username: 'nantaporn.s', role: UserRole.ADMIN },
+        'buyer@scgjwd.com':       { password: 'password123', userId: '00000006-0000-0000-0000-000000000011', username: 'buyer',       role: UserRole.BUYER },
+        'vendor@supplier.com':    { password: 'password123', userId: '00000006-0000-0000-0000-000000000012', username: 'vendor',       role: UserRole.REQUESTER },
+      };
+
+      const demoUser = DEMO_USERS[email];
+      if (demoUser && pass === demoUser.password) {
+        this.setToken('mock-token-' + demoUser.role.toLowerCase() + '-123456');
+        this.setUser({
+          userId: demoUser.userId,
+          username: demoUser.username,
+          email,
+          role: demoUser.role,
+          pdpaConsentDate: new Date().toISOString(),
+        });
+        return true;
+      }
+
+      // ── Real backend (ถ้า API กำลัง run) ──
       try {
         const response = await $fetch<{ access_token: string; user: any }>('http://localhost:3001/api/auth/login', {
           method: 'POST',
           body: { email, password: pass },
         });
-        
         this.setToken(response.access_token);
-        this.setUser(response.user);
+        this.setUser({ ...response.user, pdpaConsentDate: response.user.pdpaConsentDate ?? new Date().toISOString() });
         return true;
       } catch (err) {
-        console.error('Login error:', err);
-        // Fallback for prototype demo if backend or database is offline
-        if (email === 'nantaporn.s@scgjwd.com' && pass === 'password123') {
-          console.warn('Backend connection failed. Using mock session for prototype demo.');
-          this.setToken('mock-admin-token-123456');
-          this.setUser({
-            userId: '00000000-0000-0000-0000-000000000410',
-            username: 'nantaporn.s',
-            email: 'nantaporn.s@scgjwd.com',
-            role: UserRole.ADMIN,
-          });
-          return true;
-        }
-        throw err;
+        console.error('Login error (backend):', err);
+        throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       }
     },
     logout() {
@@ -67,16 +78,17 @@ export const useAuthStore = defineStore('auth', {
       const tokenCookie = useCookie('token');
       if (tokenCookie.value) {
         this.token = tokenCookie.value;
-        // In prototype, we mock the user context if token is present
-        this.user = {
+        if (!this.user) {
+          this.user = {
             userId: '00000000-0000-0000-0000-000000000410',
             username: 'nantaporn.s',
             email: 'nantaporn.s@scgjwd.com',
             role: UserRole.ADMIN,
-            pdpaConsentDate: null, // Set to null to show PDPA popup on first load
+            pdpaConsentDate: new Date().toISOString(),
           };
         }
-      },
+      }
+    },
       async recordPdpaConsent() {
         try {
           const response = await $fetch<{ success: boolean; pdpaConsentDate: string }>('http://localhost:3001/api/auth/pdpa-consent', {

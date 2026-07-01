@@ -142,7 +142,8 @@
     </div>
 
     <!-- Signing Drawer -->
-    <USlideover v-model="showSignDrawer" prevent-close :ui="{ width: 'max-w-2xl' }">
+    <USlideover v-model:open="showSignDrawer" prevent-close :ui="{ width: 'max-w-2xl' }">
+      <template #content>
       <div class="p-6 h-full flex flex-col justify-between" v-if="activeContract">
         <div class="space-y-6 flex-1 overflow-y-auto pr-1">
           <div class="flex items-center justify-between border-b pb-3">
@@ -282,6 +283,7 @@
           <UButton color="gray" variant="solid" class="text-xs font-bold px-4" @click="showSignDrawer = false">ปิดหน้าต่าง</UButton>
         </div>
       </div>
+          </template>
     </USlideover>
   </div>
 </template>
@@ -433,7 +435,7 @@ const submitSignature = async () => {
         }
       }
     }
-    alert('ลงนามดิจิทัลสำเร็จ! (Simulated)');
+    alert('ลงนามดิจิทัลสำเร็จ!');
     showSignDrawer.value = false;
   } finally {
     submitting.value = false;

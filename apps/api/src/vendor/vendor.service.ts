@@ -236,6 +236,9 @@ export class VendorService {
     if (!bank) {
       throw new NotFoundException('ไม่พบข้อมูลบัญชีธนาคาร');
     }
+    if (bank.verified_by_buyer === username) {
+      throw new BadRequestException('ไม่สามารถยืนยันซ้ำได้ ผู้ตรวจสอบฝั่ง Accounting ต้องเป็นคนละท่านกับฝั่ง Buyer (Segregation of Duties)');
+    }
     bank.verified_by_accounting = username;
     if (bank.verified_by_buyer) {
       bank.verification_status = 'Active';

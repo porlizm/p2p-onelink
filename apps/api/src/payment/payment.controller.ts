@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 
-@Controller('api')
+@Controller()
 export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
@@ -53,6 +53,12 @@ export class PaymentController {
   @Get('payment/proposal')
   async getProposals() {
     return this.paymentService.getProposals();
+  }
+
+  // 4.2 Approve Proposal (Finance Manager)
+  @Patch('payment/proposal/:id/approve')
+  async approveProposal(@Param('id') id: string) {
+    return this.paymentService.approveProposal(id);
   }
 
   // 5. Generate Bank File

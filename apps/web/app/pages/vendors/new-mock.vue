@@ -76,6 +76,7 @@ import { computed, reactive, ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const isSubmitting = ref(false);
 const createdBy = computed(() => authStore.user?.username || 'buyer.demo');
 const businessCategories = ['อุปกรณ์ไอที', 'เครื่องใช้สำนักงาน', 'บริการขนส่ง', 'บำรุงรักษา/วิศวกรรม', 'อุปกรณ์เซฟตี้', 'งาน Outsourcing'];
@@ -97,9 +98,9 @@ const submitVendor = async () => {
   const payload = { tax_id: form.tax_id, vendor_name: form.vendor_name, vendor_name_en: form.vendor_name_en, vendor_type: form.vendor_type, business_category: form.business_category, contacts: [{ ...form.contact }], addresses: [{ ...form.address }], bank_accounts: [{ ...form.bank, account_name: form.bank.account_name || form.vendor_name }], documents: docs.map((doc) => ({ document_type: doc.type, file_url: doc.file_url || '/uploads/vendors/pending-' + doc.type + '.pdf', expiry_date: '2027-12-31' })) };
   try {
     await $fetch('http://localhost:3001/api/vendor/register', { method: 'POST', headers: { Authorization: 'Bearer ' + authStore.token }, body: payload });
-    alert('บันทึกคู่ค้าและส่งเข้าคิวตรวจสอบเรียบร้อยแล้ว');
+    await dialog.alert('บันทึกคู่ค้าและส่งเข้าคิวตรวจสอบเรียบร้อยแล้ว', { variant: 'success' });
   } catch (err) {
-    alert('บันทึกคู่ค้าในชุดข้อมูลสาธิตเรียบร้อยแล้ว และส่งสถานะเป็น PendingRegistration');
+    await dialog.alert('บันทึกคู่ค้าในชุดข้อมูลสาธิตเรียบร้อยแล้ว และส่งสถานะเป็น PendingRegistration', { variant: 'success' });
   } finally {
     isSubmitting.value = false;
     navigateTo('/vendors');

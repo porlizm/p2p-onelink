@@ -228,101 +228,165 @@
     </div>
 
     <!-- GR Receive Modal -->
-    <div v-if="showReceiveModal" class="gr-modal-overlay" @click.self="showReceiveModal = false">
-      <div class="gr-modal">
-        <div class="flex items-center justify-between mb-4">
-          <div>
-            <h3 class="text-base font-bold text-slate-800">ตรวจรับสินค้า</h3>
-            <p class="text-xs text-slate-500 mt-0.5">
-              {{ selectedGR?.gr_no }} &mdash; อ้างอิง PO: {{ selectedGR?.po?.po_no || 'N/A' }}
-              <span class="ml-2 text-slate-400">({{ selectedGR?.po?.vendor?.vendor_name || 'N/A' }})</span>
-            </p>
-          </div>
-          <button class="text-slate-400 hover:text-slate-700 text-xl leading-none" @click="showReceiveModal = false">&times;</button>
-        </div>
+    <AppModal
+      v-model="showReceiveModal"
+      title="ตรวจรับสินค้า"
+      :subtitle="`${selectedGR?.gr_no} — PO: ${selectedGR?.po?.po_no || 'N/A'} (${selectedGR?.po?.vendor?.vendor_name || 'N/A'})`"
+      variant="success"
+      size="md"
+    >
+      <template #icon>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      </template>
 
+      <div class="space-y-5">
         <!-- Items table -->
-        <div class="border border-[#e9ecef] rounded-lg overflow-hidden mb-4">
-          <table class="w-full text-left border-collapse text-sm">
-            <thead>
-              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-slate-500 uppercase">
-                <th class="px-4 py-2.5">รายการสินค้า</th>
-                <th class="px-4 py-2.5 text-right">จำนวนที่สั่ง</th>
-                <th class="px-4 py-2.5 text-right">จำนวนที่รับ</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-[#eff1f5]">
-              <tr v-for="(item, idx) in receiveForm.items" :key="idx">
-                <td class="px-4 py-2.5 font-medium text-slate-700">{{ item.item_name }}</td>
-                <td class="px-4 py-2.5 text-right text-slate-500">{{ item.qty_ordered }} {{ item.uom }}</td>
-                <td class="px-4 py-2.5 text-right">
-                  <input
-                    v-model.number="item.received_qty"
-                    type="number"
-                    :min="0"
-                    :max="item.qty_ordered"
-                    class="w-20 border border-[#e9ecef] rounded-lg px-2 py-1 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-                  />
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Service rating -->
-        <div class="mb-4">
-          <label class="text-xs font-semibold text-slate-600 block mb-1.5">คะแนนบริการผู้ขาย</label>
-          <div class="flex gap-1">
-            <span
-              v-for="star in 5"
-              :key="star"
-              class="star-btn"
-              :class="star <= receiveForm.rating ? 'text-amber-400' : 'text-slate-300'"
-              @click="receiveForm.rating = star"
-            >★</span>
-            <span class="ml-2 text-xs text-slate-500 self-center">{{ receiveForm.rating }} / 5</span>
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">รายการสินค้า</p>
+          <div class="border border-[#e9ecef] rounded-xl overflow-hidden">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#fafbfc] border-b border-[#eff1f5]">
+                  <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">รายการ</th>
+                  <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right">จำนวนที่สั่ง</th>
+                  <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right">จำนวนที่รับได้</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#f8f9fa]">
+                <tr v-for="(item, idx) in receiveForm.items" :key="idx" class="hover:bg-[#f8fffe] transition-colors">
+                  <td class="px-4 py-3 text-sm font-semibold text-slate-700">{{ item.item_name }}</td>
+                  <td class="px-4 py-3 text-sm text-slate-500 text-right tabular-nums">{{ item.qty_ordered }} <span class="text-[10px] text-slate-400">{{ item.uom }}</span></td>
+                  <td class="px-4 py-3 text-right">
+                    <input
+                      v-model.number="item.received_qty"
+                      type="number" :min="0" :max="item.qty_ordered"
+                      class="w-20 border-2 border-[#e9ecef] focus:border-[var(--primary)] rounded-lg px-2 py-1.5 text-right text-sm font-bold focus:outline-none transition-colors text-slate-800"
+                    />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <!-- Receive result -->
-        <div class="mb-4">
-          <label class="text-xs font-semibold text-slate-600 block mb-1.5">ผลการตรวจรับ</label>
-          <div class="flex gap-4">
-            <label class="flex items-center gap-1.5 cursor-pointer text-sm">
-              <input type="radio" v-model="receiveForm.result" value="FullReceipt" class="accent-green-500" />
-              รับครบถ้วน
+        <!-- Result radio cards -->
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">ผลการตรวจรับ</p>
+          <div class="grid grid-cols-3 gap-2">
+            <label
+              v-for="opt in [{value:'FullReceipt',label:'รับครบถ้วน',color:'green'},{value:'PartialReceipt',label:'รับบางส่วน',color:'amber'},{value:'Rejected',label:'ปฏิเสธ',color:'red'}]"
+              :key="opt.value"
+              class="receive-radio-card"
+              :class="receiveForm.result === opt.value ? `receive-radio-card--${opt.color}` : ''"
+            >
+              <input type="radio" v-model="receiveForm.result" :value="opt.value" class="sr-only" />
+              <span class="text-sm font-bold">{{ opt.label }}</span>
             </label>
-            <label class="flex items-center gap-1.5 cursor-pointer text-sm">
-              <input type="radio" v-model="receiveForm.result" value="PartialReceipt" class="accent-amber-500" />
-              รับบางส่วน
-            </label>
-            <label class="flex items-center gap-1.5 cursor-pointer text-sm">
-              <input type="radio" v-model="receiveForm.result" value="Rejected" class="accent-red-500" />
-              ปฏิเสธทั้งหมด
-            </label>
+          </div>
+        </div>
+
+        <!-- Rating -->
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">คะแนนบริการผู้ขาย</p>
+          <div class="flex items-center gap-1">
+            <button
+              v-for="star in 5" :key="star"
+              type="button"
+              class="text-3xl leading-none transition-transform hover:scale-110 focus:outline-none"
+              :class="star <= receiveForm.rating ? 'text-amber-400' : 'text-slate-200'"
+              @click="receiveForm.rating = star"
+            >★</button>
+            <span class="ml-3 text-sm font-bold text-slate-600">{{ receiveForm.rating }} / 5</span>
           </div>
         </div>
 
         <!-- Remark -->
-        <div class="mb-5">
-          <label class="text-xs font-semibold text-slate-600 block mb-1.5">หมายเหตุ (ไม่บังคับ)</label>
+        <div>
+          <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">หมายเหตุ <span class="normal-case font-normal">(ไม่บังคับ)</span></p>
           <textarea
-            v-model="receiveForm.remark"
-            rows="2"
-            placeholder="ระบุหมายเหตุเพิ่มเติม..."
-            class="w-full border border-[#e9ecef] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] resize-none"
+            v-model="receiveForm.remark" rows="2"
+            placeholder="ระบุหมายเหตุเพิ่มเติม เช่น สินค้าแตกหัก, บรรจุภัณฑ์เสียหาย..."
+            class="w-full border-2 border-[#e9ecef] focus:border-[var(--primary)] rounded-xl px-4 py-3 text-sm focus:outline-none transition-colors resize-none text-slate-700 placeholder:text-slate-300"
           ></textarea>
         </div>
 
-        <!-- Buttons -->
+        <!-- Receipt image upload -->
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-2">
+            <div>
+              <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">รูปภาพหลักฐานการตรวจรับ</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">อัปโหลดได้สูงสุด 10 ภาพ รองรับเฉพาะไฟล์รูปภาพ ภาพละไม่เกิน 10 MB</p>
+            </div>
+            <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 rounded-full px-2 py-1">
+              {{ receiveForm.attachments.length }} / 10
+            </span>
+          </div>
+
+          <input
+            ref="receiptFileInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="hidden"
+            @change="handleReceiptImageUpload"
+          />
+
+          <button
+            type="button"
+            class="w-full border-2 border-dashed border-[#dce6f1] hover:border-[var(--primary)] hover:bg-green-50/40 rounded-xl px-4 py-4 transition text-left group"
+            :disabled="receiveForm.attachments.length >= receiptUploadLimits.maxFiles"
+            :class="receiveForm.attachments.length >= receiptUploadLimits.maxFiles ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'"
+            @click="receiptFileInput?.click()"
+          >
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-green-50 text-[var(--primary)] flex items-center justify-center group-hover:scale-105 transition">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              </div>
+              <div>
+                <p class="text-sm font-bold text-slate-700">เพิ่มรูปภาพการตรวจรับสินค้า</p>
+                <p class="text-xs text-slate-400">เช่น รูปสินค้า, กล่อง, ใบส่งของ หรือจุดชำรุดเสียหาย</p>
+              </div>
+            </div>
+          </button>
+
+          <p v-if="receiptUploadError" class="mt-2 text-xs font-semibold text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+            {{ receiptUploadError }}
+          </p>
+
+          <div v-if="receiveForm.attachments.length" class="grid grid-cols-2 sm:grid-cols-5 gap-2 mt-3">
+            <div
+              v-for="(image, index) in receiveForm.attachments"
+              :key="image.id"
+              class="relative rounded-xl border border-[#e9ecef] bg-white overflow-hidden shadow-[var(--shadow-sm)]"
+            >
+              <img :src="image.url" :alt="image.name" class="w-full h-20 object-cover bg-slate-100" />
+              <button
+                type="button"
+                class="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/95 text-red-600 shadow flex items-center justify-center hover:bg-red-50"
+                :aria-label="`ลบรูป ${image.name}`"
+                @click="removeReceiptImage(index)"
+              >
+                ×
+              </button>
+              <div class="px-2 py-1">
+                <p class="text-[10px] font-semibold text-slate-600 truncate">{{ image.name }}</p>
+                <p class="text-[9px] text-slate-400">{{ formatFileSize(image.size) }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
         <div class="flex justify-end gap-3">
-          <button class="action-btn action-btn--neutral" @click="showReceiveModal = false">ยกเลิก</button>
-          <button class="action-btn action-btn--review" style="background:#16a34a;color:#fff;border-color:#16a34a;" @click="confirmReceive">
+          <button class="modal-btn modal-btn--ghost" @click="closeReceiveModal">ยกเลิก</button>
+          <button class="modal-btn modal-btn--primary" @click="confirmReceive">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
             ยืนยันการรับสินค้า
           </button>
         </div>
-      </div>
-    </div>
+      </template>
+    </AppModal>
 
     <!-- TAB 4: AI REPLENISHMENT PLANNER -->
     <div v-if="activeTab === 'replenish'" class="space-y-4">
@@ -389,18 +453,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const activeTab = ref('gr');
+
+type ReceiptImage = {
+  id: string;
+  file: File;
+  name: string;
+  size: number;
+  type: string;
+  url: string;
+};
 
 const showReceiveModal = ref(false);
 const selectedGR = ref<any>(null);
-const receiveForm = ref({ result: 'FullReceipt', rating: 5, remark: '', items: [] as any[] });
+const receiptFileInput = ref<HTMLInputElement | null>(null);
+const receiptUploadError = ref('');
+const receiptUploadLimits = {
+  maxFiles: 10,
+  maxSizeBytes: 10 * 1024 * 1024,
+};
+const receiveForm = ref({
+  result: 'FullReceipt',
+  rating: 5,
+  remark: '',
+  items: [] as any[],
+  attachments: [] as ReceiptImage[],
+});
+
+const clearReceiptImages = () => {
+  receiveForm.value.attachments.forEach(image => URL.revokeObjectURL(image.url));
+  receiveForm.value.attachments = [];
+  receiptUploadError.value = '';
+  if (receiptFileInput.value) receiptFileInput.value.value = '';
+};
 
 const openReceiveModal = (gr: any) => {
+  clearReceiptImages();
   selectedGR.value = gr;
   receiveForm.value = {
     result: 'FullReceipt',
@@ -410,17 +504,86 @@ const openReceiveModal = (gr: any) => {
       { item_name: 'สินค้าตามใบสั่งซื้อ ' + (gr.po?.po_no || ''), qty_ordered: 10, received_qty: 10, uom: 'ชิ้น' },
       { item_name: 'อุปกรณ์เสริม', qty_ordered: 5, received_qty: 5, uom: 'ชิ้น' },
     ],
+    attachments: [],
   };
   showReceiveModal.value = true;
 };
 
-const confirmReceive = () => {
+const closeReceiveModal = () => {
+  showReceiveModal.value = false;
+  clearReceiptImages();
+};
+
+const formatFileSize = (bytes: number) => {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+};
+
+const handleReceiptImageUpload = (event: Event) => {
+  const input = event.target as HTMLInputElement;
+  const files = Array.from(input.files || []);
+  receiptUploadError.value = '';
+
+  if (!files.length) return;
+
+  const rejected: string[] = [];
+  let availableSlots = receiptUploadLimits.maxFiles - receiveForm.value.attachments.length;
+
+  for (const file of files) {
+    if (availableSlots <= 0) {
+      rejected.push(`อัปโหลดได้สูงสุด ${receiptUploadLimits.maxFiles} ภาพ`);
+      break;
+    }
+
+    if (!file.type.startsWith('image/')) {
+      rejected.push(`${file.name}: รองรับเฉพาะไฟล์รูปภาพ`);
+      continue;
+    }
+
+    if (file.size > receiptUploadLimits.maxSizeBytes) {
+      rejected.push(`${file.name}: ขนาดเกิน 10 MB`);
+      continue;
+    }
+
+    receiveForm.value.attachments.push({
+      id: `${file.name}-${file.size}-${file.lastModified}-${crypto.randomUUID?.() || Date.now()}`,
+      file,
+      name: file.name,
+      size: file.size,
+      type: file.type,
+      url: URL.createObjectURL(file),
+    });
+    availableSlots -= 1;
+  }
+
+  receiptUploadError.value = rejected.slice(0, 3).join(' • ');
+  input.value = '';
+};
+
+const removeReceiptImage = (index: number) => {
+  const [removed] = receiveForm.value.attachments.splice(index, 1);
+  if (removed) URL.revokeObjectURL(removed.url);
+  receiptUploadError.value = '';
+};
+
+const confirmReceive = async () => {
   if (!selectedGR.value) return;
   selectedGR.value.status = receiveForm.value.result;
   selectedGR.value.quality_score = receiveForm.value.rating;
+  selectedGR.value.receipt_images = receiveForm.value.attachments.map(image => ({
+    file_name: image.name,
+    file_size: image.size,
+    file_type: image.type,
+    uploaded_at: new Date().toISOString(),
+  }));
   showReceiveModal.value = false;
-  alert(`บันทึกการรับสินค้า ${selectedGR.value.gr_no} เรียบร้อยแล้ว`);
+  clearReceiptImages();
+  await dialog.alert(`บันทึกการรับสินค้า ${selectedGR.value.gr_no} เรียบร้อยแล้ว`, { variant: 'success' });
 };
+
+watch(showReceiveModal, (isOpen) => {
+  if (!isOpen) clearReceiptImages();
+});
 
 const tabs = [
   { id: 'gr', name: 'ประวัติรับสินค้า (GR)', icon: 'i-heroicons-document-check' },
@@ -446,15 +609,15 @@ const replenishSuggestions = ref([
   { code: 'ITM-00012', name: 'พาเลทไม้แร็คกิ้ง ทนความชื้น', qty_onhand: 20, avg_consumption: 120, min_suggested: 50, suggested_order: 150, uom: 'ชิ้น', loading: false },
 ]);
 
-const autoOrder = (item: any) => {
+const autoOrder = async (item: any) => {
   if (item.suggested_order <= 0) {
-    alert('สินค้านี้ยังมีจำนวนเพียงพอ ไม่จำเป็นต้องเติมสินค้าในขณะนี้');
+    await dialog.alert('สินค้านี้ยังมีจำนวนเพียงพอ ไม่จำเป็นต้องเติมสินค้าในขณะนี้', { variant: 'info' });
     return;
   }
   item.loading = true;
-  setTimeout(() => {
+  setTimeout(async () => {
     item.loading = false;
-    alert(`สร้างแบบร่างใบขอซื้อ (Draft PR) สำหรับสินค้า "${item.name}" จำนวน ${item.suggested_order} ${item.uom} สำเร็จ!`);
+    await dialog.alert(`สร้างแบบร่างใบขอซื้อ (Draft PR) สำหรับสินค้า "${item.name}" จำนวน ${item.suggested_order} ${item.uom} สำเร็จ!`, { variant: 'success' });
     item.qty_onhand += item.suggested_order;
     item.suggested_order = 0;
   }, 1200);
@@ -656,30 +819,3 @@ onMounted(() => {
   loadClaims();
 });
 </script>
-
-<style scoped>
-.gr-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.4);
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.gr-modal {
-  background: #fff;
-  border-radius: 1rem;
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 42rem;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
-}
-.star-btn {
-  cursor: pointer;
-  font-size: 1.5rem;
-  line-height: 1;
-  user-select: none;
-  transition: color 0.15s;
-}
-</style>

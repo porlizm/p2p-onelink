@@ -14,201 +14,139 @@
       </div>
     </div>
 
-    <!-- Stats summary cards -->
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-          <UIcon name="i-heroicons-trophy" class="w-6 h-6" />
+    <!-- Bidding workspace -->
+    <section class="bidding-workspace">
+      <div class="bidding-hero">
+        <div class="bidding-hero__copy">
+          <span class="bidding-hero__eyebrow">RFQ Command Center</span>
+          <h3>ภาพรวมงานประกวดราคาที่ต้องติดตาม</h3>
+          <p>รวมสถานะการเปิดซอง จำนวนคู่ค้าที่ตอบกลับ และงานที่ต้องตัดสินไว้ในมุมมองเดียว เพื่อให้สแกนและลงมือทำได้เร็วขึ้น</p>
         </div>
-        <div>
-          <span class="text-[10px] text-[var(--muted-foreground)] uppercase block font-semibold">โครงการทั้งหมด</span>
-          <span class="text-lg font-bold text-[var(--foreground)]">{{ rfqList.length }}</span>
-        </div>
-      </div>
-      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-green-50 text-green-600 flex items-center justify-center">
-          <UIcon name="i-heroicons-paper-airplane" class="w-6 h-6" />
-        </div>
-        <div>
-          <span class="text-[10px] text-[var(--muted-foreground)] uppercase block font-semibold">เปิดเสนอราคาอยู่</span>
-          <span class="text-lg font-bold text-[var(--foreground)]">
-            {{ rfqList.filter(r => r.status === 'OpenForQuotation').length }}
-          </span>
-        </div>
-      </div>
-      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center">
-          <UIcon name="i-heroicons-envelope-open" class="w-6 h-6" />
-        </div>
-        <div>
-          <span class="text-[10px] text-[var(--muted-foreground)] uppercase block font-semibold">รอเปิดซอง/ตัดสินผล</span>
-          <span class="text-lg font-bold text-[var(--foreground)]">
-            {{ rfqList.filter(r => r.status === 'UnderEvaluation' || isClosedButNotAwarded(r)).length }}
-          </span>
-        </div>
-      </div>
-      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-          <UIcon name="i-heroicons-check-circle" class="w-6 h-6" />
-        </div>
-        <div>
-          <span class="text-[10px] text-[var(--muted-foreground)] uppercase block font-semibold">ตัดสินผลแล้ว</span>
-          <span class="text-lg font-bold text-[var(--foreground)]">
-            {{ rfqList.filter(r => r.status === 'Awarded').length }}
-          </span>
-        </div>
-      </div>
-      <div class="bg-white border border-amber-200 rounded-xl p-4 shadow-[var(--shadow-sm)] flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-          <UIcon name="i-heroicons-scale" class="w-6 h-6" />
-        </div>
-        <div>
-          <span class="text-[10px] text-[var(--muted-foreground)] uppercase block font-semibold">รอตัดสินผล</span>
-          <span class="text-lg font-bold text-amber-600">
-            {{ rfqList.filter(r => r.status === 'PendingEvaluation').length }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Search & Filter Tab -->
-    <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-      <div class="p-4 border-b border-[#eff1f5] flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div class="relative w-full sm:max-w-xs">
-          <UInput 
-            v-model="search" 
-            placeholder="ค้นหาเลขที่ RFQ หรือหัวข้อโครงการ..." 
-            icon="i-heroicons-magnifying-glass-20-solid"
-            size="md"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <select v-model="filterStatus" class="ds-select" style="width:180px">
-            <option value="ทั้งหมด">ทั้งหมด</option>
-            <option value="OpenForQuotation">เปิดรับใบเสนอ</option>
-            <option value="UnderEvaluation">กำลังประเมิน</option>
-            <option value="Awarded">ตัดสินแล้ว</option>
-            <option value="Draft">ร่างเอกสาร</option>
-          </select>
+        <div class="bidding-hero__metrics">
+          <div v-for="stat in biddingStats" :key="stat.label" class="bidding-stat">
+            <span class="bidding-stat__value" :class="stat.tone">{{ stat.value }}</span>
+            <span class="bidding-stat__label">{{ stat.label }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- RFQ Table -->
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-              <th class="px-6 py-3.5">เลขที่โครงการ</th>
-              <th class="px-6 py-3.5">หัวข้อประกวดราคา</th>
-              <th class="px-6 py-3.5">ปิดรับซองเสนอราคา</th>
-              <th class="px-6 py-3.5 text-center">จำนวนคู่ค้าที่เชิญ</th>
-              <th class="px-6 py-3.5 text-center">ยื่นเสนอแล้ว</th>
-              <th class="px-6 py-3.5 text-center">สถานะ</th>
-              <th class="px-6 py-3.5 text-center">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-[#eff1f5] text-sm">
-            <tr v-for="rfq in filteredRfqs" :key="rfq.rfq_id" class="hover:bg-[#f8fffe] transition">
-              <td class="px-6 py-5 font-bold text-[var(--primary)]">{{ rfq.rfq_no }}</td>
-              <td class="px-6 py-5">
-                <div class="font-medium text-[var(--foreground)]">{{ rfq.title }}</div>
-                <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5 line-clamp-1 max-w-sm">
-                  {{ rfq.description || 'ไม่มีรายละเอียดเพิ่มเติม' }}
+      <div class="bidding-toolbar">
+        <div class="bidding-search">
+          <UIcon name="i-heroicons-magnifying-glass-20-solid" class="w-4 h-4 text-slate-400" />
+          <input v-model="search" type="search" placeholder="ค้นหาเลขที่ RFQ หรือชื่อโครงการ..." />
+        </div>
+        <div class="bidding-tabs" aria-label="ตัวกรองสถานะประกวดราคา">
+          <button
+            v-for="option in statusFilterOptions"
+            :key="option.value"
+            type="button"
+            class="bidding-tab"
+            :class="{ 'bidding-tab--active': filterStatus === option.value }"
+            @click="filterStatus = option.value"
+          >
+            <span>{{ option.label }}</span>
+            <span class="bidding-tab__count">{{ option.count }}</span>
+          </button>
+        </div>
+      </div>
+
+      <div v-if="filteredRfqs.length" class="rfq-list">
+        <article v-for="rfq in filteredRfqs" :key="rfq.rfq_id" class="rfq-card">
+          <div class="rfq-card__main">
+            <div class="rfq-card__header">
+              <div>
+                <div class="rfq-card__meta">
+                  <span class="rfq-card__no">{{ rfq.rfq_no }}</span>
+                  <span v-if="rfq.status === 'OpenForQuotation' && isExpired(rfq.close_date)" class="rfq-card__deadline-alert">
+                    ปิดรับซองแล้ว
+                  </span>
                 </div>
-              </td>
-              <td class="px-6 py-5 text-xs">
-                <div class="text-[var(--foreground)] font-medium">{{ formatDate(rfq.close_date) }}</div>
-                <span
-                  v-if="isExpired(rfq.close_date) && rfq.status === 'OpenForQuotation'"
-                  class="text-[9px] text-red-600 font-bold flex items-center gap-0.5 mt-0.5"
-                >
-                  <UIcon name="i-heroicons-clock" class="w-3 h-3" />
-                  ปิดรับซองแล้ว
-                </span>
-              </td>
-              <td class="px-6 py-5 text-center font-medium">{{ rfq.vendors?.length || 0 }} ราย</td>
-              <td class="px-6 py-5 text-center font-bold text-slate-700">
-                {{ rfq.quotations?.length || 0 }} ราย
-              </td>
-              <td class="px-6 py-5 text-center">
-                <StatusBadge :status="rfq.status === 'OpenForQuotation' && isExpired(rfq.close_date) ? 'UnderEvaluation' : rfq.status" />
-              </td>
-              <td class="px-6 py-5 text-center">
-                <div class="flex items-center justify-center gap-1.5 flex-wrap">
-                  <!-- OpenForQuotation: disabled compare + ชวนผู้ขาย -->
-                  <template v-if="rfq.status === 'OpenForQuotation' && !isExpired(rfq.close_date)">
-                    <span
-                      class="action-btn action-btn--neutral"
-                      style="opacity:0.5;cursor:not-allowed"
-                      title="เปิดเปรียบเทียบได้หลังปิดรับเสนอราคา"
-                    >
-                      ซองยังไม่เปิด
-                    </span>
-                    <button class="action-btn action-btn--neutral" @click="inviteVendorToRfq(rfq)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
-                      ชวนผู้ขาย
-                    </button>
-                  </template>
+                <h3 class="rfq-card__title">{{ rfq.title }}</h3>
+              </div>
+              <StatusBadge :status="getDisplayStatus(rfq)" />
+            </div>
 
-                  <!-- PendingEvaluation: compare (enabled) + ประกาศผล -->
-                  <template v-else-if="rfq.status === 'PendingEvaluation'">
-                    <NuxtLink :to="`/bidding/${rfq.rfq_id}/compare`" class="action-btn action-btn--compare">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-                      เปรียบเทียบ
-                    </NuxtLink>
-                    <button class="action-btn action-btn--review" @click="announceAward(rfq)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
-                      ประกาศผล
-                    </button>
-                  </template>
+            <p class="rfq-card__description">{{ rfq.description || 'ไม่มีรายละเอียดเพิ่มเติม' }}</p>
 
-                  <!-- OpenForQuotation expired (treat as PendingEvaluation) -->
-                  <template v-else-if="rfq.status === 'OpenForQuotation' && isExpired(rfq.close_date)">
-                    <NuxtLink :to="`/bidding/${rfq.rfq_id}/compare`" class="action-btn action-btn--compare">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
-                      เปรียบเทียบและตัดสิน
-                    </NuxtLink>
-                    <button class="action-btn action-btn--neutral" @click="inviteVendorToRfq(rfq)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
-                      ชวนผู้ขาย
-                    </button>
-                  </template>
+            <div class="rfq-card__details">
+              <div class="rfq-detail">
+                <span class="rfq-detail__label">ปิดรับซอง</span>
+                <span class="rfq-detail__value">{{ formatDate(rfq.close_date) }}</span>
+              </div>
+              <div class="rfq-detail">
+                <span class="rfq-detail__label">เชิญคู่ค้า</span>
+                <span class="rfq-detail__value">{{ rfq.vendors?.length || 0 }} ราย</span>
+              </div>
+              <div class="rfq-detail">
+                <span class="rfq-detail__label">ยื่นเสนอแล้ว</span>
+                <span class="rfq-detail__value rfq-detail__value--strong">{{ rfq.quotations?.length || 0 }} ราย</span>
+              </div>
+            </div>
+          </div>
 
-                  <!-- Awarded: ดูผล -->
-                  <template v-else-if="rfq.status === 'Awarded'">
-                    <NuxtLink :to="`/bidding/${rfq.rfq_id}/compare`" class="action-btn action-btn--view">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                      ดูผล
-                    </NuxtLink>
-                  </template>
+          <div class="rfq-card__actions">
+            <template v-if="rfq.status === 'OpenForQuotation' && !isExpired(rfq.close_date)">
+              <span class="rfq-action rfq-action--disabled" title="เปิดเปรียบเทียบได้หลังปิดรับเสนอราคา">
+                <UIcon name="i-heroicons-lock-closed" class="w-4 h-4" />
+                ซองยังไม่เปิด
+              </span>
+              <button class="rfq-action rfq-action--secondary" @click="inviteVendorToRfq(rfq)">
+                <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                ชวนผู้ขาย
+              </button>
+            </template>
 
-                  <!-- NoAward: เปิดประมูลใหม่ -->
-                  <template v-else-if="rfq.status === 'NoAward'">
-                    <button class="action-btn action-btn--compare" @click="reopenRfq(rfq)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
-                      เปิดประมูลใหม่
-                    </button>
-                  </template>
+            <template v-else-if="rfq.status === 'PendingEvaluation'">
+              <NuxtLink :to="`/bidding/${rfq.rfq_id}/compare`" class="rfq-action rfq-action--primary">
+                <UIcon name="i-heroicons-chart-bar" class="w-4 h-4" />
+                เปรียบเทียบ
+              </NuxtLink>
+              <button class="rfq-action rfq-action--warning" @click="announceAward(rfq)">
+                <UIcon name="i-heroicons-paper-airplane" class="w-4 h-4" />
+                ประกาศผล
+              </button>
+            </template>
 
-                  <!-- Cancelled: ดูรายละเอียด -->
-                  <template v-else-if="rfq.status === 'Cancelled'">
-                    <button class="action-btn action-btn--neutral" @click="alert(`รายละเอียด ${rfq.rfq_no}: ${rfq.description || rfq.title}`)">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                      ดูรายละเอียด
-                    </button>
-                  </template>
-                </div>
-              </td>
-            </tr>
-            <tr v-if="filteredRfqs.length === 0">
-              <td colspan="7" class="text-center py-10 text-xs text-[var(--muted-foreground)]">
-                ไม่พบประวัติรายการโครงการจัดซื้อเปรียบเทียบราคา
-              </td>
-            </tr>
-          </tbody>
-        </table>
+            <template v-else-if="rfq.status === 'OpenForQuotation' && isExpired(rfq.close_date)">
+              <NuxtLink :to="`/bidding/${rfq.rfq_id}/compare`" class="rfq-action rfq-action--primary">
+                <UIcon name="i-heroicons-chart-bar" class="w-4 h-4" />
+                เปรียบเทียบและตัดสิน
+              </NuxtLink>
+              <button class="rfq-action rfq-action--secondary" @click="inviteVendorToRfq(rfq)">
+                <UIcon name="i-heroicons-envelope" class="w-4 h-4" />
+                ชวนผู้ขาย
+              </button>
+            </template>
+
+            <template v-else-if="rfq.status === 'Awarded'">
+              <NuxtLink :to="`/bidding/${rfq.rfq_id}/compare`" class="rfq-action rfq-action--success">
+                <UIcon name="i-heroicons-eye" class="w-4 h-4" />
+                ดูผล
+              </NuxtLink>
+            </template>
+
+            <template v-else-if="rfq.status === 'NoAward'">
+              <button class="rfq-action rfq-action--primary" @click="reopenRfq(rfq)">
+                <UIcon name="i-heroicons-arrow-path" class="w-4 h-4" />
+                เปิดประมูลใหม่
+              </button>
+            </template>
+
+            <template v-else-if="rfq.status === 'Cancelled'">
+              <button class="rfq-action rfq-action--secondary" @click="dialog.alert(`รายละเอียด ${rfq.rfq_no}: ${rfq.description || rfq.title}`)">
+                <UIcon name="i-heroicons-eye" class="w-4 h-4" />
+                ดูรายละเอียด
+              </button>
+            </template>
+          </div>
+        </article>
       </div>
-    </div>
+
+      <div v-else class="rfq-empty">
+        <UIcon name="i-heroicons-document-magnifying-glass" class="w-10 h-10" />
+        <p>ไม่พบโครงการประกวดราคาตามเงื่อนไขที่เลือก</p>
+      </div>
+    </section>
 
     <!-- AI Sourcing Assistant & Market Analytics -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -289,10 +227,31 @@ import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const search = ref('');
 const filterStatus = ref('ทั้งหมด');
 const rfqList = ref<any[]>([]);
+
+const getDisplayStatus = (rfq: any) => {
+  return rfq.status === 'OpenForQuotation' && isExpired(rfq.close_date) ? 'UnderEvaluation' : rfq.status;
+};
+
+const biddingStats = computed(() => [
+  { label: 'ทั้งหมด', value: rfqList.value.length, tone: 'tone-slate' },
+  { label: 'เปิดเสนอราคา', value: rfqList.value.filter(r => r.status === 'OpenForQuotation' && !isExpired(r.close_date)).length, tone: 'tone-blue' },
+  { label: 'รอเปิดซอง', value: rfqList.value.filter(r => r.status === 'UnderEvaluation' || isClosedButNotAwarded(r)).length, tone: 'tone-amber' },
+  { label: 'รอตัดสินผล', value: rfqList.value.filter(r => r.status === 'PendingEvaluation').length, tone: 'tone-orange' },
+  { label: 'ตัดสินแล้ว', value: rfqList.value.filter(r => r.status === 'Awarded').length, tone: 'tone-green' },
+]);
+
+const statusFilterOptions = computed(() => [
+  { label: 'ทั้งหมด', value: 'ทั้งหมด', count: rfqList.value.length },
+  { label: 'เปิดรับใบเสนอ', value: 'OpenForQuotation', count: rfqList.value.filter(r => r.status === 'OpenForQuotation' && !isExpired(r.close_date)).length },
+  { label: 'กำลังประเมิน', value: 'UnderEvaluation', count: rfqList.value.filter(r => r.status === 'UnderEvaluation' || isClosedButNotAwarded(r)).length },
+  { label: 'รอตัดสินผล', value: 'PendingEvaluation', count: rfqList.value.filter(r => r.status === 'PendingEvaluation').length },
+  { label: 'ตัดสินแล้ว', value: 'Awarded', count: rfqList.value.filter(r => r.status === 'Awarded').length },
+]);
 
 const aiScrapedVendors = ref([
   { name: 'บริษัท ซีเมนต์เจริญรุ่งเรือง จำกัด', category: 'วัสดุก่อสร้าง / ปูนซีเมนต์', matchScore: '98%', source: 'YellowPages', highlight: 'ราคาส่งปูนปอร์ตแลนด์ต่ำกว่าตลาด 2.5%' },
@@ -306,27 +265,27 @@ const marketPriceTrends = ref([
   { item: 'น้ำมันดีเซลหมุนเร็ว B7 (ลิตร)', change: '+4.5%', benchmark: '33.5 ฿', ourAvg: '32.8 ฿' }
 ]);
 
-const inviteVendor = (name: string) => {
-  alert(`ส่งจดหมายและเชิญคู่ค้า "${name}" เข้าร่วมโครงการ RFQ จัดซื้อผ่านอีเมลสำเร็จ!`);
+const inviteVendor = async (name: string) => {
+  await dialog.alert(`ส่งจดหมายและเชิญคู่ค้า "${name}" เข้าร่วมโครงการ RFQ จัดซื้อผ่านอีเมลสำเร็จ!`, { variant: 'success' });
 };
 
 // Per-row RFQ action handlers
-const inviteVendorToRfq = (rfq: any) => {
-  alert(`ส่งคำเชิญประกวดราคา ${rfq.rfq_no} ไปยังผู้ขายในรายการแล้ว`);
+const inviteVendorToRfq = async (rfq: any) => {
+  await dialog.alert(`ส่งคำเชิญประกวดราคา ${rfq.rfq_no} ไปยังผู้ขายในรายการแล้ว`, { variant: 'success' });
 };
 
-const announceAward = (rfq: any) => {
-  if (!confirm(`ยืนยันประกาศผลการตัดสินโครงการ ${rfq.rfq_no} ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้`)) return;
+const announceAward = async (rfq: any) => {
+  if (!(await dialog.confirm(`ยืนยันประกาศผลการตัดสินโครงการ ${rfq.rfq_no} ใช่หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้`, { variant: 'danger' }))) return;
   rfq.status = 'Awarded';
-  alert(`ประกาศผลการตัดสิน ${rfq.rfq_no} เรียบร้อยแล้ว`);
+  await dialog.alert(`ประกาศผลการตัดสิน ${rfq.rfq_no} เรียบร้อยแล้ว`, { variant: 'success' });
 };
 
-const reopenRfq = (rfq: any) => {
+const reopenRfq = async (rfq: any) => {
   const newCloseDate = new Date(Date.now() + 86400000 * 7);
   rfq.status = 'OpenForQuotation';
   rfq.close_date = newCloseDate;
   const closeDateStr = newCloseDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
-  alert(`เปิดประมูล ${rfq.rfq_no} ใหม่แล้ว กำหนดปิดรับซอง ${closeDateStr}`);
+  await dialog.alert(`เปิดประมูล ${rfq.rfq_no} ใหม่แล้ว กำหนดปิดรับซอง ${closeDateStr}`, { variant: 'info' });
 };
 
 const loadRfqs = async () => {
@@ -442,16 +401,22 @@ const isClosedButNotAwarded = (rfq: any) => {
 const filteredRfqs = computed(() => {
   return rfqList.value.filter((r) => {
     if (filterStatus.value !== 'ทั้งหมด') {
+      if (filterStatus.value === 'UnderEvaluation') {
+        if (!(r.status === 'UnderEvaluation' || isClosedButNotAwarded(r))) return false;
+      } else {
       if (filterStatus.value === 'OpenForQuotation' && isExpired(r.close_date)) {
         return false;
       }
       if (r.status !== filterStatus.value) {
         return false;
       }
+      }
     }
     if (search.value) {
       const q = search.value.toLowerCase();
-      return r.rfq_no?.toLowerCase().includes(q) || r.title?.toLowerCase().includes(q);
+      return r.rfq_no?.toLowerCase().includes(q)
+        || r.title?.toLowerCase().includes(q)
+        || r.description?.toLowerCase().includes(q);
     }
     return true;
   });
@@ -480,3 +445,378 @@ onMounted(() => {
   loadRfqs();
 });
 </script>
+
+<style scoped>
+.bidding-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bidding-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid #e5ebf3;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(248, 252, 255, 0.96), rgba(255, 255, 255, 0.98)),
+    radial-gradient(circle at top right, rgba(0, 146, 69, 0.08), transparent 32%);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.bidding-hero__eyebrow {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: #00833e;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.bidding-hero__copy h3 {
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.bidding-hero__copy p {
+  max-width: 720px;
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.bidding-hero__metrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  align-content: stretch;
+}
+
+.bidding-stat {
+  min-height: 82px;
+  padding: 12px 10px;
+  border: 1px solid #e8edf4;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.bidding-stat__value {
+  display: block;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.bidding-stat__label {
+  display: block;
+  margin-top: 9px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.tone-slate { color: #0f172a; }
+.tone-blue { color: #2563eb; }
+.tone-amber { color: #d97706; }
+.tone-orange { color: #ea580c; }
+.tone-green { color: #059669; }
+
+.bidding-toolbar {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid #e8edf4;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.035);
+}
+
+.bidding-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.bidding-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.bidding-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.bidding-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.bidding-tab:hover {
+  background: #eaf2ff;
+  color: #1e40af;
+}
+
+.bidding-tab--active {
+  background: #ffffff;
+  border-color: #cfe0f8;
+  color: #005f2f;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+}
+
+.bidding-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  color: #475569;
+  font-size: 11px;
+}
+
+.bidding-tab--active .bidding-tab__count {
+  background: #dcfce7;
+  color: #047857;
+}
+
+.rfq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rfq-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  gap: 18px;
+  padding: 18px;
+  border: 1px solid #e8edf4;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.035);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.rfq-card:hover {
+  transform: translateY(-1px);
+  border-color: #cbdff3;
+  box-shadow: 0 14px 32px rgba(15, 23, 42, 0.06);
+}
+
+.rfq-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.rfq-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.rfq-card__no {
+  color: #006b35;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.rfq-card__deadline-alert {
+  display: inline-flex;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.rfq-card__title {
+  margin: 7px 0 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.rfq-card__description {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.rfq-card__details {
+  display: grid;
+  grid-template-columns: 1.4fr repeat(2, minmax(108px, 0.5fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.rfq-detail {
+  padding: 10px 12px;
+  border: 1px solid #edf2f7;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.rfq-detail__label {
+  display: block;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.rfq-detail__value {
+  display: block;
+  margin-top: 4px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.rfq-detail__value--strong {
+  color: #0f172a;
+}
+
+.rfq-card__actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding-left: 18px;
+  border-left: 1px solid #edf2f7;
+}
+
+.rfq-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.rfq-action--primary {
+  background: #eef4ff;
+  color: #1d4ed8;
+  border-color: #dbe8ff;
+}
+
+.rfq-action--warning {
+  background: #f59e0b;
+  color: #fff;
+  border-color: #f59e0b;
+}
+
+.rfq-action--success {
+  background: #e8f8ef;
+  color: #047857;
+  border-color: #c8eed8;
+}
+
+.rfq-action--secondary {
+  background: #f8fafc;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+.rfq-action--disabled {
+  background: #f8fafc;
+  color: #94a3b8;
+  border-color: #edf2f7;
+  cursor: not-allowed;
+}
+
+.rfq-action:not(.rfq-action--disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.rfq-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 220px;
+  color: #94a3b8;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .bidding-hero,
+  .bidding-toolbar,
+  .rfq-card {
+    grid-template-columns: 1fr;
+  }
+
+  .bidding-tabs {
+    justify-content: flex-start;
+  }
+
+  .rfq-card__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding-left: 0;
+    padding-top: 14px;
+    border-left: 0;
+    border-top: 1px solid #edf2f7;
+  }
+}
+
+@media (max-width: 760px) {
+  .bidding-hero__metrics,
+  .rfq-card__details,
+  .rfq-card__actions {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

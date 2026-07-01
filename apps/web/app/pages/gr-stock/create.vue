@@ -231,6 +231,7 @@ import { useAuthStore } from '~/stores/auth';
 const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const poId = route.query.po_id as string;
 const poDetails = ref<any>(null);
@@ -313,7 +314,7 @@ const loadPo = async () => {
 
 const submitGr = async () => {
   if (lines.value.every(l => Number(l.qty_to_receive) <= 0)) {
-    alert('กรุณากรอกจำนวนสินค้าที่จะตรวจรับอย่างน้อย 1 รายการ');
+    await dialog.alert('กรุณากรอกจำนวนสินค้าที่จะตรวจรับอย่างน้อย 1 รายการ', { variant: 'danger' });
     return;
   }
 

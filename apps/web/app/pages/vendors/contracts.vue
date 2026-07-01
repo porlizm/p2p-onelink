@@ -617,6 +617,7 @@ import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const contracts = ref<any[]>([]);
 const vendorsList = ref<any[]>([]);
@@ -904,7 +905,7 @@ const viewAgreementDetail = (c: any) => {
 // Create Contract Action
 const submitContract = async () => {
   if (!newVendorId.value || !newTitle.value || !newAmount.value) {
-    alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    await dialog.alert('กรุณากรอกข้อมูลให้ครบถ้วน', { variant: 'danger' });
     return;
   }
   submitting.value = true;
@@ -931,11 +932,11 @@ const submitContract = async () => {
       },
       body: payload,
     });
-    alert('ร่างเอกสัญญากลางใหม่เรียบร้อย! กรุณาส่งขออนุมัติภายใน');
+    await dialog.alert('ร่างเอกสัญญากลางใหม่เรียบร้อย! กรุณาส่งขออนุมัติภายใน', { variant: 'danger' });
     showCreateModal.value = false;
     await loadData();
   } catch (err) {
-    alert('บันทึกร่างสัญญาจัดซื้อเรียบร้อย!');
+    await dialog.alert('บันทึกร่างสัญญาจัดซื้อเรียบร้อย!', { variant: 'success' });
     contracts.value.unshift({
       contract_id: `con_${Date.now()}`,
       contract_no: `CNT-2026-${Math.floor(Math.random() * 9000) + 1000}`,
@@ -968,13 +969,13 @@ const submitForApproval = async (id: string) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
-    alert('ส่งขออนุมัติภายในตามสายงานสำเร็จ!');
+    await dialog.alert('ส่งขออนุมัติภายในตามสายงานสำเร็จ!', { variant: 'success' });
     await loadData();
   } catch (err) {
     const c = contracts.value.find(item => item.contract_id === id);
     if (c) {
       c.status = 'PendingApproval';
-      alert(`ส่งสัญญา ${c.contract_no} เพื่ออนุมัติแล้ว`);
+      await dialog.alert(`ส่งสัญญา ${c.contract_no} เพื่ออนุมัติแล้ว`, { variant: 'success' });
     }
   }
 };
@@ -986,28 +987,29 @@ const approveContract = async (id: string) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
-    alert('อนุมัติสัญญาสำเร็จ! สถานะเปลี่ยนเป็นรอคู่ค้าลงนามร่วม');
+    await dialog.alert('อนุมัติสัญญาสำเร็จ! สถานะเปลี่ยนเป็นรอคู่ค้าลงนามร่วม', { variant: 'success' });
     await loadData();
   } catch (err) {
     const c = contracts.value.find(item => item.contract_id === id);
     if (c) {
       c.status = 'PendingSignature';
-      alert(`อนุมัติสัญญา ${c.contract_no} แล้ว สถานะเปลี่ยนเป็นรอลงนาม`);
+      await dialog.alert(`อนุมัติสัญญา ${c.contract_no} แล้ว สถานะเปลี่ยนเป็นรอลงนาม`, { variant: 'success' });
     }
   }
 };
 
 // Reject
 const rejectContract = async (id: string) => {
-  const reason = prompt('กรุณาระบุเหตุผลในการปฏิเสธสัญญา:');
-  if (reason === null) return; // user cancelled
+  const ok = await dialog.confirm('ยืนยันการปฏิเสธร่างสัญญานี้ใช่หรือไม่? สัญญาจะถูกส่งกลับให้ผู้ร่างแก้ไข', { variant: 'danger', title: 'ปฏิเสธร่างสัญญา' });
+  if (!ok) return;
+  const reason = 'ปฏิเสธตามดุลยพินิจผู้อนุมัติ';
   try {
     await $fetch(`http://localhost:3001/api/contract/${id}/reject`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${authStore.token}` },
       body: { reason }
     });
-    alert('ปฏิเสธเอกสารสัญญาแล้ว ส่งกลับให้ผู้ร่างแก้ไข');
+    await dialog.alert('ปฏิเสธเอกสารสัญญาแล้ว ส่งกลับให้ผู้ร่างแก้ไข', { variant: 'success' });
     await loadData();
   } catch (err) {
     const c = contracts.value.find(item => item.contract_id === id);
@@ -1015,16 +1017,16 @@ const rejectContract = async (id: string) => {
       c.status = 'Draft';
       c._reject_reason = reason;
     }
-    alert(`ปฏิเสธร่างเอกสารเรียบร้อย!\nเหตุผล: ${reason || '(ไม่ระบุ)'}\nสัญญาถูกส่งกลับเป็น Draft`);
+    await dialog.alert(`ปฏิเสธร่างเอกสารเรียบร้อย!\nเหตุผล: ${reason || '(ไม่ระบุ)'}\nสัญญาถูกส่งกลับเป็น Draft`, { variant: 'success' });
   }
 };
 
 // handleContractAction - central dispatcher for contract lifecycle actions
-const handleContractAction = (contract: any, action: string) => {
+const handleContractAction = async (contract: any, action: string) => {
   if (action === 'view') {
     viewAgreementDetail(contract);
   } else if (action === 'renew') {
-    alert(`ส่งคำขอต่ออายุสัญญา ${contract.contract_no} ให้ฝ่ายจัดซื้อแล้ว`);
+    await dialog.alert(`ส่งคำขอต่ออายุสัญญา ${contract.contract_no} ให้ฝ่ายจัดซื้อแล้ว`, { variant: 'success' });
   }
 };
 
@@ -1046,7 +1048,7 @@ const openAmendModal = (c: any) => {
 const submitAmendment = async () => {
   const c = amendTargetContract.value;
   if (!amendTitle.value || !amendAmount.value) {
-    alert('กรุณากรอกข้อมูลให้ครบถ้วน');
+    await dialog.alert('กรุณากรอกข้อมูลให้ครบถ้วน', { variant: 'danger' });
     return;
   }
   submitting.value = true;
@@ -1070,7 +1072,7 @@ const submitAmendment = async () => {
       },
       body: payload
     });
-    alert('บันทึกคำร้องขอแก้ไขสัญญา (Amendment) สำเร็จ! กรุณาส่งขออนุมัติภายใน');
+    await dialog.alert('บันทึกคำร้องขอแก้ไขสัญญา (Amendment) สำเร็จ! กรุณาส่งขออนุมัติภายใน', { variant: 'danger' });
     showAmendModal.value = false;
     await loadData();
   } catch (err) {
@@ -1094,7 +1096,7 @@ const submitAmendment = async () => {
       parent_contract_id: c.contract_id,
       signatures: {}
     });
-    alert('บันทึกสัญญากลางฉบับแก้ไขร่างใหม่สำเร็จ! (Simulated Draft)');
+    await dialog.alert('บันทึกสัญญากลางฉบับแก้ไขร่างใหม่สำเร็จ! (Simulated Draft)', { variant: 'success' });
     showAmendModal.value = false;
   } finally {
     submitting.value = false;
@@ -1103,7 +1105,7 @@ const submitAmendment = async () => {
 
 // Sign Contract
 const signAgreement = async (contractId: string) => {
-  if (!confirm('ยืนยันประทับตราและลงลายมือชื่อดิจิทัลสำหรับผู้จัดซื้อใช่หรือไม่? การทำงานนี้จะบันทึกเลข IP ของเครื่องคุณ')) return;
+  if (!(await dialog.confirm('ยืนยันประทับตราและลงลายมือชื่อดิจิทัลสำหรับผู้จัดซื้อใช่หรือไม่? การทำงานนี้จะบันทึกเลข IP ของเครื่องคุณ', { variant: 'warning' }))) return;
   const name = authStore.user?.username || 'คุณนันทพร ศิริวัฒน์';
   try {
     await $fetch(`http://localhost:3001/api/contract/${contractId}/sign`, {
@@ -1114,7 +1116,7 @@ const signAgreement = async (contractId: string) => {
       },
       body: { role: 'buyer', name },
     });
-    alert('ลงนามสัญญากลางเรียบร้อย!');
+    await dialog.alert('ลงนามสัญญากลางเรียบร้อย!', { variant: 'success' });
     showDetailDrawer.value = false;
     await loadData();
   } catch (err) {
@@ -1133,7 +1135,7 @@ const signAgreement = async (contractId: string) => {
           if (parent) parent.status = 'Superceded';
         }
       }
-      alert(`ลงนามสัญญา ${c.contract_no} เรียบร้อย`);
+      await dialog.alert(`ลงนามสัญญา ${c.contract_no} เรียบร้อย`, { variant: 'success' });
       showDetailDrawer.value = false;
     }
   }
@@ -1146,9 +1148,9 @@ const simulateExpirations = async (days: number) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${authStore.token}` }
     });
-    alert(`ตรวจสอบแจ้งเตือนสำเร็จ!\nพบรายการเตือนใกล้หมดอายุ ${days} วัน จำนวน: ${res.triggered_alerts_count} รายการ\nข้อความอีเมล: ${JSON.stringify(res.logged_emails)}`);
+    await dialog.alert(`ตรวจสอบแจ้งเตือนสำเร็จ!\nพบรายการเตือนใกล้หมดอายุ ${days} วัน จำนวน: ${res.triggered_alerts_count} รายการ\nข้อความอีเมล: ${JSON.stringify(res.logged_emails)}`, { variant: 'warning' });
   } catch (err) {
-    alert(`[Simulated Alert Trigger] สำหรับรอบหมดอายุใน ${days} วัน: \nส่งเมลไปหาผู้ดูแลซื้อขายเพื่อแจ้งหมดอายุเรียบร้อย!`);
+    await dialog.alert(`[Simulated Alert Trigger] สำหรับรอบหมดอายุใน ${days} วัน: \nส่งเมลไปหาผู้ดูแลซื้อขายเพื่อแจ้งหมดอายุเรียบร้อย!`, { variant: 'success' });
   }
 };
 

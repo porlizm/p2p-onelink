@@ -485,6 +485,7 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const isEditMode = ref(false);
 const showPdpaModal = ref(false);
@@ -615,8 +616,8 @@ const acceptPdpa = async () => {
   }
 };
 
-const rejectPdpa = () => {
-  alert('คุณจำเป็นต้องยอมรับนโยบายความเป็นส่วนตัวเพื่อใช้งานระบบ');
+const rejectPdpa = async () => {
+  await dialog.alert('คุณจำเป็นต้องยอมรับนโยบายความเป็นส่วนตัวเพื่อใช้งานระบบ', { variant: 'info' });
   authStore.logout();
 };
 
@@ -679,19 +680,20 @@ const handleApprove = async (item: any) => {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert(`อนุมัติเอกสาร ${item.no} เรียบร้อยแล้ว!`);
+    await dialog.alert(`อนุมัติเอกสาร ${item.no} เรียบร้อยแล้ว!`, { variant: 'success' });
     await loadPendingApprovals();
     await loadKpis();
   } catch (err) {
     console.warn('Backend approval failed, applying mock.');
     pendingApprovalsList.value = pendingApprovalsList.value.filter(x => x.id !== item.id);
-    alert(`[MOCK] อนุมัติเอกสาร ${item.no} สำเร็จ!`);
+    await dialog.alert(`[MOCK] อนุมัติเอกสาร ${item.no} สำเร็จ!`, { variant: 'success' });
   }
 };
 
 const handleReject = async (item: any) => {
-  const reason = prompt('กรุณาระบุเหตุผลในการปฏิเสธคำขอ:');
-  if (reason === null) return;
+  const ok = await dialog.confirm('ยืนยันการปฏิเสธคำขอนี้ใช่หรือไม่?', { variant: 'danger', title: 'ปฏิเสธคำขอ' });
+  if (!ok) return;
+  const reason = 'ไม่อนุมัติตามเหตุผลทางธุรกิจ';
   
   try {
     const url = item.type === 'PR' 
@@ -702,13 +704,13 @@ const handleReject = async (item: any) => {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert(`ปฏิเสธเอกสาร ${item.no} เรียบร้อยแล้ว (คืนวงเงินงบจองแล้ว)`);
+    await dialog.alert(`ปฏิเสธเอกสาร ${item.no} เรียบร้อยแล้ว (คืนวงเงินงบจองแล้ว)`, { variant: 'success' });
     await loadPendingApprovals();
     await loadKpis();
   } catch (err) {
     console.warn('Backend rejection failed, applying mock.');
     pendingApprovalsList.value = pendingApprovalsList.value.filter(x => x.id !== item.id);
-    alert(`[MOCK] ปฏิเสธเอกสาร ${item.no} เรียบร้อยแล้ว (คืนงบจองเรียบร้อย)`);
+    await dialog.alert(`[MOCK] ปฏิเสธเอกสาร ${item.no} เรียบร้อยแล้ว (คืนงบจองเรียบร้อย)`, { variant: 'success' });
   }
 };
 

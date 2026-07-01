@@ -557,6 +557,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 // UI States
 const searchQuery = ref('');
@@ -671,9 +672,9 @@ const submitAllocation = async () => {
     });
     showAllocateModal.value = false;
     await loadData();
-    alert('จัดสรรสินทรัพย์ข้ามฝ่ายสำเร็จเรียบร้อยแล้ว!');
+    await dialog.alert('จัดสรรสินทรัพย์ข้ามฝ่ายสำเร็จเรียบร้อยแล้ว!', { variant: 'success' });
   } catch (err: any) {
-    alert(err.data?.message || 'เกิดข้อผิดพลาดในการจัดสรรสินทรัพย์');
+    await dialog.alert(err.data?.message || 'เกิดข้อผิดพลาดในการจัดสรรสินทรัพย์', { variant: 'danger' });
   } finally {
     submitting.value = false;
   }
@@ -692,9 +693,9 @@ const submitCreateAsset = async () => {
     });
     showCreateModal.value = false;
     await loadData();
-    alert('ลงทะเบียนสินทรัพย์ใหม่สำเร็จ!');
+    await dialog.alert('ลงทะเบียนสินทรัพย์ใหม่สำเร็จ!', { variant: 'success' });
   } catch (err: any) {
-    alert(err.data?.message || 'เกิดข้อผิดพลาดในการบันทึกสินทรัพย์');
+    await dialog.alert(err.data?.message || 'เกิดข้อผิดพลาดในการบันทึกสินทรัพย์', { variant: 'danger' });
   } finally {
     submitting.value = false;
   }

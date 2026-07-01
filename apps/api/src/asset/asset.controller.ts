@@ -3,7 +3,7 @@ import { AssetService } from './asset.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { DistributeAssetDto } from './dto/distribute-asset.dto';
 
-@Controller('api/asset')
+@Controller('asset')
 export class AssetController {
   constructor(private readonly assetService: AssetService) {}
 

@@ -212,10 +212,24 @@ export class PaymentService {
     return this.proposalRepo.find({ order: { created_at: 'DESC' } });
   }
 
+  // 4.2 Approve Payment Proposal (Finance Manager)
+  async approveProposal(proposalId: string) {
+    const proposal = await this.proposalRepo.findOne({ where: { proposal_id: proposalId } });
+    if (!proposal) throw new NotFoundException('Proposal not found');
+    if (proposal.status !== 'Pending') {
+      throw new BadRequestException('Proposal นี้ไม่อยู่ในสถานะรออนุมัติ');
+    }
+    proposal.status = 'Approved';
+    return this.proposalRepo.save(proposal);
+  }
+
   // 5. Generate Bank File
   async generateBankFile(proposalId: string) {
     const proposal = await this.proposalRepo.findOne({ where: { proposal_id: proposalId } });
     if (!proposal) throw new NotFoundException('Proposal not found');
+    if (proposal.status !== 'Approved') {
+      throw new BadRequestException('Proposal ต้องได้รับการอนุมัติจาก Finance Manager ก่อน Generate Bank File');
+    }
 
     const requests = await this.prRepo.find({
       where: { proposal_id: proposalId },

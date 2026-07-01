@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { CatalogSubmissionService } from './catalog-submission.service';
 
-@Controller('api')
+@Controller()
 export class CatalogSubmissionController {
   constructor(private readonly catalogService: CatalogSubmissionService) {}
 

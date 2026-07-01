@@ -962,4 +962,117 @@ button.btn-ghost:hover,
   color: var(--color-green-700, #007d3a);
 }
 
+/* ==========================================================================
+   AppModal Shared Utilities
+   Used inside AppModal body/footer slots across all pages
+   ========================================================================== */
+
+/* ── info-cell: label/value pair in modal body ── */
+.info-cell {
+  background: #fafbfc;
+  border: 1px solid #eff1f5;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.info-cell__label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.info-cell__value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+.info-cell__pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.info-cell__pill--ok   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+.info-cell__pill--warn { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+.info-cell__pill--err  { background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; }
+
+/* ── modal-btn: footer action buttons ── */
+.modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.12s;
+  white-space: nowrap;
+}
+.modal-btn:not(:disabled):hover { transform: translateY(-1px); }
+.modal-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+
+.modal-btn--primary {
+  background: #009245;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0,146,69,0.28);
+}
+.modal-btn--primary:not(:disabled):hover {
+  background: #007d3a;
+  box-shadow: 0 4px 14px rgba(0,146,69,0.38);
+}
+
+.modal-btn--danger {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fecdd3;
+}
+.modal-btn--danger:not(:disabled):hover { background: #ffe4e6; }
+
+.modal-btn--danger-solid {
+  background: #e11d48;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(225,29,72,0.28);
+}
+.modal-btn--danger-solid:not(:disabled):hover { background: #be123c; }
+
+.modal-btn--warning {
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.modal-btn--warning:not(:disabled):hover { background: #fef3c7; }
+
+.modal-btn--ghost {
+  background: #f1f5f9;
+  color: #475569;
+}
+.modal-btn--ghost:hover { background: #e2e8f0; }
+
+/* ── receive-radio-card: used in GR modal ── */
+.receive-radio-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  background: #fafbfc;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+.receive-radio-card:hover { border-color: #94a3b8; background: #f8fafc; }
+.receive-radio-card--green  { border-color: #16a34a; background: #f0fdf4; color: #15803d; }
+.receive-radio-card--amber  { border-color: #d97706; background: #fffbeb; color: #92400e; }
+.receive-radio-card--red    { border-color: #e11d48; background: #fff1f2; color: #be123c; }
+
+
 

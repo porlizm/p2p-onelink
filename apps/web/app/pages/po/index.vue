@@ -191,6 +191,7 @@ import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const search = ref('');
 const filterStatus = ref('');
 const poList = ref<any[]>([]);
@@ -339,20 +340,20 @@ const handlePoAction = async (po: any, action: string) => {
   } catch {
     // mock
     if (action === 'edit') {
-      alert(`เปิดแบบร่าง ${po.po_no}`);
+      await dialog.alert(`เปิดแบบร่าง ${po.po_no}`, { variant: 'info' });
     } else if (action === 'approve') {
       po.status = 'Approved';
-      alert(`อนุมัติ ${po.po_no} เรียบร้อย`);
+      await dialog.alert(`อนุมัติ ${po.po_no} เรียบร้อย`, { variant: 'success' });
     } else if (action === 'reject') {
-      const reason = prompt('ระบุเหตุผลการปฏิเสธ');
-      if (reason === null) return;
+      const ok = await dialog.confirm('ยืนยันการปฏิเสธ ' + po.po_no + ' ใช่หรือไม่?', { variant: 'danger' });
+      if (!ok) return;
       po.status = 'Rejected';
     } else if (action === 'send') {
       po.status = 'SentToVendor';
-      alert(`ส่ง ${po.po_no} ให้ผู้ขายแล้ว`);
+      await dialog.alert(`ส่ง ${po.po_no} ให้ผู้ขายแล้ว`, { variant: 'success' });
     } else if (action === 'confirm') {
       po.status = 'VendorConfirmed';
-      alert(`ยืนยันผู้ขายรับ ${po.po_no} แล้ว`);
+      await dialog.alert(`ยืนยันผู้ขายรับ ${po.po_no} แล้ว`, { variant: 'success' });
     }
   }
 };

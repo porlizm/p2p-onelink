@@ -10,13 +10,14 @@
       </div>
       <div class="flex items-center gap-3">
         <!-- Floating Cart Summary -->
-        <NuxtLink to="/pr/create" class="relative">
+        <NuxtLink to="/pr/create" class="relative inline-flex">
           <button class="btn-primary relative">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h19l-1.68 8.39A2 2 0 0 1 18.34 16H7.66a2 2 0 0 1-1.97-1.61L4 6"/><path d="M9 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M1 1h4l2.68 13.39"/></svg>
             สร้างใบขอซื้อ (PR)
             <span
               v-if="cartStore.totalItems > 0"
-              class="absolute -top-2 -right-2 bg-[var(--destructive)] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-white animate-bounce"
+              class="absolute -top-2.5 -right-2.5 bg-red-600 text-white text-[11px] font-black rounded-full min-w-[22px] h-[22px] flex items-center justify-center px-1 border-2 border-white shadow-md"
+              style="animation: bounceOnce 0.4s ease;"
             >
               {{ cartStore.totalItems }}
             </span>
@@ -60,69 +61,120 @@
 
     <!-- Catalog Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      <div 
-        v-for="item in filteredItems" 
+      <div
+        v-for="item in filteredItems"
         :key="item.item_id"
-        class="bg-white border border-[#e9ecef] rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col justify-between group"
+        class="catalog-card bg-white border border-[#e9ecef] rounded-xl overflow-hidden flex flex-col group"
+        :class="getCartQty(item.item_id) > 0 ? 'ring-2 ring-[var(--primary)]/25 border-[var(--primary)]/30 shadow-md' : 'hover:shadow-lg'"
       >
-        <!-- Card Header / Image -->
-        <div class="h-40 bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center border-b border-[#eff1f5] relative overflow-hidden">
+        <!-- Image — clickable to detail -->
+        <NuxtLink :to="`/catalog/${item.item_id}`" class="block relative h-44 overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100 flex-shrink-0">
+          <!-- Code badge -->
           <span class="z-10 absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-semibold bg-white/95 backdrop-blur border border-[#e9ecef] text-[var(--muted-foreground)]">
             {{ item.central_item_code }}
           </span>
-          <span 
+          <!-- Type badge -->
+          <span
             class="z-10 absolute top-2 right-2 px-2 py-0.5 rounded text-[10px] font-bold"
-            :class="[
-              item.item_type === 'Goods' 
-                ? 'bg-blue-50/95 text-blue-700 border border-blue-200' 
-                : 'bg-indigo-50/95 text-indigo-700 border border-indigo-200'
-            ]"
+            :class="item.item_type === 'Goods' ? 'bg-blue-50/95 text-blue-700 border border-blue-200' : 'bg-indigo-50/95 text-indigo-700 border border-indigo-200'"
           >
             {{ item.item_type === 'Goods' ? 'สินค้า' : 'บริการ' }}
           </span>
-          <img v-if="item.image_url" :src="item.image_url" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="item photo" />
-          <template v-else>
-            <svg v-if="item.item_type === 'Goods'" class="w-16 h-16 text-slate-300 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"/></svg>
-            <svg v-else class="w-16 h-16 text-slate-300 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.71-4.345a4.5 4.5 0 1 1-6.364-6.364 4.5 4.5 0 0 1 6.364 6.364Z"/></svg>
-          </template>
-        </div>
-
-        <!-- Card Body -->
-        <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
-          <div>
-            <h3 class="font-bold text-sm text-[var(--foreground)] line-clamp-2 min-h-[40px] group-hover:text-[var(--primary)] transition-colors">
-              {{ item.item_name }}
-            </h3>
-            <div class="mt-2 space-y-1 text-xs text-[var(--muted-foreground)]">
-              <div class="flex items-center gap-1">
-                <span class="truncate">คู่ค้า: {{ item.price?.vendor_name || 'N/A' }}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <span>หน่วยนับ: {{ item.uom }}</span>
-              </div>
-            </div>
+          <!-- In-cart pill overlay -->
+          <div v-if="getCartQty(item.item_id) > 0" class="z-10 absolute bottom-2 right-2 flex items-center gap-1 bg-green-600 text-white text-[11px] font-bold rounded-full px-2.5 py-0.5 shadow-sm">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+            {{ getCartQty(item.item_id) }} {{ item.uom }}
           </div>
 
-          <div class="pt-3 border-t border-[var(--border)] flex items-center justify-between">
+          <img v-if="item.image_url" :src="item.image_url" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="" />
+          <div v-else class="w-full h-full flex items-center justify-center">
+            <svg v-if="item.item_type === 'Goods'" class="w-16 h-16 text-slate-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Zm.75-12h9v9h-9v-9Z"/></svg>
+            <svg v-else class="w-16 h-16 text-slate-200" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l5.654-4.654m5.71-4.345a4.5 4.5 0 1 1-6.364-6.364 4.5 4.5 0 0 1 6.364 6.364Z"/></svg>
+          </div>
+        </NuxtLink>
+
+        <!-- Card Body -->
+        <div class="p-4 flex-1 flex flex-col gap-3">
+          <!-- Name — clickable to detail -->
+          <NuxtLink :to="`/catalog/${item.item_id}`" class="block">
+            <h3 class="font-bold text-sm text-[var(--foreground)] line-clamp-2 leading-snug hover:text-[var(--primary)] transition-colors" style="min-height: 2.5rem;">
+              {{ item.item_name }}
+            </h3>
+          </NuxtLink>
+
+          <div class="space-y-0.5 text-xs text-[var(--muted-foreground)]">
+            <p class="truncate">คู่ค้า: {{ item.price?.vendor_name || 'N/A' }}</p>
+            <p>หน่วยนับ: {{ item.uom }}</p>
+          </div>
+
+          <!-- Stock status -->
+          <div v-if="item.status === 'LowStock'" class="flex items-center gap-1 text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            ใกล้หมด — เหลือ {{ item.stock_qty }} {{ item.uom }}
+          </div>
+          <div v-else-if="item.status === 'OutOfStock'" class="flex items-center gap-1 text-[10px] font-semibold text-red-700 bg-red-50 border border-red-200 rounded-md px-2 py-1">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            สินค้าหมดสต็อก
+          </div>
+          <div v-else-if="item.status === 'Discontinued'" class="text-[10px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 rounded-md px-2 py-1">
+            ยกเลิกการจำหน่าย
+          </div>
+
+          <!-- Price + actions — pushed to bottom -->
+          <div class="mt-auto pt-3 border-t border-[#eff1f5] space-y-2">
             <div>
-              <span class="text-[10px] text-[var(--muted-foreground)] block">ราคาต่อหน่วย</span>
-              <span class="text-base font-extrabold text-[var(--foreground)]">
-                {{ formatCurrency(item.price?.unit_price) }}
-              </span>
-              <span class="text-[10px] text-[var(--muted-foreground)]"> THB</span>
+              <span class="text-[10px] text-[var(--muted-foreground)]">ราคาต่อหน่วย</span>
+              <div class="flex items-baseline gap-1">
+                <span class="text-base font-extrabold text-[var(--foreground)]">{{ formatCurrency(item.price?.unit_price) }}</span>
+                <span class="text-[10px] text-[var(--muted-foreground)]">THB</span>
+              </div>
             </div>
 
-            <!-- Add to Cart Widget -->
-            <div class="flex items-center gap-1.5">
+            <!-- State A: ยังไม่ได้เลือก -->
+            <template v-if="getCartQty(item.item_id) === 0">
               <button
+                class="w-full btn-primary justify-center"
+                style="padding: 8px 14px; font-size: 0.75rem;"
+                :disabled="['OutOfStock','Discontinued'].includes(item.status)"
                 @click="addCart(item)"
-                class="btn-primary"
-                style="padding: 6px 14px; font-size: 0.75rem;"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
                 เลือก
               </button>
-            </div>
+            </template>
+
+            <!-- State B: มีในตะกร้าแล้ว -->
+            <template v-else>
+              <div class="flex items-center gap-2">
+                <!-- Stepper with editable input -->
+                <div class="flex items-center flex-1 border-2 border-[var(--primary)] rounded-lg overflow-hidden bg-white" style="height: 36px;">
+                  <button
+                    class="w-9 h-full flex items-center justify-center text-slate-600 hover:bg-slate-50 transition-colors font-bold text-lg flex-shrink-0"
+                    @click="decreaseCart(item)"
+                  >−</button>
+                  <input
+                    :value="getCartQty(item.item_id)"
+                    type="number"
+                    min="1"
+                    class="flex-1 h-full text-center text-sm font-bold text-[var(--foreground)] focus:outline-none bg-transparent w-0"
+                    @change="(e) => setCartQty(item, +(e.target as HTMLInputElement).value)"
+                    @input="(e) => setCartQty(item, +(e.target as HTMLInputElement).value)"
+                  />
+                  <button
+                    class="w-9 h-full flex items-center justify-center text-[var(--primary)] hover:bg-green-50 transition-colors font-bold text-lg flex-shrink-0"
+                    @click="addCart(item)"
+                  >+</button>
+                </div>
+                <!-- Clear all button -->
+                <button
+                  class="w-9 h-9 flex items-center justify-center rounded-lg bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 transition-colors flex-shrink-0 border border-red-200"
+                  title="ลบออกจากตะกร้า"
+                  @click="clearCart(item)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+                </button>
+              </div>
+            </template>
           </div>
         </div>
       </div>
@@ -497,6 +549,34 @@ const addCart = (item: any) => {
   });
 };
 
+const getCartQty = (itemId: string): number => {
+  return cartStore.items.find((i) => i.item_id === itemId)?.quantity || 0;
+};
+
+const decreaseCart = (item: any) => {
+  const idx = cartStore.items.findIndex((i) => i.item_id === item.item_id);
+  if (idx === -1) return;
+  const current = cartStore.items[idx].quantity;
+  if (current <= 1) {
+    cartStore.removeFromCart(idx);
+  } else {
+    cartStore.updateQuantity(idx, current - 1);
+  }
+};
+
+const setCartQty = (item: any, val: number) => {
+  if (!val || isNaN(val) || val < 1) return;
+  const qty = Math.floor(val);
+  const idx = cartStore.items.findIndex((i) => i.item_id === item.item_id);
+  if (idx === -1) return;
+  cartStore.updateQuantity(idx, qty);
+};
+
+const clearCart = (item: any) => {
+  const idx = cartStore.items.findIndex((i) => i.item_id === item.item_id);
+  if (idx !== -1) cartStore.removeFromCart(idx);
+};
+
 const filteredItems = computed(() => {
   return items.value.filter((item) => {
     if (filterType.value !== 'ทั้งหมด' && item.item_type !== filterType.value) {
@@ -523,3 +603,10 @@ onMounted(() => {
   loadCatalog();
 });
 </script>
+
+<style scoped>
+/* Hide number input arrows in the qty stepper */
+.catalog-card input[type=number]::-webkit-inner-spin-button,
+.catalog-card input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.catalog-card input[type=number] { -moz-appearance: textfield; }
+</style>

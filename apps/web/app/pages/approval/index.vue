@@ -88,6 +88,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const approvals = ref<any[]>([]);
 const activeTab = ref('ทั้งหมด');
 const search = ref('');
@@ -141,27 +142,28 @@ const approve = async (item: any) => {
     const endpoint = item.type === 'PR' ? 'http://localhost:3001/api/pr/' + item.id + '/approve' : item.type === 'PO' ? 'http://localhost:3001/api/po/' + item.id + '/approve' : '';
     if (endpoint) await $fetch(endpoint, { method: 'PATCH', headers: { Authorization: 'Bearer ' + authStore.token } });
     approvals.value = approvals.value.filter((x) => x.id !== item.id);
-    alert('อนุมัติเอกสาร ' + item.no + ' เรียบร้อยแล้ว');
+    await dialog.alert('อนุมัติเอกสาร ' + item.no + ' เรียบร้อยแล้ว', { variant: 'success' });
   } catch (err) {
     approvals.value = approvals.value.filter((x) => x.id !== item.id);
-    alert('บันทึกผลอนุมัติเอกสาร ' + item.no + ' ในชุดข้อมูลสาธิตเรียบร้อยแล้ว');
+    await dialog.alert('บันทึกผลอนุมัติเอกสาร ' + item.no + ' ในชุดข้อมูลสาธิตเรียบร้อยแล้ว', { variant: 'success' });
   } finally {
     busyId.value = '';
   }
 };
 
 const reject = async (item: any) => {
-  const reason = prompt('ระบุเหตุผลในการปฏิเสธ ' + item.no);
-  if (reason === null) return;
+  const ok = await dialog.confirm('ยืนยันการปฏิเสธเอกสาร ' + item.no + ' ใช่หรือไม่?', { variant: 'danger', title: 'ปฏิเสธเอกสาร' });
+  if (!ok) return;
+  const reason = 'ปฏิเสธตามดุลยพินิจผู้อนุมัติ';
   busyId.value = item.id;
   try {
     const endpoint = item.type === 'PR' ? 'http://localhost:3001/api/pr/' + item.id + '/reject' : item.type === 'PO' ? 'http://localhost:3001/api/po/' + item.id + '/reject' : '';
     if (endpoint) await $fetch(endpoint, { method: 'PATCH', headers: { Authorization: 'Bearer ' + authStore.token } });
     approvals.value = approvals.value.filter((x) => x.id !== item.id);
-    alert('ปฏิเสธเอกสาร ' + item.no + ' เรียบร้อยแล้ว');
+    await dialog.alert('ปฏิเสธเอกสาร ' + item.no + ' เรียบร้อยแล้ว', { variant: 'success' });
   } catch (err) {
     approvals.value = approvals.value.filter((x) => x.id !== item.id);
-    alert('บันทึกผลปฏิเสธเอกสาร ' + item.no + ' ในชุดข้อมูลสาธิตเรียบร้อยแล้ว');
+    await dialog.alert('บันทึกผลปฏิเสธเอกสาร ' + item.no + ' ในชุดข้อมูลสาธิตเรียบร้อยแล้ว', { variant: 'success' });
   } finally {
     busyId.value = '';
   }

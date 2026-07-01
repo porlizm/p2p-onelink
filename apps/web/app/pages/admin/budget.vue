@@ -561,6 +561,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const budgetTabs = [
   { id: 'requests', name: 'คำขออนุมัติเพิ่มงบประมาณ', icon: 'i-heroicons-clipboard-document-check' },
@@ -626,7 +627,7 @@ const approveRequest = async (id: string) => {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert('อนุมัติการเพิ่มงบประมาณสำเร็จ!');
+    await dialog.alert('อนุมัติการเพิ่มงบประมาณสำเร็จ!', { variant: 'success' });
     await loadCostCenters();
     await loadBudgetRequests();
   } catch (err) {
@@ -637,7 +638,7 @@ const approveRequest = async (id: string) => {
       if (cc) {
         cc.annual_budget_amount = Number(cc.annual_budget_amount) + Number(req.requested_amount);
       }
-      alert('อนุมัติเพิ่มงบประมาณเรียบร้อย!');
+      await dialog.alert('อนุมัติเพิ่มงบประมาณเรียบร้อย!', { variant: 'success' });
     }
   }
 };
@@ -648,14 +649,14 @@ const rejectRequest = async (id: string) => {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert('ปฏิเสธการเพิ่มงบประมาณเรียบร้อย!');
+    await dialog.alert('ปฏิเสธการเพิ่มงบประมาณเรียบร้อย!', { variant: 'success' });
     await loadCostCenters();
     await loadBudgetRequests();
   } catch (err) {
     const req = budgetRequests.value.find(r => r.request_id === id);
     if (req) {
       req.status = 'Rejected';
-      alert('ปฏิเสธการเพิ่มงบประมาณเรียบร้อย!');
+      await dialog.alert('ปฏิเสธการเพิ่มงบประมาณเรียบร้อย!', { variant: 'success' });
     }
   }
 };
@@ -678,7 +679,7 @@ const submitTransfer = async () => {
         amount: transferAmount.value,
       },
     });
-    alert('โอนย้ายงบประมาณระหว่างศูนย์ต้นทุนสำเร็จ!');
+    await dialog.alert('โอนย้ายงบประมาณระหว่างศูนย์ต้นทุนสำเร็จ!', { variant: 'success' });
     transferFromCc.value = '';
     transferToCc.value = '';
     transferAmount.value = 0;
@@ -691,7 +692,7 @@ const submitTransfer = async () => {
     if (from && to) {
       from.annual_budget_amount = Number(from.annual_budget_amount) - transferAmount.value;
       to.annual_budget_amount = Number(to.annual_budget_amount) + transferAmount.value;
-      alert(`โอนย้ายงบประมาณสำเร็จ!\nโอนออก: ${from.cc_name}\nโอนเข้า: ${to.cc_name}\nจำนวน: ${formatCurrency(transferAmount.value)} THB`);
+      await dialog.alert(`โอนย้ายงบประมาณสำเร็จ!\nโอนออก: ${from.cc_name}\nโอนเข้า: ${to.cc_name}\nจำนวน: ${formatCurrency(transferAmount.value)} THB`, { variant: 'success' });
     }
     transferFromCc.value = '';
     transferToCc.value = '';
@@ -710,7 +711,7 @@ const submitReset = async () => {
       method: 'POST',
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert('รีเซ็ตปีงบประมาณและล้างงบประจำปีเข้าสู่ปีถัดไปสำเร็จ!');
+    await dialog.alert('รีเซ็ตปีงบประมาณและล้างงบประจำปีเข้าสู่ปีถัดไปสำเร็จ!', { variant: 'success' });
     showResetConfirm.value = false;
     await loadCostCenters();
   } catch (err) {
@@ -720,7 +721,7 @@ const submitReset = async () => {
       cc.budget_reserved_amount = 0;
       cc.budget_used_amount = 0;
     });
-    alert('รีเซ็ตปีงบประมาณและขยับปีถัดไปเรียบร้อย!');
+    await dialog.alert('รีเซ็ตปีงบประมาณและขยับปีถัดไปเรียบร้อย!', { variant: 'success' });
     showResetConfirm.value = false;
   } finally {
     isSubmittingReset.value = false;
@@ -750,7 +751,7 @@ const saveTolerance = async () => {
         budget_overrun_tolerance_amount: Number(toleranceAmt.value),
       },
     });
-    alert('บันทึกเกณฑ์การควบคุมงบเกินสำเร็จ!');
+    await dialog.alert('บันทึกเกณฑ์การควบคุมงบเกินสำเร็จ!', { variant: 'success' });
     showToleranceModal.value = false;
     await loadCostCenters();
   } catch (err: any) {
@@ -760,10 +761,10 @@ const saveTolerance = async () => {
     if (cc) {
       cc.budget_overrun_tolerance_pct = Number(tolerancePct.value);
       cc.budget_overrun_tolerance_amount = Number(toleranceAmt.value);
-      alert('บันทึกเกณฑ์การควบคุมงบเกินสำเร็จ!');
+      await dialog.alert('บันทึกเกณฑ์การควบคุมงบเกินสำเร็จ!', { variant: 'success' });
       showToleranceModal.value = false;
     } else {
-      alert('เกิดข้อผิดพลาดในการบันทึกเกณฑ์การควบคุมงบเกิน');
+      await dialog.alert('เกิดข้อผิดพลาดในการบันทึกเกณฑ์การควบคุมงบเกิน', { variant: 'danger' });
     }
   } finally {
     isSavingTolerance.value = false;
@@ -885,10 +886,10 @@ const handleExcelUpload = async (event: any) => {
       },
     });
 
-    alert('อัปโหลดไฟล์แผนจัดซื้อรายปีและอัปเดตระบบเรียบร้อย!');
+    await dialog.alert('อัปโหลดไฟล์แผนจัดซื้อรายปีและอัปเดตระบบเรียบร้อย!', { variant: 'success' });
     await loadAnnualPlans();
   } catch (err) {
-    alert('อัปโหลดไฟล์และอัปเดตเรียบร้อย!');
+    await dialog.alert('อัปโหลดไฟล์และอัปเดตเรียบร้อย!', { variant: 'success' });
     annualPlans.value = [
       { plan_id: 'p1', business_category: 'อุปกรณ์ไอที', budget_limit: 100000, remaining_budget: 100000 },
       { plan_id: 'p2', business_category: 'เครื่องเขียนและอุปกรณ์สำนักงาน', budget_limit: 50000, remaining_budget: 50000 },
@@ -897,8 +898,8 @@ const handleExcelUpload = async (event: any) => {
   }
 };
 
-const downloadTemplate = () => {
-  alert('ดาวน์โหลดไฟล์แม่แบบ Excel สำหรับวางแผนจัดซื้อเรียบร้อย (Template_Annual_Plan.xlsx)');
+const downloadTemplate = async () => {
+  await dialog.alert('ดาวน์โหลดไฟล์แม่แบบ Excel สำหรับวางแผนจัดซื้อเรียบร้อย (Template_Annual_Plan.xlsx)', { variant: 'success' });
 };
 
 const submitDemand = async () => {
@@ -918,7 +919,7 @@ const submitDemand = async () => {
       },
     });
 
-    alert('ส่งผลสำรวจสำเร็จและรวบรวมข้อมูลเรียบร้อย!');
+    await dialog.alert('ส่งผลสำรวจสำเร็จและรวบรวมข้อมูลเรียบร้อย!', { variant: 'success' });
     demandForm.value.item_name = '';
     demandForm.value.quantity = 1;
     demandForm.value.estimated_amount = 50000;
@@ -935,7 +936,7 @@ const submitDemand = async () => {
       plan: selectedPlan ? { business_category: selectedPlan.business_category } : null,
       company: { company_name: 'SCGJWD Head Office' }
     });
-    alert('ส่งผลสำรวจสำเร็จ!');
+    await dialog.alert('ส่งผลสำรวจสำเร็จ!', { variant: 'success' });
     demandForm.value.item_name = '';
     demandForm.value.quantity = 1;
     demandForm.value.estimated_amount = 50000;

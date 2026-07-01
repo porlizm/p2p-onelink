@@ -267,6 +267,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const allowedIpRange = ref('');
 const savingIp = ref(false);
@@ -329,7 +330,7 @@ const saveIpRestrictions = async () => {
     if (authStore.user) {
       authStore.user.allowedIpRange = allowedIpRange.value;
     }
-    alert('บันทึกข้อจำกัดช่วงที่อยู่ IP พนักงานจัดซื้อเรียบร้อย!');
+    await dialog.alert('บันทึกข้อจำกัดช่วงที่อยู่ IP พนักงานจัดซื้อเรียบร้อย!', { variant: 'success' });
   } catch (err) {
     console.error(err);
   } finally {

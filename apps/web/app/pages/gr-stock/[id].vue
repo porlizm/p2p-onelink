@@ -212,6 +212,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const grId = route.params.id as string;
 const grDetails = ref<any>(null);
@@ -256,7 +257,7 @@ const loadGrDetails = async () => {
 
 const submitClaim = async () => {
   if (!claimDescription.value.trim()) {
-    alert('กรุณากรอกเหตุผลหรือรายละเอียดการแจ้งเคลม');
+    await dialog.alert('กรุณากรอกเหตุผลหรือรายละเอียดการแจ้งเคลม', { variant: 'danger' });
     return;
   }
 

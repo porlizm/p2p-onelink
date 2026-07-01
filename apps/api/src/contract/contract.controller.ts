@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Ip, Query } from '@nestjs/common';
 import { ContractService } from './contract.service';
 
-@Controller('api')
+@Controller()
 export class ContractController {
   constructor(private readonly contractService: ContractService) {}
 

@@ -254,6 +254,7 @@ import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const activeTab = ref('eligibility');
 
 const tabs = [
@@ -391,7 +392,7 @@ const openNewEvalModal = (vendor?: any) => {
 
 const submitEvaluation = async () => {
   if (!evalVendorId.value || scoreTechnical.value === null || scoreCommercial.value === null || scoreDelivery.value === null) {
-    alert('กรุณากรอกข้อมูลและให้คะแนนผู้ค้าให้ครบเกณฑ์สำคัญ (Technical, Commercial, Delivery)');
+    await dialog.alert('กรุณากรอกข้อมูลและให้คะแนนผู้ค้าให้ครบเกณฑ์สำคัญ (Technical, Commercial, Delivery)', { variant: 'danger' });
     return;
   }
   submitting.value = true;
@@ -416,7 +417,7 @@ const submitEvaluation = async () => {
       },
       body: payload,
     });
-    alert('บันทึกและส่งผลประเมินขอสิทธิ์อนุมัติสำเร็จ!');
+    await dialog.alert('บันทึกและส่งผลประเมินขอสิทธิ์อนุมัติสำเร็จ!', { variant: 'success' });
     showCreateModal.value = false;
     await loadData();
   } catch (err) {
@@ -429,7 +430,7 @@ const submitEvaluation = async () => {
       vendor: { vendor_name: selectedVendor?.vendor_name || 'คู่ค้าตัวอย่าง' },
       approver: null,
     });
-    alert('บันทึกและส่งผลประเมินขอสิทธิ์อนุมัติสำเร็จ!');
+    await dialog.alert('บันทึกและส่งผลประเมินขอสิทธิ์อนุมัติสำเร็จ!', { variant: 'success' });
     showCreateModal.value = false;
   } finally {
     submitting.value = false;
@@ -446,7 +447,7 @@ const approveEvalRecord = async (evalId: string) => {
       },
       body: { approver_id: authStore.user?.userId || '00000006-0000-0000-0000-000000000007' },
     });
-    alert('อนุมัติผลประเมินและเฉลี่ยคะแนนเข้าระดับผู้ค้าหลักเรียบร้อย!');
+    await dialog.alert('อนุมัติผลประเมินและเฉลี่ยคะแนนเข้าระดับผู้ค้าหลักเรียบร้อย!', { variant: 'success' });
     await loadData();
   } catch (err) {
     const ev = evaluations.value.find(e => e.evaluation_id === evalId);
@@ -458,7 +459,7 @@ const approveEvalRecord = async (evalId: string) => {
       if (v) {
         v.evaluation_score = calculateAverage(ev.scores);
       }
-      alert('อนุมัติผลประเมินและเฉลี่ยคะแนนเข้าระดับผู้ค้าหลักเรียบร้อย!');
+      await dialog.alert('อนุมัติผลประเมินและเฉลี่ยคะแนนเข้าระดับผู้ค้าหลักเรียบร้อย!', { variant: 'success' });
     }
   }
 };

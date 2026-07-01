@@ -688,6 +688,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const activeTab = ref('sealed'); // sealed, multicriteria, reverse_auction
 const rfq = ref<any>(null);
@@ -709,11 +710,11 @@ const decryptBid = async () => {
       body: { password: decryptionPassword.value },
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert('ลงนามถอดรหัสเรียบร้อยแล้ว!');
+    await dialog.alert('ลงนามถอดรหัสเรียบร้อยแล้ว!', { variant: 'success' });
     decryptionPassword.value = '';
     loadComparison();
   } catch (err: any) {
-    alert(err.data?.message || 'การถอดรหัสล้มเหลว');
+    await dialog.alert(err.data?.message || 'การถอดรหัสล้มเหลว', { variant: 'danger' });
   } finally {
     decrypting.value = false;
   }
@@ -732,22 +733,22 @@ const saveTechnicalScores = async () => {
         }))
       }
     });
-    alert('บันทึกคะแนนเทคนิคเรียบร้อยแล้ว!');
+    await dialog.alert('บันทึกคะแนนเทคนิคเรียบร้อยแล้ว!', { variant: 'success' });
   } catch (err) {
     console.warn('Backend failed. Simulating local save.');
-    alert('บันทึกคะแนนเทคนิคเรียบร้อยแล้ว! (Simulation Mode)');
+    await dialog.alert('บันทึกคะแนนเทคนิคเรียบร้อยแล้ว! (Simulation Mode)', { variant: 'success' });
   } finally {
     savingScores.value = false;
   }
 };
 
-const showLocalAlert = () => {
-  alert('อัปเดตคะแนนประเมินและถ่วงน้ำหนักรวมของใบเสนอราคาเรียบร้อยแล้ว!');
+const showLocalAlert = async () => {
+  await dialog.alert('อัปเดตคะแนนประเมินและถ่วงน้ำหนักรวมของใบเสนอราคาเรียบร้อยแล้ว!', { variant: 'success' });
 };
 
 const approvingShortlist = ref(false);
 const handleApproveShortlist = async (approved: boolean) => {
-  if (!confirm(`คุณยืนยันต้องการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองสำหรับโครงการนี้ใช่หรือไม่?`)) return;
+  if (!(await dialog.confirm(`คุณยืนยันต้องการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองสำหรับโครงการนี้ใช่หรือไม่?`, { variant: 'danger' }))) return;
   approvingShortlist.value = true;
   try {
     await $fetch(`http://localhost:3001/api/bidding/rfq/${rfq.value.rfq_id}/shortlist/approve`, {
@@ -755,14 +756,14 @@ const handleApproveShortlist = async (approved: boolean) => {
       headers: { Authorization: `Bearer ${authStore.token}` },
       body: { approved }
     });
-    alert(`ดำเนินการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองเสร็จสิ้น`);
+    await dialog.alert(`ดำเนินการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองเสร็จสิ้น`, { variant: 'success' });
     await loadComparison();
   } catch (err: any) {
     // Mock fallback: อัปเดต local state แทน
     if (rfq.value) {
       rfq.value.shortlist_approved = approved;
     }
-    alert(`ดำเนินการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองเสร็จสิ้น (ซิมมูเลชั่น)`);
+    await dialog.alert(`ดำเนินการ ${approved ? 'อนุมัติ' : 'ปฏิเสธ'} รายชื่อผู้มีสิทธิ์ส่งซองเสร็จสิ้น (ซิมมูเลชั่น)`, { variant: 'success' });
   } finally {
     approvingShortlist.value = false;
   }
@@ -911,7 +912,7 @@ const simulateCompetitorBids = () => {
   updateAuctionRanks();
 };
 
-const placeManualBuyerBidCorrection = (quoteId: string, percentage: number) => {
+const placeManualBuyerBidCorrection = async (quoteId: string, percentage: number) => {
   const target = auctionQuotes.value.find(aq => aq.quote_id === quoteId);
   if (!target) return;
   const dropVal = Math.round(target.currentPrice * (percentage / 100));
@@ -922,7 +923,7 @@ const placeManualBuyerBidCorrection = (quoteId: string, percentage: number) => {
     note: 'ต่อรองราคากลาง Match สำเร็จ'
   });
   updateAuctionRanks();
-  alert(`ส่งคำต่อรองราคาสำเร็จ! ผู้ขายยินยอมปรับราคารวมลงเหลือ ${formatCurrency(target.currentPrice)} THB`);
+  await dialog.alert(`ส่งคำต่อรองราคาสำเร็จ! ผู้ขายยินยอมปรับราคารวมลงเหลือ ${formatCurrency(target.currentPrice)} THB`, { variant: 'success' });
 };
 
 // Fixed formula helper methods
@@ -1073,7 +1074,7 @@ const isLowestTotal = (quote: any) => {
 };
 
 const awardQuote = async (quoteId: string) => {
-  if (!confirm('คุณยืนยันต้องการตัดสินและคัดเลือกผู้จำหน่ายรายนี้ในการจัดซื้อใช่หรือไม่?')) return;
+  if (!(await dialog.confirm('คุณยืนยันต้องการตัดสินและคัดเลือกผู้จำหน่ายรายนี้ในการจัดซื้อใช่หรือไม่?', { variant: 'warning' }))) return;
   isAwarding.value = true;
   
   try {
@@ -1084,11 +1085,11 @@ const awardQuote = async (quoteId: string) => {
       },
     });
 
-    alert(`ตัดสินประมูลสำเร็จ!\nสร้างใบขอซื้ออัตโนมัติเรียบร้อยแล้ว: เลขที่ ${res.pr_no}\nสถานะ PR: รออนุมัติ (กันยอดงบประมาณแล้ว)`);
+    await dialog.alert(`ตัดสินประมูลสำเร็จ!\nสร้างใบขอซื้ออัตโนมัติเรียบร้อยแล้ว: เลขที่ ${res.pr_no}\nสถานะ PR: รออนุมัติ (กันยอดงบประมาณแล้ว)`, { variant: 'success' });
     navigateTo('/pr');
   } catch (err: any) {
     console.warn('Backend award failed, using demo success action.');
-    alert(`ตัดสินข้อเสนอประมูลเรียบร้อย!\nระบบสร้างใบขอซื้ออัตโนมัติ: PR2606888\nสถานะ PR: รออนุมัติ`);
+    await dialog.alert(`ตัดสินข้อเสนอประมูลเรียบร้อย!\nระบบสร้างใบขอซื้ออัตโนมัติ: PR2606888\nสถานะ PR: รออนุมัติ`, { variant: 'success' });
     navigateTo('/pr');
   } finally {
     isAwarding.value = false;
@@ -1096,7 +1097,7 @@ const awardQuote = async (quoteId: string) => {
 };
 
 const triggerEscalation = async () => {
-  if (!confirm('คุณยืนยันต้องการประกาศผู้ประมูลสำรอง (Runner-up) เป็นผู้ชนะแทนใช่หรือไม่? ระบบจะทำการยกเลิกเอกสารเดิมและสั่งจองงบประมาณให้ผู้จำหน่ายสำรองรายใหม่ทันที')) return;
+  if (!(await dialog.confirm('คุณยืนยันต้องการประกาศผู้ประมูลสำรอง (Runner-up) เป็นผู้ชนะแทนใช่หรือไม่? ระบบจะทำการยกเลิกเอกสารเดิมและสั่งจองงบประมาณให้ผู้จำหน่ายสำรองรายใหม่ทันที', { variant: 'danger' }))) return;
   escalating.value = true;
   try {
     const res = await $fetch<any>(`http://localhost:3001/api/bidding/rfq/${rfq.value.rfq_id}/escalate`, {
@@ -1105,7 +1106,7 @@ const triggerEscalation = async () => {
         Authorization: `Bearer ${authStore.token}`,
       },
     });
-    alert(`ปรับเปลี่ยนผู้ชนะประมูลสำเร็จ!\nสร้างใบขอซื้อให้ผู้ประมูลสำรองเรียบร้อย: เลขที่ ${res.new_pr_no}`);
+    await dialog.alert(`ปรับเปลี่ยนผู้ชนะประมูลสำเร็จ!\nสร้างใบขอซื้อให้ผู้ประมูลสำรองเรียบร้อย: เลขที่ ${res.new_pr_no}`, { variant: 'success' });
     await loadComparison();
   } catch (err: any) {
     console.warn('Backend escalation failed, applying locally.');
@@ -1117,7 +1118,7 @@ const triggerEscalation = async () => {
     rfq.value.quotations.forEach((q: any) => {
       q.status = q.quote_id === 'q2' ? 'Selected' : 'NotSelected';
     });
-    alert(`เลื่อนสิทธิ์ผู้ชนะสำรองสำเร็จ!\nระบบสร้างใบขอซื้อให้สำรอง: PR2606999 (บริษัท อินโนเวทีฟ ไอที เซอร์วิส จำกัด)`);
+    await dialog.alert(`เลื่อนสิทธิ์ผู้ชนะสำรองสำเร็จ!\nระบบสร้างใบขอซื้อให้สำรอง: PR2606999 (บริษัท อินโนเวทีฟ ไอที เซอร์วิส จำกัด)`, { variant: 'success' });
   } finally {
     escalating.value = false;
   }

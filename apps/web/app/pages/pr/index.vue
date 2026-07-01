@@ -183,139 +183,118 @@
       </div>
     </div>
 
-    <!-- Details Modal Drawer -->
-    <UModal v-model:open="detailsOpen">
-      <template #content>
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between">
-            <h3 class="text-base font-bold text-[var(--foreground)]">
-              รายละเอียดใบขอซื้อ {{ activePr?.pr_no }}
-            </h3>
-            <span 
-              class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-              :class="[
-                activePr?.status === 'Approved' ? 'bg-green-50 text-green-700 border border-green-200' :
-                activePr?.status === 'PendingApproval' ? 'bg-orange-50 text-orange-700 border border-orange-200' :
-                activePr?.status === 'BlockedOverBudget' ? 'bg-red-50 text-red-700 border border-red-200' :
-                'bg-slate-100 text-slate-700'
-              ]"
-            >
-              {{ formatStatus(activePr?.status) }}
+    <!-- PR Detail Modal -->
+    <AppModal
+      v-model="detailsOpen"
+      :title="`ใบขอซื้อ ${activePr?.pr_no}`"
+      :subtitle="activePr?.description || 'จัดซื้อทั่วไป'"
+      size="lg"
+    >
+      <template #icon>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      </template>
+      <template #badge>
+        <StatusBadge :status="activePr?.status || 'Draft'" />
+      </template>
+
+      <div class="space-y-5">
+        <!-- Meta info cards -->
+        <div class="grid grid-cols-2 gap-3">
+          <div class="info-cell">
+            <span class="info-cell__label">วันที่บันทึก</span>
+            <span class="info-cell__value">{{ formatDate(activePr?.created_at) }}</span>
+          </div>
+          <div class="info-cell">
+            <span class="info-cell__label">สายอนุมัติ (DOA)</span>
+            <span class="info-cell__value flex items-center gap-1.5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              {{ activePr?.approver_role || 'Manager' }}
             </span>
           </div>
-        </template>
-
-        <div class="space-y-4 py-2 text-xs">
-          <!-- Metadata -->
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <span class="text-[var(--muted-foreground)] block">วัตถุประสงค์ในการขอซื้อ</span>
-              <span class="font-medium text-[var(--foreground)]">{{ activePr?.description || 'จัดซื้อทั่วไป' }}</span>
-            </div>
-            <div>
-              <span class="text-[var(--muted-foreground)] block">วันที่ลงบันทึก</span>
-              <span class="font-medium text-[var(--foreground)]">{{ formatDate(activePr?.created_at) }}</span>
-            </div>
-            <div>
-              <span class="text-[var(--muted-foreground)] block">สายการอนุมัติเอกสาร (DOA Approver)</span>
-              <span class="font-bold text-[var(--primary)] flex items-center gap-1 mt-0.5">
-                <UIcon name="i-heroicons-shield-check" class="w-4 h-4 text-indigo-500" />
-                {{ activePr?.approver_role || 'Manager' }}
-              </span>
-            </div>
-            <div>
-              <span class="text-[var(--muted-foreground)] block">สถานะการตรวจสอบงบประมาณ</span>
-              <span 
-                v-if="activePr?.is_budget_overrun" 
-                class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-600 border border-amber-200 mt-1 inline-block"
-              >
-                งบเกินเกณฑ์ผ่อนปรน (Escalated)
-              </span>
-              <span 
-                v-else 
-                class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-600 border border-green-200 mt-1 inline-block"
-              >
-                งบปกติผ่านเกณฑ์ (On Budget)
-              </span>
-            </div>
-          </div>
-
-          <!-- Lines table -->
-          <div class="border border-[#e9ecef] rounded-lg overflow-hidden mt-4">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="bg-[#fafbfc] text-[10px] font-bold text-slate-500 border-b border-[#eff1f5]">
-                  <th class="p-2">รายการขอจัดซื้อ</th>
-                  <th class="p-2 text-right">จำนวน</th>
-                  <th class="p-2 text-right">ราคาหน่วย (THB)</th>
-                  <th class="p-2 text-right">รวม (THB)</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-[#eff1f5]">
-                <tr v-for="line in activePr?.lines" :key="line.line_id" class="text-[11px]">
-                  <td class="p-2">
-                    <div class="font-bold text-[var(--foreground)]">{{ line.item_name }}</div>
-                    <div class="text-[9px] text-[var(--muted-foreground)] flex items-center gap-1.5 mt-0.5">
-                      <span>ศูนย์ต้นทุน: {{ line.cost_center?.cc_name || 'N/A' }}</span>
-                      <a 
-                        v-if="line.quotation_url" 
-                        :href="line.quotation_url" 
-                        target="_blank" 
-                        class="text-[var(--primary)] font-bold flex items-center gap-0.5 hover:underline"
-                      >
-                        <UIcon name="i-heroicons-paper-clip" class="w-3 h-3" />
-                        ใบเสนอราคา.pdf
-                      </a>
-                    </div>
-                  </td>
-                  <td class="p-2 text-right">{{ formatQuantity(line.quantity) }} {{ line.uom }}</td>
-                  <td class="p-2 text-right">{{ formatCurrency(line.unit_price) }}</td>
-                  <td class="p-2 text-right font-bold">{{ formatCurrency(line.total_price) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="flex justify-between items-center pt-2">
-            <span class="text-[var(--muted-foreground)]">ยอดรวมของใบขอซื้อทั้งหมด:</span>
-            <span class="text-sm font-extrabold text-[var(--foreground)]">
-              {{ formatCurrency(activePr?.total_amount) }} THB
+          <div class="info-cell col-span-2">
+            <span class="info-cell__label">สถานะงบประมาณ</span>
+            <span
+              class="info-cell__pill mt-1"
+              :class="activePr?.is_budget_overrun ? 'info-cell__pill--warn' : 'info-cell__pill--ok'"
+            >
+              {{ activePr?.is_budget_overrun ? '⚠ งบเกินเกณฑ์ผ่อนปรน (Escalated)' : '✓ งบปกติผ่านเกณฑ์ (On Budget)' }}
             </span>
           </div>
         </div>
 
-        <template #footer>
-          <div class="flex items-center justify-between w-full">
-            <div class="flex gap-2">
-              <UButton 
-                v-if="activePr?.status === 'Approved'"
-                color="primary" 
-                size="sm" 
-                @click="convertToPo(activePr)"
-                class="cursor-pointer"
-              >
-                <UIcon name="i-heroicons-shopping-cart" class="w-4.5 h-4.5 mr-1" />
-                ออกเอกสารใบสั่งซื้อ (PO)
-              </UButton>
-              <UButton 
-                v-if="activePr?.status === 'PendingApproval' || activePr?.status === 'Approved'"
-                color="error" 
-                variant="outline"
-                size="sm" 
-                @click="cancelPR(activePr)"
-                class="cursor-pointer font-bold"
-              >
-                <UIcon name="i-heroicons-x-circle" class="w-4.5 h-4.5 mr-1" />
-                ยกเลิกใบขอซื้อ (Cancel PR)
-              </UButton>
-            </div>
-            <UButton variant="outline" size="sm" @click="detailsOpen = false">ปิดหน้าต่าง</UButton>
+        <!-- Section label -->
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">รายการขอจัดซื้อ</span>
+          <div class="flex-1 h-px bg-[#eff1f5]"></div>
+          <span class="text-[11px] font-semibold text-slate-500">{{ activePr?.lines?.length || 0 }} รายการ</span>
+        </div>
+
+        <!-- Lines table -->
+        <div class="border border-[#e9ecef] rounded-xl overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5]">
+                <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide">รายการ</th>
+                <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right">จำนวน</th>
+                <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right">ราคา/หน่วย</th>
+                <th class="px-4 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-wide text-right">รวม (THB)</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#f8f9fa]">
+              <tr v-for="line in activePr?.lines" :key="line.line_id" class="hover:bg-[#f8fffe] transition-colors">
+                <td class="px-4 py-3.5">
+                  <div class="text-sm font-semibold text-slate-800">{{ line.item_name }}</div>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="text-[10px] text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{{ line.cost_center?.cc_name || 'N/A' }}</span>
+                    <a v-if="line.quotation_url" :href="line.quotation_url" target="_blank"
+                      class="text-[10px] text-[var(--primary)] font-semibold flex items-center gap-0.5 hover:underline">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                      ใบเสนอราคา
+                    </a>
+                  </div>
+                </td>
+                <td class="px-4 py-3.5 text-right text-sm text-slate-600 tabular-nums">{{ formatQuantity(line.quantity) }} <span class="text-[10px] text-slate-400">{{ line.uom }}</span></td>
+                <td class="px-4 py-3.5 text-right text-sm text-slate-600 tabular-nums">{{ formatCurrency(line.unit_price) }}</td>
+                <td class="px-4 py-3.5 text-right text-sm font-bold text-slate-800 tabular-nums">{{ formatCurrency(line.total_price) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Total row -->
+        <div class="flex items-center justify-between bg-[#fafbfc] border border-[#e9ecef] rounded-xl px-5 py-4">
+          <span class="text-sm text-slate-500 font-medium">ยอดรวมใบขอซื้อทั้งหมด</span>
+          <div class="text-right">
+            <span class="text-xl font-black text-slate-800 tabular-nums">{{ formatCurrency(activePr?.total_amount) }}</span>
+            <span class="text-xs text-slate-400 ml-1">THB</span>
           </div>
-        </template>
-      </UCard>
-          </template>
-    </UModal>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex items-center justify-between">
+          <div class="flex gap-2">
+            <button
+              v-if="activePr?.status === 'Approved'"
+              class="modal-btn modal-btn--primary"
+              @click="convertToPo(activePr)"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h19l-1.68 8.39A2 2 0 0 1 18.34 16H7.66a2 2 0 0 1-1.97-1.61L4 6"/><path d="M9 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/><path d="M1 1h4l2.68 13.39"/></svg>
+              ออกใบสั่งซื้อ (PO)
+            </button>
+            <button
+              v-if="['PendingApproval','Approved'].includes(activePr?.status)"
+              class="modal-btn modal-btn--danger"
+              @click="cancelPR(activePr)"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              ยกเลิก PR
+            </button>
+          </div>
+          <button class="modal-btn modal-btn--ghost" @click="detailsOpen = false">ปิดหน้าต่าง</button>
+        </div>
+      </template>
+    </AppModal>
   </div>
 </template>
 
@@ -325,6 +304,7 @@ import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const search = ref('');
 const filterStatus = ref('ทั้งหมด');
@@ -550,7 +530,7 @@ const convertToPo = async (pr: any) => {
 };
 
 const cancelPR = async (pr: any) => {
-  if (!confirm(`คุณต้องการยกเลิกใบขอซื้อ ${pr.pr_no} ใช่หรือไม่? ยอดเงินสำรองทั้งหมดจะถูกส่งคืนศูนย์ต้นทุน`)) {
+  if (!(await dialog.confirm(`คุณต้องการยกเลิกใบขอซื้อ ${pr.pr_no} ใช่หรือไม่? ยอดเงินสำรองทั้งหมดจะถูกส่งคืนศูนย์ต้นทุน`, { variant: 'danger' }))) {
     return;
   }
   try {
@@ -560,13 +540,13 @@ const cancelPR = async (pr: any) => {
         Authorization: `Bearer ${authStore.token}`,
       },
     });
-    alert('ยกเลิกใบขอซื้อเรียบร้อยแล้ว!');
+    await dialog.alert('ยกเลิกใบขอซื้อเรียบร้อยแล้ว!', { variant: 'success' });
     await loadPrs();
     detailsOpen.value = false;
   } catch (err: any) {
     console.warn('Backend cancel failed, using demo cancel.');
     pr.status = 'Cancelled';
-    alert(`ยกเลิกใบขอซื้อ ${pr.pr_no} สำเร็จ! (คืนงบจองเรียบร้อย)`);
+    await dialog.alert(`ยกเลิกใบขอซื้อ ${pr.pr_no} สำเร็จ! (คืนงบจองเรียบร้อย)`, { variant: 'success' });
     detailsOpen.value = false;
   }
 };
@@ -580,29 +560,29 @@ const openDetails = (pr: any) => {
   detailsOpen.value = true;
 };
 
-const submitForApproval = (pr: any) => {
+const submitForApproval = async (pr: any) => {
   pr.status = 'PendingApproval';
-  alert(`ส่ง PR ${pr.pr_no} เพื่ออนุมัติเรียบร้อย`);
+  await dialog.alert(`ส่ง PR ${pr.pr_no} เพื่ออนุมัติเรียบร้อย`, { variant: 'success' });
 };
 
-const quickApprovePr = (pr: any) => {
+const quickApprovePr = async (pr: any) => {
   pr.status = 'Approved';
-  alert(`อนุมัติ PR ${pr.pr_no} เรียบร้อยแล้ว`);
+  await dialog.alert(`อนุมัติ PR ${pr.pr_no} เรียบร้อยแล้ว`, { variant: 'success' });
 };
 
-const rejectPr = (pr: any) => {
-  const reason = prompt('ระบุเหตุผล');
-  if (reason === null) return;
+const rejectPr = async (pr: any) => {
+  const ok = await dialog.confirm('ยืนยันการปฏิเสธใบขอซื้อนี้ใช่หรือไม่?', { variant: 'danger', title: 'ปฏิเสธใบขอซื้อ' });
+  if (!ok) return;
   pr.status = 'Rejected';
-  pr.rejection_reason = reason || 'ไม่ผ่านงบประมาณที่กำหนด กรุณาปรับลดรายการ';
+  pr.rejection_reason = 'ไม่ผ่านงบประมาณที่กำหนด กรุณาปรับลดรายการ';
 };
 
-const viewRejectionReason = (pr: any) => {
-  alert(pr.rejection_reason || 'ไม่ผ่านงบประมาณที่กำหนด กรุณาปรับลดรายการ');
+const viewRejectionReason = async (pr: any) => {
+  await dialog.alert(pr.rejection_reason || 'ไม่ผ่านงบประมาณที่กำหนด กรุณาปรับลดรายการ', { variant: 'warning', title: 'เหตุผลที่ไม่ผ่านการอนุมัติ' });
 };
 
-const requestBudgetException = (pr: any) => {
-  alert(`ส่งคำขอยกเว้นงบประมาณ ${pr.pr_no} ไปยัง CFO แล้ว`);
+const requestBudgetException = async (pr: any) => {
+  await dialog.alert(`ส่งคำขอยกเว้นงบประมาณ ${pr.pr_no} ไปยัง CFO แล้ว`, { variant: 'success' });
 };
 
 const filteredPrs = computed(() => {

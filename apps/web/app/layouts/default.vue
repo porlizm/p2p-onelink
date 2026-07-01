@@ -13,10 +13,10 @@
       <!-- Logo Area -->
       <div class="sidebar__logo">
         <div class="sidebar__logo-mark">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
-            <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L3 7v5c0 4.8 3.5 9.2 9 10 5.5-.8 9-5.2 9-10V7l-9-5z" fill="white" fill-opacity="0.2" />
+            <path d="M12 21c3.8-.7 6.7-4.2 6.7-8.2V8l-6.7-3.7L5.3 8v4.8c0 4 2.9 7.5 6.7 8.2z" stroke="white" stroke-width="2" stroke-linejoin="round" />
+            <path d="M9 11l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
           </svg>
         </div>
         <Transition name="fade-slide">
@@ -224,6 +224,9 @@
       </main>
     </div>
   </div>
+
+  <!-- Global Dialog (replaces alert/confirm) -->
+  <AppDialog />
 </template>
 
 <script setup lang="ts">
@@ -233,6 +236,37 @@ import { useAuthStore } from '~/stores/auth';
 const authStore = useAuthStore();
 const route = useRoute();
 const isCollapsed = ref(false);
+
+const moduleNameMap: Record<string, string> = {
+  '/': 'Dashboard',
+  '/vendors/evaluation': 'Vendor Evaluation',
+  '/vendors/contracts': 'Contract Management',
+  '/vendors/catalog-approval': 'Catalog Approval',
+  '/vendors': 'Vendor',
+  '/catalog': 'Catalog',
+  '/pr': 'Purchase Requisition',
+  '/bidding': 'RFQ Bidding',
+  '/po': 'Purchase Order',
+  '/gr-stock': 'Goods Receipt & Inventory',
+  '/approval': 'Approval Inbox',
+  '/finance': 'Accounting & e-Payment',
+  '/admin/assets': 'Asset Management',
+  '/admin': 'Settings',
+};
+
+useHead({
+  titleTemplate: 'Procurement Hub | %s',
+  title: () => {
+    const path = route.path;
+    const sortedEntries = Object.entries(moduleNameMap).sort((a, b) => b[0].length - a[0].length);
+    for (const [routePrefix, name] of sortedEntries) {
+      if (path === routePrefix || (routePrefix !== '/' && path.startsWith(routePrefix))) {
+        return name;
+      }
+    }
+    return 'Dashboard';
+  }
+});
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;

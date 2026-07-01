@@ -215,6 +215,7 @@ import { useAuthStore } from '~/stores/auth';
 import StatusBadge from '~/components/StatusBadge.vue';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const submissions = ref<any[]>([]);
 const activeSubmission = ref<any | null>(null);
@@ -239,15 +240,16 @@ const filteredSubmissions = computed(() => {
   return submissions.value.filter(s => s.status === activeStatus.value);
 });
 
-const showDoaDetails = () => {
-  alert(
+const showDoaDetails = async () => {
+  await dialog.alert(
     `[AI Smart DOA Report]\n\n` +
     `ความเสี่ยงอนุมัติ: ต่ำมาก (Low Risk)\n` +
     `เหตุผลวิเคราะห์:\n` +
     `1. หมวดหมู่สินค้าตรงตามเงื่อนไขข้อตกลงราคากลางเดิม\n` +
     `2. อัตราส่วนลดราคาคงที่ และไม่มีการเสนอราคาที่ขัดแย้งกับตลาดจัดซื้อกลาง\n` +
     `3. ประวัติความสัมพันธ์กับคู่ค้า "${activeSubmission.value?.vendor?.vendor_name}" มีเกรดผลประเมินเฉลี่ย A+ (ดีเยี่ยม)\n` +
-    `4. ผู้อนุมัติในสายงานสอดคล้องตามกฎ DOA ของแผนก`
+    `4. ผู้อนุมัติในสายงานสอดคล้องตามกฎ DOA ของแผนก`,
+    { variant: 'info', title: 'AI Smart DOA Analysis' }
   );
 };
 
@@ -300,7 +302,7 @@ const openReview = (sub: any) => {
 
 const submitReview = async (action: 'Approved' | 'Rejected') => {
   if (!activeSubmission.value) return;
-  if (!confirm(`คุณต้องการยืนยันการ "${action === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ'}" คำขอปรับปรุงแค็ตตาล็อกนี้ใช่หรือไม่?`)) return;
+  if (!(await dialog.confirm(`คุณต้องการยืนยันการ "${action === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ'}" คำขอปรับปรุงแค็ตตาล็อกนี้ใช่หรือไม่?`, { variant: 'danger' }))) return;
 
   submitting.value = true;
   const user_id = authStore.user?.userId || '00000000-0000-0000-0000-000000000410';
@@ -315,7 +317,7 @@ const submitReview = async (action: 'Approved' | 'Rejected') => {
       body: { action, user_id },
     });
 
-    alert(`บันทึกการพิจารณา "${action === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ'}" สำเร็จ!`);
+    await dialog.alert(`บันทึกการพิจารณา "${action === 'Approved' ? 'อนุมัติ' : 'ปฏิเสธ'}" สำเร็จ!`, { variant: 'success' });
     showReviewDrawer.value = false;
     await loadSubmissions();
   } catch (err) {
@@ -324,7 +326,7 @@ const submitReview = async (action: 'Approved' | 'Rejected') => {
     if (match) {
       match.status = action;
     }
-    alert(`บันทึกการพิจารณาสำเร็จ!`);
+    await dialog.alert(`บันทึกการพิจารณาสำเร็จ!`, { variant: 'success' });
     showReviewDrawer.value = false;
   } finally {
     submitting.value = false;

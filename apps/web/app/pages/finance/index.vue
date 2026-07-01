@@ -29,6 +29,180 @@
           </template>
     </UModal>
 
+    <!-- Tabs -->
+    <div class="flex gap-2 border-b border-[#eff1f5]">
+      <button
+        class="px-4 py-2 text-sm font-semibold border-b-2 transition"
+        :class="activeTab === 'queue' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+        @click="activeTab = 'queue'"
+      >
+        คิว e-Payment
+      </button>
+      <button
+        class="px-4 py-2 text-sm font-semibold border-b-2 transition"
+        :class="activeTab === 'proposals' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-slate-400 hover:text-slate-600'"
+        @click="activeTab = 'proposals'"
+      >
+        Payment Request → Proposal → Bank File
+      </button>
+    </div>
+
+    <div v-if="activeTab === 'proposals'" class="space-y-6">
+      <!-- 1. Invoices ready to raise Payment Request -->
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">1. ใบแจ้งหนี้ที่ Match แล้ว รอสร้าง Payment Request</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">เลขที่ Invoice</th>
+                <th class="px-6 py-3.5">ผู้ค้า</th>
+                <th class="px-6 py-3.5 text-right">ยอดเงิน (THB)</th>
+                <th class="px-6 py-3.5 text-center">วันครบกำหนด</th>
+                <th class="px-6 py-3.5 text-center">การดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="inv in readyInvoices" :key="inv.invoice_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-4 font-bold text-[var(--primary)]">
+                  <NuxtLink :to="`/finance/${inv.invoice_id}`">{{ inv.invoice_no }}</NuxtLink>
+                </td>
+                <td class="px-6 py-4">{{ inv.vendor?.vendor_name || '-' }}</td>
+                <td class="px-6 py-4 text-right font-bold">{{ formatCurrency(inv.total_amount) }}</td>
+                <td class="px-6 py-4 text-center">
+                  <input type="date" v-model="dueDateDrafts[inv.invoice_id]" class="border rounded px-2 py-1 text-xs" />
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button class="action-btn action-btn--review" @click="createPaymentRequest(inv)">สร้าง Payment Request</button>
+                </td>
+              </tr>
+              <tr v-if="readyInvoices.length === 0">
+                <td colspan="5" class="text-center py-8 text-xs text-[var(--muted-foreground)]">ไม่มีใบแจ้งหนี้ที่รอสร้าง Payment Request</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 2. Payment Requests -> select to batch into Proposal -->
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700 flex items-center justify-between">
+          <span>2. Payment Requests — เลือกรวมชุด (Batch) เป็น Proposal</span>
+          <button
+            class="action-btn action-btn--review"
+            :disabled="selectedRequestIds.length === 0"
+            @click="createProposal"
+          >
+            สร้าง Proposal ({{ selectedRequestIds.length }} รายการ)
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5"></th>
+                <th class="px-6 py-3.5">เลขที่ Payment Request</th>
+                <th class="px-6 py-3.5">ผู้ค้า</th>
+                <th class="px-6 py-3.5 text-right">ยอดเงิน</th>
+                <th class="px-6 py-3.5 text-center">Lane การจ่าย</th>
+                <th class="px-6 py-3.5 text-center">สถานะ</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="pr in unbatchedRequests" :key="pr.payment_request_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-4">
+                  <input type="checkbox" :value="pr.payment_request_id" v-model="selectedRequestIds" />
+                </td>
+                <td class="px-6 py-4 font-bold">{{ pr.payment_request_no }}</td>
+                <td class="px-6 py-4">{{ pr.vendor?.vendor_name || '-' }}</td>
+                <td class="px-6 py-4 text-right font-bold">{{ formatCurrency(pr.amount) }}</td>
+                <td class="px-6 py-4 text-center">
+                  <select v-model="pr.lane_id" @change="assignLane(pr)" class="border rounded px-2 py-1 text-xs">
+                    <option :value="null">— เลือก Lane —</option>
+                    <option v-for="lane in lanes" :key="lane.lane_id" :value="lane.lane_id">{{ lane.lane_name }}</option>
+                  </select>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">{{ pr.status }}</span>
+                </td>
+              </tr>
+              <tr v-if="unbatchedRequests.length === 0">
+                <td colspan="6" class="text-center py-8 text-xs text-[var(--muted-foreground)]">ไม่มี Payment Request ที่รอรวมชุด</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3. Proposals -> approve -> generate bank file -->
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">3. Payment Proposals</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">เลขที่ Proposal</th>
+                <th class="px-6 py-3.5 text-right">ยอดรวม</th>
+                <th class="px-6 py-3.5 text-center">สถานะ</th>
+                <th class="px-6 py-3.5 text-center">การดำเนินการ</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="p in proposals" :key="p.proposal_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-4 font-bold">{{ p.proposal_no }}</td>
+                <td class="px-6 py-4 text-right font-bold">{{ formatCurrency(p.total_amount) }}</td>
+                <td class="px-6 py-4 text-center">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                    :class="p.status === 'Generated' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : p.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
+                  >{{ p.status }}</span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button v-if="p.status === 'Pending'" class="action-btn action-btn--review" @click="approveProposal(p)">อนุมัติ (Finance Manager)</button>
+                  <button v-else-if="p.status === 'Approved'" class="action-btn action-btn--compare" @click="genBankFile(p)">Generate Bank File</button>
+                  <span v-else class="text-xs text-slate-400">สร้างไฟล์แล้ว</span>
+                </td>
+              </tr>
+              <tr v-if="proposals.length === 0">
+                <td colspan="4" class="text-center py-8 text-xs text-[var(--muted-foreground)]">ยังไม่มี Payment Proposal</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 4. Generated bank files -->
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">4. ไฟล์ธนาคาร (Bank Files)</div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">ชื่อไฟล์</th>
+                <th class="px-6 py-3.5 text-center">สถานะ</th>
+                <th class="px-6 py-3.5 text-center">ดาวน์โหลด</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="f in bankFiles" :key="f.bank_file_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-4 font-mono text-xs">{{ f.file_name }}</td>
+                <td class="px-6 py-4 text-center">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800">{{ f.status }}</span>
+                </td>
+                <td class="px-6 py-4 text-center">
+                  <button class="action-btn action-btn--view" @click="downloadBankFile(f)">ดาวน์โหลด</button>
+                </td>
+              </tr>
+              <tr v-if="bankFiles.length === 0">
+                <td colspan="3" class="text-center py-8 text-xs text-[var(--muted-foreground)]">ยังไม่มีไฟล์ธนาคาร</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <template v-if="activeTab === 'queue'">
     <!-- Summary KPI Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <div class="glass-panel rounded-xl p-4 flex items-center gap-4">
@@ -222,7 +396,7 @@
                     <button
                       v-if="po.status === 'InPaymentProposal'"
                       class="action-btn action-btn--view"
-                      @click="alert('Payment Proposal รอรวมในชุดจ่ายประจำวัน')"
+                      @click="dialog.alert('Payment Proposal รอรวมในชุดจ่ายประจำวัน')"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                       ดูใบจ่าย
@@ -232,7 +406,7 @@
                     <button
                       v-if="po.status === 'BankFileGenerated'"
                       class="action-btn action-btn--compare"
-                      @click="alert('ไฟล์ธนาคาร Bank File สร้างแล้ว รอยืนยัน clearing')"
+                      @click="dialog.alert('ไฟล์ธนาคาร Bank File สร้างแล้ว รอยืนยัน clearing', { variant: 'info' })"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
                       ดูไฟล์ธนาคาร
@@ -243,7 +417,7 @@
                       v-if="po.status === 'ProcessingPayment'"
                       class="action-btn action-btn--neutral"
                       style="opacity:0.85"
-                      @click="alert('กำลังประมวลผลการโอนเงิน ระบบจะอัปเดตภายใน 1 ชม.')"
+                      @click="dialog.alert('กำลังประมวลผลการโอนเงิน ระบบจะอัปเดตภายใน 1 ชม.', { variant: 'info' })"
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="animate-spin"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
                       ติดตามสถานะ
@@ -321,6 +495,7 @@
         </table>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
@@ -329,12 +504,155 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const posList = ref<any[]>([]);
 const pendingBanks = ref<any[]>([]);
 
+// Payment Request -> Proposal -> Bank File tab
+const activeTab = ref<'queue' | 'proposals'>('queue');
+const readyInvoices = ref<any[]>([]);
+const dueDateDrafts = ref<Record<string, string>>({});
+const paymentRequests = ref<any[]>([]);
+const proposals = ref<any[]>([]);
+const bankFiles = ref<any[]>([]);
+const lanes = ref<any[]>([]);
+const selectedRequestIds = ref<string[]>([]);
+
+const unbatchedRequests = computed(() => paymentRequests.value.filter(r => !r.proposal_id));
+
+const authHeaders = () => ({ Authorization: `Bearer ${authStore.token}` });
+
+const loadReadyInvoices = async () => {
+  try {
+    const res = await $fetch<any[]>('http://localhost:3001/api/invoice', { headers: authHeaders() });
+    readyInvoices.value = res.filter(inv => inv.status === 'ReadyForPayment' || inv.match_status === 'Matched');
+    readyInvoices.value.forEach(inv => {
+      if (!dueDateDrafts.value[inv.invoice_id]) {
+        dueDateDrafts.value[inv.invoice_id] = new Date(Date.now() + 86400000 * 30).toISOString().slice(0, 10);
+      }
+    });
+  } catch (err) {
+    readyInvoices.value = [];
+  }
+};
+
+const loadPaymentRequests = async () => {
+  try {
+    paymentRequests.value = await $fetch<any[]>('http://localhost:3001/api/payment/request', { headers: authHeaders() });
+  } catch (err) {
+    paymentRequests.value = [];
+  }
+};
+
+const loadProposals = async () => {
+  try {
+    proposals.value = await $fetch<any[]>('http://localhost:3001/api/payment/proposal', { headers: authHeaders() });
+  } catch (err) {
+    proposals.value = [];
+  }
+};
+
+const loadBankFiles = async () => {
+  try {
+    bankFiles.value = await $fetch<any[]>('http://localhost:3001/api/payment/bank-files', { headers: authHeaders() });
+  } catch (err) {
+    bankFiles.value = [];
+  }
+};
+
+const loadLanes = async () => {
+  try {
+    lanes.value = await $fetch<any[]>('http://localhost:3001/api/payment/lanes', { headers: authHeaders() });
+  } catch (err) {
+    lanes.value = [];
+  }
+};
+
+const createPaymentRequest = async (inv: any) => {
+  try {
+    await $fetch('http://localhost:3001/api/payment/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: {
+        invoice_id: inv.invoice_id,
+        due_date: dueDateDrafts.value[inv.invoice_id],
+        created_by: authStore.user?.userId || authStore.user?.id,
+      },
+    });
+    await dialog.alert(`สร้าง Payment Request สำหรับ ${inv.invoice_no} สำเร็จ`, { variant: 'success' });
+    await Promise.all([loadReadyInvoices(), loadPaymentRequests()]);
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถสร้าง Payment Request ได้', { variant: 'danger' });
+  }
+};
+
+const assignLane = async (pr: any) => {
+  if (!pr.lane_id) return;
+  try {
+    await $fetch(`http://localhost:3001/api/payment/request/${pr.payment_request_id}/assign-lane`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: { lane_id: pr.lane_id },
+    });
+  } catch (err) {
+    // keep local optimistic update
+  }
+};
+
+const createProposal = async () => {
+  try {
+    await $fetch('http://localhost:3001/api/payment/proposal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: { request_ids: selectedRequestIds.value },
+    });
+    await dialog.alert('สร้าง Payment Proposal สำเร็จ', { variant: 'success' });
+    selectedRequestIds.value = [];
+    await Promise.all([loadPaymentRequests(), loadProposals()]);
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถสร้าง Proposal ได้', { variant: 'danger' });
+  }
+};
+
+const approveProposal = async (p: any) => {
+  try {
+    await $fetch(`http://localhost:3001/api/payment/proposal/${p.proposal_id}/approve`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+    });
+    await dialog.alert(`อนุมัติ Proposal ${p.proposal_no} สำเร็จ`, { variant: 'success' });
+    await loadProposals();
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถอนุมัติ Proposal ได้', { variant: 'danger' });
+  }
+};
+
+const genBankFile = async (p: any) => {
+  try {
+    await $fetch(`http://localhost:3001/api/payment/proposal/${p.proposal_id}/generate-bank-file`, {
+      method: 'POST',
+      headers: authHeaders(),
+    });
+    await dialog.alert(`สร้าง Bank File สำหรับ ${p.proposal_no} สำเร็จ`, { variant: 'success' });
+    await Promise.all([loadProposals(), loadBankFiles(), loadPaymentRequests()]);
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถสร้าง Bank File ได้', { variant: 'danger' });
+  }
+};
+
+const downloadBankFile = (f: any) => {
+  const blob = new Blob([f.file_content || ''], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = f.file_name;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 // Security Warning modal data
 const isErrorAlertOpen = ref(false);
-const alertErrorMessage = ref('');
+const alertErrorMessage = ref('', { variant: 'danger' });
 
 const loadPOs = async () => {
   try {
@@ -482,7 +800,7 @@ const triggerPayment = async (poId: string) => {
       },
       body: { po_id: poId },
     });
-    alert('ส่งเรื่องไปยังระบบ e-Payment สำเร็จแล้ว! สถานะถูกเปลี่ยนเป็น ProcessingPayment');
+    await dialog.alert('ส่งเรื่องไปยังระบบ e-Payment สำเร็จแล้ว! สถานะถูกเปลี่ยนเป็น ProcessingPayment', { variant: 'success' });
     await loadPOs();
   } catch (err: any) {
     const backendMessage = err.data?.message;
@@ -490,7 +808,7 @@ const triggerPayment = async (poId: string) => {
       alertErrorMessage.value = backendMessage;
       isErrorAlertOpen.value = true;
     } else {
-      alert('ส่งเรื่องไปยังระบบ e-Payment สำเร็จแล้ว!');
+      await dialog.alert('ส่งเรื่องไปยังระบบ e-Payment สำเร็จแล้ว!', { variant: 'success' });
       const po = posList.value.find(p => p.po_id === poId);
       if (po) {
         po.status = 'ProcessingPayment';
@@ -517,7 +835,7 @@ const mockCallback = async (poNo: string, status: 'Success' | 'Failed') => {
       },
       body: bodyPayload,
     });
-    alert(`รับผล Webhook Callback จาก e-Payment เรียบร้อย! PO เลขที่ ${poNo} ปรับปรุงสถานะแล้ว`);
+    await dialog.alert(`รับผล Webhook Callback จาก e-Payment เรียบร้อย! PO เลขที่ ${poNo} ปรับปรุงสถานะแล้ว`, { variant: 'success' });
     await loadPOs();
   } catch (err) {
     const po = posList.value.find(p => p.po_no === poNo);
@@ -531,7 +849,7 @@ const mockCallback = async (poNo: string, status: 'Success' | 'Failed') => {
         po.payment_error_code = 'INSUFFICIENT_FUNDS';
         po.payment_error_message = 'ยอดเงินในบัญชีหลักของบริษัท SCGJWD มีเงินคงเหลือไม่เพียงพอต่อการทำจ่ายในคิวนี้';
       }
-      alert(`รับผล Callback จาก e-Payment เรียบร้อย!`);
+      await dialog.alert(`รับผล Callback จาก e-Payment เรียบร้อย!`, { variant: 'success' });
     }
   }
 };
@@ -553,7 +871,7 @@ const verifyBank = async (accountId: string, roleType: 'buyer' | 'accounting') =
       method: 'POST',
       headers: { Authorization: `Bearer ${authStore.token}` },
     });
-    alert(`กดยืนยันฝั่ง ${roleType === 'buyer' ? 'จัดซื้อ' : 'บัญชี'} สำเร็จ!`);
+    await dialog.alert(`กดยืนยันฝั่ง ${roleType === 'buyer' ? 'จัดซื้อ' : 'บัญชี'} สำเร็จ!`, { variant: 'success' });
     await loadPendingBanks();
     await loadPOs();
   } catch (err) {
@@ -569,7 +887,7 @@ const verifyBank = async (accountId: string, roleType: 'buyer' | 'accounting') =
         bank.verification_status = 'Active';
         pendingBanks.value = pendingBanks.value.filter(b => b.bank_account_id !== accountId);
       }
-      alert(`กดยืนยันฝั่ง ${roleType === 'buyer' ? 'จัดซื้อ' : 'บัญชี'} สำเร็จ!`);
+      await dialog.alert(`กดยืนยันฝั่ง ${roleType === 'buyer' ? 'จัดซื้อ' : 'บัญชี'} สำเร็จ!`, { variant: 'success' });
     }
   }
 };
@@ -601,21 +919,21 @@ const formatPoPaymentStatus = (status: string) => {
 };
 
 // New payment queue flow handlers
-const sendEPayment = (po: any) => {
+const sendEPayment = async (po: any) => {
   po.status = 'ProcessingPayment';
-  alert(`ส่งคำสั่งจ่าย ${po.po_no} ไปยัง e-Payment แล้ว`);
+  await dialog.alert(`ส่งคำสั่งจ่าย ${po.po_no} ไปยัง e-Payment แล้ว`, { variant: 'success' });
 };
 
-const viewPaymentProof = (po: any) => {
+const viewPaymentProof = async (po: any) => {
   const paidDate = po.paid_at ? new Date(po.paid_at).toLocaleDateString('th-TH') : new Date().toLocaleDateString('th-TH');
-  alert(`ชำระเงิน ${po.po_no} สำเร็จ วันที่ ${paidDate}`);
+  await dialog.alert(`ชำระเงิน ${po.po_no} สำเร็จ วันที่ ${paidDate}`, { variant: 'success' });
 };
 
-const retryFailedPayment = (po: any) => {
+const retryFailedPayment = async (po: any) => {
   po.status = 'ReadyForPayment';
   po.payment_error_code = null;
   po.payment_error_message = null;
-  alert('รีเซตสถานะการจ่ายเพื่อดำเนินการใหม่');
+  await dialog.alert('รีเซตสถานะการจ่ายเพื่อดำเนินการใหม่', { variant: 'info' });
 };
 
 const formatCurrency = (val?: number | string) => {
@@ -633,5 +951,10 @@ const formatDate = (date: any) => {
 onMounted(() => {
   loadPOs();
   loadPendingBanks();
+  loadReadyInvoices();
+  loadPaymentRequests();
+  loadProposals();
+  loadBankFiles();
+  loadLanes();
 });
 </script>

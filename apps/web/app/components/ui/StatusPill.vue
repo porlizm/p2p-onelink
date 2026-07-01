@@ -27,7 +27,7 @@ const statusMap: Record<Tone, string[]> = {
   warning: [
     'in transit', 'invited', 'printing', 'medium', 'investigating',
     'pending', 'underreview', 'suspended', 'pendingapproval', 'pendingreview', 'pendingverification',
-    'blockedoverbudget', 'pendingcommitteeapproval', 'underevaluation',
+    'blockedoverbudget', 'pendingcommitteeapproval', 'underevaluation', 'pendingevaluation',
     'partiallyreceived', 'revisionrequested', 'partialreceipt',
     'mismatchexception', 'onhold', 'expiringsoon', 'pendingsignature',
     'open',
@@ -79,6 +79,7 @@ const labelMap: Record<string, string> = {
   selected: 'ผ่านการคัดเลือก',
   notselected: 'ไม่ผ่านการคัดเลือก',
   underevaluation: 'อยู่ระหว่างประเมิน',
+  pendingevaluation: 'อยู่ระหว่างประเมิน',
   pendingcommitteeapproval: 'รออนุมัติจากคณะกรรมการ',
   
   // PO

@@ -143,6 +143,7 @@ import { ref, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const types = ref<any[]>([]);
 const newCode = ref('');
@@ -203,7 +204,7 @@ const createItemType = async () => {
 };
 
 const deleteItemType = async (id: string) => {
-  if (!confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรูปแบบสินค้านี้ออกจากระบบ?')) return;
+  if (!(await dialog.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบรูปแบบสินค้านี้ออกจากระบบ?', { variant: 'danger' }))) return;
   errorMsg.value = '';
   successMsg.value = '';
 

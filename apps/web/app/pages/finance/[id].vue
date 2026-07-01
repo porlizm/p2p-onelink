@@ -292,6 +292,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const invoiceId = route.params.id as string;
 const invoice = ref<any>(null);
@@ -341,7 +342,7 @@ const netInvoiceAmount = computed(() => {
 
 const submitCnDn = async () => {
   if (!newCnDnAmount.value || !newCnDnReason.value) {
-    alert('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน');
+    await dialog.alert('กรุณากรอกข้อมูลสำคัญให้ครบถ้วน', { variant: 'danger' });
     return;
   }
   submittingCnDn.value = true;
@@ -375,7 +376,7 @@ const submitCnDn = async () => {
     showAddCnDnModal.value = false;
     newCnDnAmount.value = null;
     newCnDnReason.value = '';
-    alert('บันทึกและผูกเอกสารใบลดหนี้/เพิ่มหนี้สำเร็จ!');
+    await dialog.alert('บันทึกและผูกเอกสารใบลดหนี้/เพิ่มหนี้สำเร็จ!', { variant: 'success' });
   } finally {
     submittingCnDn.value = false;
   }

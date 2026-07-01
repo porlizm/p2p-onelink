@@ -390,6 +390,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const route = useRoute();
 const authStore = useAuthStore();
+const dialog = useDialog();
 const poId = route.params.id as string;
 
 const loading = ref(true);
@@ -566,7 +567,7 @@ const saveRevision = async () => {
 };
 
 const cancelPO = async () => {
-  if (!confirm(`คุณต้องการยกเลิกใบสั่งซื้อ ${po.value.po_no} ใช่หรือไม่? ยอดเงินคงค้างสำรองที่ไม่ได้ตรวจรับจะถูกส่งคืนศูนย์ต้นทุน`)) {
+  if (!(await dialog.confirm(`คุณต้องการยกเลิกใบสั่งซื้อ ${po.value.po_no} ใช่หรือไม่? ยอดเงินคงค้างสำรองที่ไม่ได้ตรวจรับจะถูกส่งคืนศูนย์ต้นทุน`, { variant: 'danger' }))) {
     return;
   }
   try {
@@ -577,11 +578,11 @@ const cancelPO = async () => {
       },
     });
     po.value = res;
-    alert('ยกเลิกใบสั่งซื้อเรียบร้อยแล้ว!');
+    await dialog.alert('ยกเลิกใบสั่งซื้อเรียบร้อยแล้ว!', { variant: 'success' });
   } catch (err: any) {
     console.warn('Backend PO cancellation failed, applying locally.');
     po.value.status = 'Cancelled';
-    alert(`ยกเลิกใบสั่งซื้อ ${po.value.po_no} สำเร็จ! (คืนงบจองที่เหลือเรียบร้อย)`);
+    await dialog.alert(`ยกเลิกใบสั่งซื้อ ${po.value.po_no} สำเร็จ! (คืนงบจองที่เหลือเรียบร้อย)`, { variant: 'success' });
   }
 };
 
@@ -643,7 +644,7 @@ const confirmTriggerPayment = async () => {
     });
     po.value = res;
     offsetOpen.value = false;
-    alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ!');
+    await dialog.alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ!', { variant: 'success' });
   } catch (err: any) {
     console.error(err);
     // Local simulation
@@ -655,7 +656,7 @@ const confirmTriggerPayment = async () => {
     }
     po.value.status = 'ProcessingPayment';
     offsetOpen.value = false;
-    alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ!');
+    await dialog.alert('ส่งจ่ายเงินไปยังระบบ e-Payment สำเร็จ!', { variant: 'success' });
   } finally {
     isSubmittingPayment.value = false;
   }

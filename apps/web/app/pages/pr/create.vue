@@ -417,6 +417,7 @@ import { useAuthStore } from '~/stores/auth';
 import { useCartStore } from '~/stores/cart';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 const cartStore = useCartStore();
 
 const description = ref('');
@@ -599,7 +600,7 @@ const submitPR = async () => {
       },
     });
 
-    alert(`บันทึกใบขอซื้อสำเร็จ! เลขที่ใบสั่งซื้อ: ${response.pr_no}\nสถานะเอกสาร: ${response.status}`);
+    await dialog.alert(`บันทึกใบขอซื้อสำเร็จ! เลขที่ใบสั่งซื้อ: ${response.pr_no}\nสถานะเอกสาร: ${response.status}`, { variant: 'success' });
     cartStore.clearCart();
     navigateTo('/pr');
   } catch (err) {
@@ -611,7 +612,7 @@ const submitPR = async () => {
     const mockPrNo = `PR${yy}${mm}999`;
     const mockStatus = hasHardBlockedLines.value ? 'BlockedOverBudget' : 'PendingApproval';
 
-    alert(`ส่งใบขอซื้อเรียบร้อย!\nเลขที่ใบขอซื้อ: ${mockPrNo}\nสถานะเอกสาร: ${mockStatus}`);
+    await dialog.alert(`ส่งใบขอซื้อเรียบร้อย!\nเลขที่ใบขอซื้อ: ${mockPrNo}\nสถานะเอกสาร: ${mockStatus}`, { variant: 'success' });
     cartStore.clearCart();
     navigateTo('/pr');
   } finally {
@@ -655,12 +656,12 @@ const submitBudgetRequest = async () => {
         reason: requestReason.value,
       },
     });
-    alert('ส่งคำขอเพิ่มงบประมาณไปยัง Accountant เรียบร้อยแล้ว!');
+    await dialog.alert('ส่งคำขอเพิ่มงบประมาณไปยัง Accountant เรียบร้อยแล้ว!', { variant: 'success' });
     showRequestBudgetModal.value = false;
     await loadCostCenters();
   } catch (err) {
     console.warn('Backend connection failed. Simulating budget request submission.');
-    alert(`ส่งคำขอเพิ่มงบประมาณเรียบร้อย!\nจำนวนเงิน: ${formatCurrency(requestAmount.value)} THB\nรอการอนุมัติจากทางทีมบัญชี`);
+    await dialog.alert(`ส่งคำขอเพิ่มงบประมาณเรียบร้อย!\nจำนวนเงิน: ${formatCurrency(requestAmount.value)} THB\nรอการอนุมัติจากทางทีมบัญชี`, { variant: 'success' });
     showRequestBudgetModal.value = false;
   } finally {
     isSubmittingRequest.value = false;

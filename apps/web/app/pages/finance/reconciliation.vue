@@ -232,6 +232,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
+const dialog = useDialog();
 
 const reconItems = ref<any[]>([]);
 const adjustmentLogs = ref<any[]>([]);
@@ -297,7 +298,7 @@ const submitAdjustment = async () => {
       },
     });
 
-    alert('บันทึกการปรับปรุงยอดกระทบยอดเรียบร้อย!');
+    await dialog.alert('บันทึกการปรับปรุงยอดกระทบยอดเรียบร้อย!', { variant: 'success' });
     showAdjustModal.value = false;
     await loadReconciliationData();
     await loadAdjustmentLogs();
@@ -315,7 +316,7 @@ const submitAdjustment = async () => {
       request_payload: { adjustmentAmount: Number(adjustmentAmount.value), remarks: adjustmentRemarks.value, username: 'accounting.user' },
       created_at: new Date(),
     });
-    alert('บันทึกการปรับปรุงยอดกระทบยอดเรียบร้อย!');
+    await dialog.alert('บันทึกการปรับปรุงยอดกระทบยอดเรียบร้อย!', { variant: 'success' });
     showAdjustModal.value = false;
   } finally {
     isSubmitting.value = false;

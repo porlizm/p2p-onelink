@@ -27,19 +27,19 @@
     </div>
 
     <!-- Main Grid Details -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       <!-- General and Address Info (2/3 width) -->
-      <div class="md:col-span-2 space-y-6">
+      <div class="md:col-span-2 space-y-4">
         <!-- Details Card -->
         <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-2">
               <UIcon name="i-heroicons-building-office-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">ข้อมูลที่ตั้งและประเภทธุรกิจ</h3>
             </div>
           </template>
 
-          <div class="space-y-4 text-sm mt-3">
+          <div class="space-y-3 text-sm mt-2">
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <span class="text-xs text-[var(--muted-foreground)] block">ประเภทธุรกิจ</span>
@@ -63,13 +63,13 @@
         <!-- Contacts Card -->
         <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-2">
               <UIcon name="i-heroicons-user-group-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">ผู้ติดต่อประสานงาน</h3>
             </div>
           </template>
 
-          <div v-if="contact" class="space-y-3 mt-3 text-sm">
+          <div v-if="contact" class="space-y-2.5 mt-2 text-sm">
             <div>
               <span class="text-xs text-[var(--muted-foreground)] block">ชื่อ-นามสกุล</span>
               <span class="font-medium text-[var(--foreground)]">{{ contact.contact_name }}</span>
@@ -86,14 +86,176 @@
             </div>
           </div>
         </UCard>
+
+        <!-- Buyer Review and Verification Action Box -->
+        <UCard
+          v-if="vendor?.status === 'PendingRegistration'"
+          class="border-2 border-[var(--primary)]/20 shadow-[var(--shadow-md)] rounded-[var(--radius-xl)] bg-white"
+        >
+          <template #header>
+            <div class="flex items-center gap-2">
+              <UIcon name="i-heroicons-check-badge-20-solid" class="w-5 h-5 text-[var(--primary)]" />
+              <h3 class="font-semibold text-sm text-[var(--foreground)]">ตรวจสอบและตัดสินใจอนุมัติคู่ค้า</h3>
+            </div>
+          </template>
+
+          <div class="space-y-4">
+            <p class="text-xs text-[var(--muted-foreground)]">
+              กรุณาตรวจสอบเอกสารแนบและเลขประจำตัวผู้เสียภาษีให้ถูกต้องครบถ้วนก่อนทำการยืนยันเข้าสู่ระบบ
+            </p>
+            <div v-if="showRejectComment" class="space-y-2">
+              <UFormField label="เหตุผลที่ปฏิเสธการลงทะเบียน (จะแจ้งกลับไปที่คู่ค้า)" required>
+                <UTextarea v-model="rejectReason" placeholder="ระบุเหตุผล เช่น หนังสือรับรองหมดอายุ หรือ เอกสารหน้า Book Bank ไม่ตรงกับชื่อบริษัท..." size="md" />
+              </UFormField>
+            </div>
+            <div class="flex justify-end gap-3 pt-2">
+              <template v-if="!showRejectComment">
+                <button class="vnd-btn vnd-btn--reject" @click="showRejectComment = true">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                  ปฏิเสธ
+                </button>
+                <button class="vnd-btn vnd-btn--approve" :disabled="isSubmitting" @click="handleApprove">
+                  <svg v-if="!isSubmitting" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10"/></svg>
+                  อนุมัติคู่ค้า
+                </button>
+              </template>
+              <template v-else>
+                <button class="vnd-btn vnd-btn--cancel" @click="showRejectComment = false">ยกเลิก</button>
+                <button class="vnd-btn vnd-btn--confirm-reject" :disabled="isSubmitting" @click="handleReject">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  ยืนยันการปฏิเสธ
+                </button>
+              </template>
+            </div>
+          </div>
+        </UCard>
+
+        <!-- ── Status Management Panel (Active / Blocked / Suspended / Rejected) ── -->
+        <UCard
+          v-if="['Active', 'Blocked', 'Suspended', 'Rejected'].includes(vendor?.status)"
+          class="border border-[#e9ecef] shadow-sm rounded-[var(--radius-xl)] bg-white"
+        >
+          <template #header>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <UIcon name="i-heroicons-shield-check-20-solid" class="w-5 h-5 text-[var(--primary)]" />
+                <h3 class="font-semibold text-sm text-[var(--foreground)]">จัดการสถานะคู่ค้า</h3>
+              </div>
+              <StatusBadge :status="vendor.status" />
+            </div>
+          </template>
+
+          <div class="space-y-4">
+
+            <!-- Status history timeline -->
+            <div class="space-y-2">
+              <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide">ประวัติสถานะ</p>
+              <div class="space-y-1">
+                <div v-for="(log, i) in statusHistory" :key="i" class="flex items-start gap-3 text-xs">
+                  <div class="flex flex-col items-center">
+                    <div class="w-2 h-2 rounded-full mt-1 flex-shrink-0" :class="log.color"></div>
+                    <div v-if="i < statusHistory.length - 1" class="w-px h-4 bg-[#e9ecef]"></div>
+                  </div>
+                  <div>
+                    <span class="font-semibold text-[var(--foreground)]">{{ log.label }}</span>
+                    <span class="text-[var(--muted-foreground)] ml-2">{{ log.date }}</span>
+                    <span v-if="log.note" class="block text-[var(--muted-foreground)] text-[11px] mt-0.5">{{ log.note }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Active: Block + Suspend + Evaluate ── -->
+            <template v-if="vendor.status === 'Active'">
+              <div class="border-t border-[#eff1f5] pt-4 space-y-3">
+                <p class="text-xs text-[var(--muted-foreground)]">คู่ค้านี้อยู่ในสถานะ <strong class="text-green-700">ใช้งานปกติ</strong> คุณสามารถดำเนินการด้านล่างได้</p>
+                <div class="flex flex-wrap gap-3">
+                  <button class="vnd-btn vnd-btn--evaluate" @click="openEvaluateModal">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9S3 16.97 3 12 7.03 3 12 3s9 4.03 9 9z"/></svg>
+                    เริ่มประเมินคู่ค้า
+                  </button>
+                  <button class="vnd-btn vnd-btn--suspend" @click="openActionModal('suspend')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    ระงับชั่วคราว
+                  </button>
+                  <button class="vnd-btn vnd-btn--block" @click="openActionModal('block')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    บล็อคคู่ค้า
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- ── Blocked: reason display + Unblock ── -->
+            <template v-if="vendor.status === 'Blocked'">
+              <div class="border-t border-[#eff1f5] pt-4 space-y-3">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800 space-y-1">
+                  <div class="font-semibold flex items-center gap-1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    คู่ค้าถูกบล็อค
+                  </div>
+                  <p>{{ vendor.block_reason || 'พบการทุจริตเอกสารใบแจ้งหนี้ — อยู่ระหว่างการสอบสวนภายใน' }}</p>
+                  <p class="text-[10px] text-red-500">บล็อคเมื่อ: {{ vendor.blocked_date || '15 มิ.ย. 2569' }} โดย: {{ vendor.blocked_by || 'nantaporn.s (Admin)' }}</p>
+                </div>
+                <div class="flex gap-3">
+                  <button class="vnd-btn vnd-btn--approve" @click="openActionModal('unblock')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+                    ยกเลิกการบล็อค
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- ── Suspended: reason display + Reinstate + Block ── -->
+            <template v-if="vendor.status === 'Suspended'">
+              <div class="border-t border-[#eff1f5] pt-4 space-y-3">
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
+                  <div class="font-semibold flex items-center gap-1.5">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                    คู่ค้าถูกระงับชั่วคราว
+                  </div>
+                  <p>{{ vendor.suspend_reason || 'รอเอกสาร ISO 9001:2015 ฉบับปัจจุบัน — กำหนดส่ง 30 มิ.ย. 2569' }}</p>
+                  <p class="text-[10px] text-amber-500">ระงับเมื่อ: {{ vendor.suspended_date || '10 มิ.ย. 2569' }} โดย: {{ vendor.suspended_by || 'nantaporn.s (Admin)' }}</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button class="vnd-btn vnd-btn--approve" @click="openActionModal('reinstate')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9S3 16.97 3 12 7.03 3 12 3s9 4.03 9 9z"/></svg>
+                    คืนสถานะใช้งาน
+                  </button>
+                  <button class="vnd-btn vnd-btn--block" @click="openActionModal('block')">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+                    บล็อคถาวร
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- ── Rejected: Re-open registration ── -->
+            <template v-if="vendor.status === 'Rejected'">
+              <div class="border-t border-[#eff1f5] pt-4 space-y-3">
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 space-y-1">
+                  <p class="font-semibold">คู่ค้าถูกปฏิเสธการลงทะเบียน</p>
+                  <p>{{ vendor.reject_reason || 'เอกสารหนังสือรับรองบริษัทหมดอายุ กรุณาส่งฉบับปัจจุบัน' }}</p>
+                </div>
+                <div class="flex gap-3">
+                  <button class="vnd-btn vnd-btn--approve" @click="handleReopen">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    เปิดโอกาสลงทะเบียนใหม่
+                  </button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </UCard>
       </div>
 
       <!-- Financial & Documents Info (1/3 width) -->
-      <div class="space-y-6">
+      <div class="space-y-4">
         <!-- AI Vendor Sentiment & Insights Card -->
         <UCard class="border-2 border-green-600/30 shadow-md rounded-[var(--radius-lg)] overflow-hidden bg-gradient-to-b from-green-50/20 to-white">
           <template #header>
-            <div class="flex items-center justify-between border-b border-[#eff1f5] pb-3">
+            <div class="flex items-center justify-between border-b border-[#eff1f5] pb-2">
               <div class="flex items-center gap-2">
                 <UIcon name="i-heroicons-sparkles" class="w-5 h-5 text-[var(--primary)] animate-pulse" />
                 <h3 class="font-extrabold text-sm text-[var(--fg-primary)] uppercase tracking-wider">AI Smart Vendor Insights</h3>
@@ -102,7 +264,7 @@
             </div>
           </template>
 
-          <div class="space-y-4 mt-3 text-xs">
+          <div class="space-y-3 mt-2 text-xs">
             <!-- Sentiment and Risk overview row -->
             <div class="grid grid-cols-2 gap-3">
               <!-- Sentiment card -->
@@ -202,13 +364,13 @@
         <!-- Bank account -->
         <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-2">
               <UIcon name="i-heroicons-credit-card-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">ข้อมูลการชำระเงิน</h3>
             </div>
           </template>
 
-          <div v-if="bank" class="space-y-3 mt-3 text-sm">
+          <div v-if="bank" class="space-y-2.5 mt-2 text-sm">
             <div>
               <span class="text-xs text-[var(--muted-foreground)] block">ธนาคาร</span>
               <span class="font-medium text-[var(--foreground)]">{{ bank.bank_name }}</span>
@@ -227,13 +389,13 @@
         <!-- Documents links -->
         <UCard class="border border-[#e9ecef] shadow-[var(--shadow-sm)] rounded-[var(--radius-lg)] bg-white">
           <template #header>
-            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-3">
+            <div class="flex items-center gap-2 border-b border-[#eff1f5] pb-2">
               <UIcon name="i-heroicons-document-arrow-down-20-solid" class="w-5 h-5 text-[var(--primary)]" />
               <h3 class="font-semibold text-sm text-[var(--foreground)]">เอกสารแนบ</h3>
             </div>
           </template>
 
-          <div class="space-y-3 mt-3">
+          <div class="space-y-2.5 mt-2">
             <div 
               v-for="doc in vendor?.documents" 
               :key="doc.document_id"
@@ -253,168 +415,6 @@
         </UCard>
       </div>
     </div>
-
-    <!-- Buyer Review and Verification Action Box -->
-    <UCard
-      v-if="vendor?.status === 'PendingRegistration'"
-      class="border-2 border-[var(--primary)]/20 shadow-[var(--shadow-md)] rounded-[var(--radius-xl)] bg-white"
-    >
-      <template #header>
-        <div class="flex items-center gap-2">
-          <UIcon name="i-heroicons-check-badge-20-solid" class="w-5 h-5 text-[var(--primary)]" />
-          <h3 class="font-semibold text-sm text-[var(--foreground)]">ตรวจสอบและตัดสินใจอนุมัติคู่ค้า</h3>
-        </div>
-      </template>
-
-      <div class="space-y-4">
-        <p class="text-xs text-[var(--muted-foreground)]">
-          กรุณาตรวจสอบเอกสารแนบและเลขประจำตัวผู้เสียภาษีให้ถูกต้องครบถ้วนก่อนทำการยืนยันเข้าสู่ระบบ
-        </p>
-        <div v-if="showRejectComment" class="space-y-2">
-          <UFormField label="เหตุผลที่ปฏิเสธการลงทะเบียน (จะแจ้งกลับไปที่คู่ค้า)" required>
-            <UTextarea v-model="rejectReason" placeholder="ระบุเหตุผล เช่น หนังสือรับรองหมดอายุ หรือ เอกสารหน้า Book Bank ไม่ตรงกับชื่อบริษัท..." size="md" />
-          </UFormField>
-        </div>
-        <div class="flex justify-end gap-3 pt-2">
-          <template v-if="!showRejectComment">
-            <button class="vnd-btn vnd-btn--reject" @click="showRejectComment = true">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
-              ปฏิเสธ
-            </button>
-            <button class="vnd-btn vnd-btn--approve" :disabled="isSubmitting" @click="handleApprove">
-              <svg v-if="!isSubmitting" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-              <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="animate-spin"><circle cx="12" cy="12" r="10" stroke-dasharray="32" stroke-dashoffset="10"/></svg>
-              อนุมัติคู่ค้า
-            </button>
-          </template>
-          <template v-else>
-            <button class="vnd-btn vnd-btn--cancel" @click="showRejectComment = false">ยกเลิก</button>
-            <button class="vnd-btn vnd-btn--confirm-reject" :disabled="isSubmitting" @click="handleReject">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-              ยืนยันการปฏิเสธ
-            </button>
-          </template>
-        </div>
-      </div>
-    </UCard>
-
-    <!-- ── Status Management Panel (Active / Blocked / Suspended / Rejected) ── -->
-    <UCard
-      v-if="['Active', 'Blocked', 'Suspended', 'Rejected'].includes(vendor?.status)"
-      class="border border-[#e9ecef] shadow-sm rounded-[var(--radius-xl)] bg-white"
-    >
-      <template #header>
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <UIcon name="i-heroicons-shield-check-20-solid" class="w-5 h-5 text-[var(--primary)]" />
-            <h3 class="font-semibold text-sm text-[var(--foreground)]">จัดการสถานะคู่ค้า</h3>
-          </div>
-          <StatusBadge :status="vendor.status" />
-        </div>
-      </template>
-
-      <div class="space-y-4">
-
-        <!-- Status history timeline -->
-        <div class="space-y-2">
-          <p class="text-xs font-semibold text-[var(--muted-foreground)] uppercase tracking-wide">ประวัติสถานะ</p>
-          <div class="space-y-1">
-            <div v-for="(log, i) in statusHistory" :key="i" class="flex items-start gap-3 text-xs">
-              <div class="flex flex-col items-center">
-                <div class="w-2 h-2 rounded-full mt-1 flex-shrink-0" :class="log.color"></div>
-                <div v-if="i < statusHistory.length - 1" class="w-px h-4 bg-[#e9ecef]"></div>
-              </div>
-              <div>
-                <span class="font-semibold text-[var(--foreground)]">{{ log.label }}</span>
-                <span class="text-[var(--muted-foreground)] ml-2">{{ log.date }}</span>
-                <span v-if="log.note" class="block text-[var(--muted-foreground)] text-[11px] mt-0.5">{{ log.note }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Active: Block + Suspend + Evaluate ── -->
-        <template v-if="vendor.status === 'Active'">
-          <div class="border-t border-[#eff1f5] pt-4 space-y-3">
-            <p class="text-xs text-[var(--muted-foreground)]">คู่ค้านี้อยู่ในสถานะ <strong class="text-green-700">ใช้งานปกติ</strong> คุณสามารถดำเนินการด้านล่างได้</p>
-            <div class="flex flex-wrap gap-3">
-              <button class="vnd-btn vnd-btn--evaluate" @click="openEvaluateModal">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9S3 16.97 3 12 7.03 3 12 3s9 4.03 9 9z"/></svg>
-                เริ่มประเมินคู่ค้า
-              </button>
-              <button class="vnd-btn vnd-btn--suspend" @click="openActionModal('suspend')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                ระงับชั่วคราว
-              </button>
-              <button class="vnd-btn vnd-btn--block" @click="openActionModal('block')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                บล็อคคู่ค้า
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- ── Blocked: reason display + Unblock ── -->
-        <template v-if="vendor.status === 'Blocked'">
-          <div class="border-t border-[#eff1f5] pt-4 space-y-3">
-            <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800 space-y-1">
-              <div class="font-semibold flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                คู่ค้าถูกบล็อค
-              </div>
-              <p>{{ vendor.block_reason || 'พบการทุจริตเอกสารใบแจ้งหนี้ — อยู่ระหว่างการสอบสวนภายใน' }}</p>
-              <p class="text-[10px] text-red-500">บล็อคเมื่อ: {{ vendor.blocked_date || '15 มิ.ย. 2569' }} โดย: {{ vendor.blocked_by || 'nantaporn.s (Admin)' }}</p>
-            </div>
-            <div class="flex gap-3">
-              <button class="vnd-btn vnd-btn--approve" @click="openActionModal('unblock')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
-                ยกเลิกการบล็อค
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- ── Suspended: reason display + Reinstate + Block ── -->
-        <template v-if="vendor.status === 'Suspended'">
-          <div class="border-t border-[#eff1f5] pt-4 space-y-3">
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 space-y-1">
-              <div class="font-semibold flex items-center gap-1.5">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-                คู่ค้าถูกระงับชั่วคราว
-              </div>
-              <p>{{ vendor.suspend_reason || 'รอเอกสาร ISO 9001:2015 ฉบับปัจจุบัน — กำหนดส่ง 30 มิ.ย. 2569' }}</p>
-              <p class="text-[10px] text-amber-500">ระงับเมื่อ: {{ vendor.suspended_date || '10 มิ.ย. 2569' }} โดย: {{ vendor.suspended_by || 'nantaporn.s (Admin)' }}</p>
-            </div>
-            <div class="flex flex-wrap gap-3">
-              <button class="vnd-btn vnd-btn--approve" @click="openActionModal('reinstate')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 4.97-4.03 9-9 9S3 16.97 3 12 7.03 3 12 3s9 4.03 9 9z"/></svg>
-                คืนสถานะใช้งาน
-              </button>
-              <button class="vnd-btn vnd-btn--block" @click="openActionModal('block')">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
-                บล็อคถาวร
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <!-- ── Rejected: Re-open registration ── -->
-        <template v-if="vendor.status === 'Rejected'">
-          <div class="border-t border-[#eff1f5] pt-4 space-y-3">
-            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs text-slate-700 space-y-1">
-              <p class="font-semibold">คู่ค้าถูกปฏิเสธการลงทะเบียน</p>
-              <p>{{ vendor.reject_reason || 'เอกสารหนังสือรับรองบริษัทหมดอายุ กรุณาส่งฉบับปัจจุบัน' }}</p>
-            </div>
-            <div class="flex gap-3">
-              <button class="vnd-btn vnd-btn--approve" @click="handleReopen">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                เปิดโอกาสลงทะเบียนใหม่
-              </button>
-            </div>
-          </div>
-        </template>
-      </div>
-    </UCard>
 
     <!-- ── Action Modal (Block / Suspend / Unblock / Reinstate) ── -->
     <AppModal
@@ -926,8 +926,21 @@ const formatDate = (dateStr: string) => {
 .vendor-like-page {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
   font-family: var(--font-sans);
+}
+
+/* Tighten Nuxt UI Card default padding across this page */
+.vendor-like-page :deep([data-slot="header"]) {
+  padding: 12px 18px !important;
+}
+
+.vendor-like-page :deep([data-slot="body"]) {
+  padding: 14px 18px !important;
+}
+
+.vendor-like-page :deep([data-slot="footer"]) {
+  padding: 12px 18px !important;
 }
 
 .vendor-like-page > .flex:first-child {

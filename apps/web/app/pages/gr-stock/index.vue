@@ -179,6 +179,70 @@
       </div>
     </div>
 
+    <!-- TAB: STOCK MOVEMENTS (Transfer / Adjustment / Write-off / Near Expiry) -->
+    <div v-if="activeTab === 'movements'" class="space-y-4">
+      <div class="bg-white border border-[#e9ecef] rounded-xl p-4 shadow-[var(--shadow-sm)] flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h4 class="font-bold text-slate-800 text-sm">รายการเคลื่อนไหวสต็อก (Stock Movement Ledger)</h4>
+          <p class="text-xs text-slate-500 mt-0.5">ทุกการเปลี่ยนแปลงจำนวนคงคลัง — รับสินค้า, โอนย้าย, ปรับปรุงยอด, ตัดจำหน่าย</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn-outline" @click="createTransferPrompt">โอนย้ายสต็อก (Transfer)</button>
+          <button class="btn-outline" @click="createAdjustmentPrompt">ปรับปรุงยอด (Adjustment)</button>
+          <button class="btn-outline" @click="createWriteOffPrompt">ตัดจำหน่าย (Write-off)</button>
+        </div>
+      </div>
+
+      <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+                <th class="px-6 py-3.5">เลขที่ Movement</th>
+                <th class="px-6 py-3.5">สินค้า</th>
+                <th class="px-6 py-3.5 text-center">ประเภท</th>
+                <th class="px-6 py-3.5 text-right">เข้า</th>
+                <th class="px-6 py-3.5 text-right">ออก</th>
+                <th class="px-6 py-3.5 text-right">คงเหลือหลังรายการ</th>
+                <th class="px-6 py-3.5 text-center">สถานะ</th>
+                <th class="px-6 py-3.5 text-center">วันที่</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[#eff1f5]">
+              <tr v-for="mv in movements" :key="mv.movement_id" class="hover:bg-[#f8fffe] transition">
+                <td class="px-6 py-4 font-mono font-bold text-slate-600">{{ mv.movement_no }}</td>
+                <td class="px-6 py-4 font-semibold text-slate-800">{{ mv.item?.item_name || '—' }}</td>
+                <td class="px-6 py-4 text-center"><span class="status-pill status-pill--neutral">{{ mv.movement_type }}</span></td>
+                <td class="px-6 py-4 text-right text-green-600 font-bold">{{ Number(mv.qty_in) > 0 ? '+' + mv.qty_in : '' }}</td>
+                <td class="px-6 py-4 text-right text-red-600 font-bold">{{ Number(mv.qty_out) > 0 ? '-' + mv.qty_out : '' }}</td>
+                <td class="px-6 py-4 text-right font-bold">{{ mv.balance_after ?? '—' }}</td>
+                <td class="px-6 py-4 text-center"><span class="status-pill" :class="mv.status === 'Posted' ? 'status-pill--success' : 'status-pill--neutral'">{{ mv.status }}</span></td>
+                <td class="px-6 py-4 text-center text-xs text-slate-400">{{ formatDate(mv.created_at) }}</td>
+              </tr>
+              <tr v-if="movements.length === 0">
+                <td colspan="8" class="text-center py-10 text-xs text-[var(--muted-foreground)]">ยังไม่มีรายการเคลื่อนไหวสต็อก</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-100 rounded-xl overflow-hidden" v-if="nearExpiry.length > 0">
+        <div class="p-4 border-b border-amber-100">
+          <h4 class="font-bold text-amber-900 text-sm">แจ้งเตือนสินค้าใกล้หมดอายุ (Near Expiry, 90 วัน)</h4>
+        </div>
+        <table class="w-full text-left border-collapse text-sm">
+          <tbody class="divide-y divide-amber-100">
+            <tr v-for="mv in nearExpiry" :key="mv.movement_id">
+              <td class="px-6 py-3 font-semibold text-slate-800">{{ mv.item?.item_name || '—' }}</td>
+              <td class="px-6 py-3 text-xs text-slate-500">Lot: {{ mv.lot_no || '—' }}</td>
+              <td class="px-6 py-3 text-right text-amber-700 font-bold">{{ formatDate(mv.expiry_date) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- TAB 3: CLAIMS & RETURNS -->
     <div v-if="activeTab === 'claims'" class="space-y-4">
       <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
@@ -588,6 +652,7 @@ watch(showReceiveModal, (isOpen) => {
 const tabs = [
   { id: 'gr', name: 'ประวัติรับสินค้า (GR)', icon: 'i-heroicons-document-check' },
   { id: 'stock', name: 'สินค้าคงคลัง (Stock)', icon: 'i-heroicons-circle-stack' },
+  { id: 'movements', name: 'เคลื่อนไหวสต็อก (Movements)', icon: 'i-heroicons-arrows-right-left' },
   { id: 'claims', name: 'รายการเคลมสินค้า (Claims)', icon: 'i-heroicons-exclamation-triangle' },
   { id: 'replenish', name: 'ระบบเติมสินค้า AI (Replenish Planner)', icon: 'i-heroicons-sparkles' },
 ];
@@ -730,6 +795,96 @@ const loadStocks = async () => {
   }
 };
 
+const movements = ref<any[]>([]);
+const nearExpiry = ref<any[]>([]);
+
+const loadMovements = async () => {
+  try {
+    movements.value = await $fetch<any[]>('http://localhost:3001/api/stock/movements', {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+  } catch (err) {
+    movements.value = [];
+  }
+};
+
+const loadNearExpiry = async () => {
+  try {
+    nearExpiry.value = await $fetch<any[]>('http://localhost:3001/api/stock/near-expiry', {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+  } catch (err) {
+    nearExpiry.value = [];
+  }
+};
+
+const createTransferPrompt = async () => {
+  const stk = stockList.value[0];
+  if (!stk?.item_id) {
+    await dialog.alert('ไม่พบสินค้าคงคลังสำหรับทดสอบโอนย้าย', { variant: 'warning' });
+    return;
+  }
+  const qtyStr = window.prompt(`โอนย้ายสินค้า "${stk.item?.item_name}" จาก MAIN ไป WAREHOUSE-2 กี่หน่วย?`, '1');
+  if (!qtyStr) return;
+  try {
+    await $fetch('http://localhost:3001/api/stock/transfer', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authStore.token}` },
+      body: { item_id: stk.item_id, company_id: stk.company_id, from_warehouse: 'MAIN', to_warehouse: 'WAREHOUSE-2', qty: Number(qtyStr), reason: 'Manual transfer' },
+    });
+    await dialog.alert('โอนย้ายสต็อกสำเร็จ', { variant: 'success' });
+    await Promise.all([loadStocks(), loadMovements()]);
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถโอนย้ายสต็อกได้', { variant: 'danger' });
+  }
+};
+
+const createAdjustmentPrompt = async () => {
+  const stk = stockList.value[0];
+  if (!stk?.item_id) {
+    await dialog.alert('ไม่พบสินค้าคงคลังสำหรับทดสอบปรับปรุงยอด', { variant: 'warning' });
+    return;
+  }
+  const countedStr = window.prompt(`นับจริงสินค้า "${stk.item?.item_name}" ได้กี่หน่วย? (ระบบมี ${stk.qty_onhand})`, String(stk.qty_onhand));
+  if (!countedStr) return;
+  const reason = window.prompt('เหตุผลของการปรับปรุงยอด', 'Physical count variance');
+  if (!reason) return;
+  try {
+    await $fetch('http://localhost:3001/api/stock/adjustment', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authStore.token}` },
+      body: { item_id: stk.item_id, company_id: stk.company_id, counted_qty: Number(countedStr), reason },
+    });
+    await dialog.alert('ส่งคำขอปรับปรุงยอดเข้าสู่การอนุมัติแล้ว', { variant: 'success' });
+    await loadMovements();
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถส่งคำขอปรับปรุงยอดได้', { variant: 'danger' });
+  }
+};
+
+const createWriteOffPrompt = async () => {
+  const stk = stockList.value[0];
+  if (!stk?.item_id) {
+    await dialog.alert('ไม่พบสินค้าคงคลังสำหรับทดสอบตัดจำหน่าย', { variant: 'warning' });
+    return;
+  }
+  const qtyStr = window.prompt(`ตัดจำหน่ายสินค้า "${stk.item?.item_name}" กี่หน่วย?`, '1');
+  if (!qtyStr) return;
+  const reason = window.prompt('เหตุผลการตัดจำหน่าย (ชำรุด/หมดอายุ/สูญหาย)', 'Damaged');
+  if (!reason) return;
+  try {
+    await $fetch('http://localhost:3001/api/stock/write-off', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authStore.token}` },
+      body: { item_id: stk.item_id, company_id: stk.company_id, qty: Number(qtyStr), reason },
+    });
+    await dialog.alert('ส่งคำขอตัดจำหน่ายเข้าสู่การอนุมัติแล้ว', { variant: 'success' });
+    await loadMovements();
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถส่งคำขอตัดจำหน่ายได้', { variant: 'danger' });
+  }
+};
+
 const loadClaims = () => {
   claimsList.value = [
     {
@@ -817,5 +972,7 @@ onMounted(() => {
   loadGrs();
   loadStocks();
   loadClaims();
+  loadMovements();
+  loadNearExpiry();
 });
 </script>

@@ -8,6 +8,7 @@ import { RfqVendor } from '../database/entities/rfq-vendor.entity';
 import { BidQuotation } from '../database/entities/bid-quotation.entity';
 import { BidQuotationLine } from '../database/entities/bid-quotation-line.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
+import { ApprovalModule } from '../approval/approval.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { CostCenter } from '../database/entities/cost-center.entity';
       BidQuotationLine,
       CostCenter,
     ]),
+    ApprovalModule,
   ],
   providers: [BiddingService],
   controllers: [BiddingController],

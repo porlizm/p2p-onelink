@@ -20,6 +20,18 @@ export class Notification {
   @Column({ type: 'boolean', default: false })
   read_flag: boolean;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  document_no: string | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  action_required: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  due_at: Date | null;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  deep_link: string | null;
+
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;
 }

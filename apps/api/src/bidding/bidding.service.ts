@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like } from 'typeorm';
 import { BiddingEvent } from '../database/entities/bidding-event.entity';
@@ -17,10 +17,13 @@ import { PurchaseOrderLine } from '../database/entities/purchase-order-line.enti
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { CreateRfqDto } from './dto/create-rfq.dto';
 import { SubmitQuoteDto } from './dto/submit-quote.dto';
-import { BiddingStatus, BidQuotationStatus, PurchaseRequisitionStatus, PurchaseOrderStatus } from '@p2p/shared';
+import { BiddingStatus, BidQuotationStatus, PurchaseRequisitionStatus, PurchaseOrderStatus, SourcingMethod } from '@p2p/shared';
+import { ApprovalService } from '../approval/approval.service';
+
+const DEFAULT_COMPANY_ID = '00000001-0000-0000-0000-000000000001';
 
 @Injectable()
-export class BiddingService {
+export class BiddingService implements OnModuleInit {
   constructor(
     private dataSource: DataSource,
     @InjectRepository(BiddingEvent)
@@ -29,7 +32,16 @@ export class BiddingService {
     private quoteRepo: Repository<BidQuotation>,
     @InjectRepository(CostCenter)
     private ccRepo: Repository<CostCenter>,
+    private approvalService: ApprovalService,
   ) {}
+
+  onModuleInit() {
+    this.approvalService.registerHandler('BiddingEvent', {
+      onApprove: async (rfqId) => { await this.finalizeAward(rfqId); },
+      onReject: async (rfqId) => { await this.cancelAward(rfqId); },
+      onRevise: async (rfqId) => { await this.returnAwardForRevise(rfqId); },
+    });
+  }
 
   async createRFQ(dto: CreateRfqDto, userId: string) {
     if (!dto.vendor_ids || dto.vendor_ids.length < 3) {
@@ -37,6 +49,18 @@ export class BiddingService {
     }
     if (!dto.items || dto.items.length === 0) {
       throw new BadRequestException('ต้องระบุอย่างน้อย 1 รายการในการเปิดประมูล');
+    }
+
+    // Trigger per the doc: RFQ should normally originate from an already-Approved PR.
+    // Kept optional (rather than required) so the pre-existing standalone RFQ→auto-PR flow keeps working.
+    if (dto.pr_id) {
+      const pr = await this.dataSource.getRepository(PurchaseRequisition).findOne({ where: { pr_id: dto.pr_id } });
+      if (!pr) {
+        throw new NotFoundException('ไม่พบเอกสาร PR ที่ระบุ');
+      }
+      if (pr.status !== PurchaseRequisitionStatus.APPROVED) {
+        throw new BadRequestException(`ไม่สามารถเปิด RFQ จาก PR นี้ได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status} (ต้องเป็น Approved)`);
+      }
     }
 
     return await this.dataSource.transaction(async (manager) => {
@@ -79,6 +103,8 @@ export class BiddingService {
         is_decrypted: false,
         shortlist_approved: !requiresShortlistApproval,
         shortlist_approver_id: dto.shortlist_approver_id || null,
+        pr_id: dto.pr_id || null,
+        sourcing_method: (dto.sourcing_method as SourcingMethod) || SourcingMethod.RFQ,
       });
       const savedRfq = await manager.getRepository(BiddingEvent).save(rfq);
 
@@ -257,28 +283,59 @@ export class BiddingService {
     return rfq;
   }
 
+  /**
+   * Award gate per the doc's exception list: if the buyer picks a quote that isn't the lowest
+   * submitted price, route it through the DOA-based approval engine instead of awarding immediately.
+   */
   async awardBid(rfqId: string, quoteId: string, userId: string, companyId: string) {
+    const rfq = await this.rfqRepo.findOne({ where: { rfq_id: rfqId } });
+    if (!rfq) {
+      throw new NotFoundException('ไม่พบเอกสาร RFQ');
+    }
+    const selectedQuote = await this.quoteRepo.findOne({ where: { quote_id: quoteId }, relations: ['lines'] });
+    if (!selectedQuote) {
+      throw new NotFoundException('ไม่พบข้อเสนอราคาที่ระบุ');
+    }
+    const allQuotes = await this.quoteRepo.find({ where: { rfq_id: rfqId }, relations: ['lines'] });
+
+    const totalOf = (q: BidQuotation) => q.lines.reduce((sum, l) => sum + Number(l.unit_price), 0);
+    const selectedTotal = totalOf(selectedQuote);
+    const lowestTotal = Math.min(...allQuotes.map(totalOf));
+    const needsApproval = selectedTotal > lowestTotal;
+
+    rfq.winner_quote_id = quoteId;
+    rfq.awarded_by = userId;
+
+    if (needsApproval) {
+      rfq.status = BiddingStatus.PENDING_AWARD_APPROVAL;
+      await this.rfqRepo.save(rfq);
+      await this.approvalService.initiateRoute('BiddingEvent', rfqId, companyId || DEFAULT_COMPANY_ID, selectedTotal);
+      return { rfq_no: rfq.rfq_no, status: rfq.status };
+    }
+
+    await this.rfqRepo.save(rfq);
+    return this.finalizeAward(rfqId);
+  }
+
+  /** Runs the actual award: locks in the winning quote and, if this RFQ wasn't linked to an existing PR, auto-generates one. */
+  private async finalizeAward(rfqId: string) {
     return await this.dataSource.transaction(async (manager) => {
       const rfq = await manager.getRepository(BiddingEvent).findOne({
         where: { rfq_id: rfqId },
         relations: ['items'],
       });
-      if (!rfq) {
-        throw new NotFoundException('ไม่พบเอกสาร RFQ');
-      }
+      if (!rfq || !rfq.winner_quote_id) return;
+      const quoteId = rfq.winner_quote_id;
 
       const selectedQuote = await manager.getRepository(BidQuotation).findOne({
         where: { quote_id: quoteId },
         relations: ['lines', 'vendor'],
       });
-      if (!selectedQuote) {
-        throw new NotFoundException('ไม่พบข้อเสนอราคาที่ระบุ');
-      }
+      if (!selectedQuote) return;
 
       // Update Bidding Event status
       rfq.status = BiddingStatus.AWARDED;
       rfq.awarded_at = new Date();
-      rfq.winner_quote_id = quoteId;
       rfq.is_escalated = false;
       await manager.getRepository(BiddingEvent).save(rfq);
 
@@ -293,7 +350,13 @@ export class BiddingService {
         await manager.getRepository(BidQuotation).save(quote);
       }
 
-      // Generate pre-filled PR automatically
+      // RFQ already traces back to an Approved PR — handoff to Module 4 (Create PO) is a separate
+      // buyer action (POST /po/convert/:prId with the winning vendor_id), matching the doc's flow.
+      if (rfq.pr_id) {
+        return { rfq_no: rfq.rfq_no, status: rfq.status, pr_id: rfq.pr_id, winner_vendor_id: selectedQuote.vendor_id };
+      }
+
+      // Legacy standalone RFQ (no source PR): auto-generate a pre-filled PR, as before.
       const prNoPrefix = `PR${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth() + 1).toString().padStart(2, '0')}`;
       const prCount = await manager.getRepository(PurchaseRequisition).count({
         where: { pr_no: Like(`${prNoPrefix}%`) },
@@ -328,11 +391,10 @@ export class BiddingService {
       });
 
       // Auto-create PR Header (Directly set status to PendingApproval for workflow)
-      const resolvedCompanyId = companyId || '00000001-0000-0000-0000-000000000001';
       const pr = manager.getRepository(PurchaseRequisition).create({
         pr_no: prNo,
-        requester_id: userId,
-        company_id: resolvedCompanyId,
+        requester_id: rfq.awarded_by || undefined,
+        company_id: DEFAULT_COMPANY_ID,
         status: PurchaseRequisitionStatus.PENDING_APPROVAL,
         total_amount: totalPrAmount,
         description: `Auto-generated from Awarded Bidding RFQ: ${rfq.rfq_no} - ${rfq.title}`,
@@ -372,6 +434,22 @@ export class BiddingService {
         pr_no: savedPr.pr_no,
       };
     });
+  }
+
+  private async cancelAward(rfqId: string) {
+    const rfq = await this.rfqRepo.findOne({ where: { rfq_id: rfqId } });
+    if (!rfq) return;
+    rfq.status = BiddingStatus.NO_AWARD;
+    rfq.winner_quote_id = null;
+    await this.rfqRepo.save(rfq);
+  }
+
+  private async returnAwardForRevise(rfqId: string) {
+    const rfq = await this.rfqRepo.findOne({ where: { rfq_id: rfqId } });
+    if (!rfq) return;
+    rfq.status = BiddingStatus.RETURNED_FOR_REVISE;
+    rfq.winner_quote_id = null;
+    await this.rfqRepo.save(rfq);
   }
 
   async escalateWinnerTimeout(rfqId: string, userId: string) {

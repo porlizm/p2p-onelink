@@ -106,7 +106,10 @@ async function bootstrap() {
   // 4. Seed Roles
   console.log('Seeding Roles...');
   const roleRepo = dataSource.getRepository(Role);
-  const roleNames = ['Requester', 'Buyer', 'Approver', 'Warehouse', 'Accounting', 'Finance', 'Admin'];
+  // Manager/SeniorManager/AccountingLead are additional, DOA-specific roles layered on top of the
+  // generic 'Approver'/'Accounting' roles below (see UserRole seeding) — they exist so DOARule.approver_role
+  // (Manager/SeniorManager/AccountingLead/Finance) can match a real user's role_name for approval routing.
+  const roleNames = ['Requester', 'Buyer', 'Approver', 'Warehouse', 'Accounting', 'Finance', 'Admin', 'Manager', 'SeniorManager', 'AccountingLead'];
   const roles = roleNames.map((name, index) =>
     roleRepo.create({
       role_id: uuid(4, index + 1),
@@ -176,6 +179,25 @@ async function bootstrap() {
       bu_id: uuid(2, u.bu),
     });
     await urRepo.save(userRole);
+  }
+
+  // 6.1 Layer DOA-specific roles (Manager/SeniorManager/AccountingLead) onto the relevant approvers,
+  // additive alongside their generic Approver/Accounting role above so existing role-gated features
+  // (e.g. bidding committee candidates, finance access) keep working unchanged.
+  const doaRoleAssignments = [
+    { userSeedId: 4, roleId: 8 },  // warakorn.c -> Manager
+    { userSeedId: 5, roleId: 9 },  // supawadee.i -> SeniorManager
+    { userSeedId: 7, roleId: 10 }, // orawan.t -> AccountingLead
+  ];
+  for (const a of doaRoleAssignments) {
+    const extraRole = urRepo.create({
+      user_role_id: uuid(7, 100 + a.userSeedId),
+      user_id: uuid(6, a.userSeedId),
+      role_id: uuid(4, a.roleId),
+      company_id: company.company_id,
+      bu_id: uuid(2, usersData.find((u) => u.id === a.userSeedId)!.bu),
+    });
+    await urRepo.save(extraRole);
   }
 
   // 7. Seed Vendors
@@ -351,12 +373,13 @@ async function bootstrap() {
   console.log('Seeding DOA Rules...');
   const doaRepo = dataSource.getRepository(DOARule);
   const doas = [
-    { id: 1, type: 'PR', min: 0, max: 50000, lvl: 1, role: 'Manager' },
-    { id: 2, type: 'PR', min: 50001, max: 999999999, lvl: 2, role: 'SeniorManager' },
-    { id: 3, type: 'PO', min: 0, max: 100000, lvl: 1, role: 'Manager' },
-    { id: 4, type: 'PO', min: 100001, max: 999999999, lvl: 2, role: 'SeniorManager' },
+    { id: 1, type: 'PurchaseRequisition', min: 0, max: 50000, lvl: 1, role: 'Manager' },
+    { id: 2, type: 'PurchaseRequisition', min: 50001, max: 999999999, lvl: 2, role: 'SeniorManager' },
+    { id: 3, type: 'PurchaseOrder', min: 0, max: 100000, lvl: 1, role: 'Manager' },
+    { id: 4, type: 'PurchaseOrder', min: 100001, max: 999999999, lvl: 2, role: 'SeniorManager' },
     { id: 5, type: 'PaymentRequest', min: 0, max: 100000, lvl: 1, role: 'AccountingLead' },
     { id: 6, type: 'PaymentRequest', min: 100001, max: 999999999, lvl: 2, role: 'Finance' },
+    { id: 7, type: 'StockAdjustment', min: 0, max: 999999999, lvl: 1, role: 'Manager' },
   ].map((d) =>
     doaRepo.create({
       rule_id: uuid(13, d.id),

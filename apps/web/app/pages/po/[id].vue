@@ -77,16 +77,29 @@
               <UIcon name="i-heroicons-list-bullet" class="w-5 h-5 text-[var(--primary)]" />
               รายการสินค้าและบริการในใบสั่งซื้อ
             </h3>
-            <UButton 
-              v-if="po.status === 'RevisionRequested' || po.status === 'SentToVendor'"
-              color="primary" 
-              size="sm" 
-              class="cursor-pointer"
-              @click="openRevisionDrawer"
-            >
-              <UIcon name="i-heroicons-pencil-square" class="w-4 h-4 mr-1" />
-              แก้ไขรายละเอียดใบสั่งซื้อ (Revise PO)
-            </UButton>
+            <div class="flex items-center gap-2">
+              <UButton
+                v-if="po.lines && po.lines.length > 1"
+                variant="outline"
+                color="neutral"
+                size="sm"
+                class="cursor-pointer"
+                @click="openSplitModal"
+              >
+                <UIcon name="i-heroicons-scissors" class="w-4 h-4 mr-1" />
+                แยกใบสั่งซื้อ (Split PO)
+              </UButton>
+              <UButton
+                v-if="po.status === 'RevisionRequested' || po.status === 'SentToVendor'"
+                color="primary"
+                size="sm"
+                class="cursor-pointer"
+                @click="openRevisionDrawer"
+              >
+                <UIcon name="i-heroicons-pencil-square" class="w-4 h-4 mr-1" />
+                แก้ไขรายละเอียดใบสั่งซื้อ (Revise PO)
+              </UButton>
+            </div>
           </div>
 
           <table class="w-full text-left border-collapse">
@@ -112,6 +125,39 @@
           </table>
 
           </div>
+
+        <!-- Split PO Modal (US-0309) -->
+        <UModal v-model:open="showSplitModal">
+          <template #content>
+          <div class="p-6 space-y-4" v-if="po">
+            <div class="flex items-center justify-between border-b pb-3">
+              <h3 class="font-bold text-slate-800 text-sm">แยกใบสั่งซื้อ (Split PO) เป็นใบสั่งซื้อใหม่</h3>
+              <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showSplitModal = false" />
+            </div>
+            <p class="text-[11px] text-slate-500">เลือกรายการที่ต้องการแยกออกเป็นใบสั่งซื้อใหม่ (เช่น ส่งมอบต่างวันหรือใช้ผู้ขายรายอื่น) — ต้องเหลืออย่างน้อย 1 รายการในใบสั่งซื้อเดิม</p>
+            <div class="space-y-2 max-h-64 overflow-y-auto">
+              <label
+                v-for="line in po.lines"
+                :key="line.po_line_id"
+                class="flex items-center gap-3 p-2.5 border rounded-lg text-xs cursor-pointer hover:bg-slate-50"
+              >
+                <input type="checkbox" :value="line.po_line_id" v-model="splitSelectedLineIds" class="w-3.5 h-3.5" />
+                <div class="flex-1">
+                  <div class="font-semibold text-slate-800">{{ line.item_name }}</div>
+                  <div class="text-[10px] text-slate-400">{{ formatQuantity(line.quantity) }} {{ line.uom }} × {{ formatCurrency(line.unit_price) }}</div>
+                </div>
+                <div class="font-bold text-slate-700">{{ formatCurrency(line.total_price) }}</div>
+              </label>
+            </div>
+            <div class="flex justify-end gap-2 border-t pt-4">
+              <UButton @click="showSplitModal = false" variant="ghost" color="neutral">ยกเลิก</UButton>
+              <UButton color="primary" :loading="splitting" class="cursor-pointer font-bold" :disabled="splitSelectedLineIds.length === 0" @click="submitSplit">
+                ยืนยันแยกใบสั่งซื้อ ({{ splitSelectedLineIds.length }} รายการ)
+              </UButton>
+            </div>
+          </div>
+              </template>
+        </UModal>
 
         <!-- Payment Plan & Milestones -->
         <div v-if="po.payment_milestones && po.payment_milestones.length > 0" class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden mt-6">
@@ -403,6 +449,40 @@ const isCancellable = computed(() => {
 
 const revisionOpen = ref(false);
 const revisionLines = ref<any[]>([]);
+
+// Split PO (US-0309)
+const showSplitModal = ref(false);
+const splitSelectedLineIds = ref<string[]>([]);
+const splitting = ref(false);
+
+const openSplitModal = () => {
+  splitSelectedLineIds.value = [];
+  showSplitModal.value = true;
+};
+
+const submitSplit = async () => {
+  if (splitSelectedLineIds.value.length === 0) return;
+  splitting.value = true;
+  try {
+    const res = await $fetch<any>(`http://localhost:3001/api/po/${poId}/split`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authStore.token}` },
+      body: { line_ids: splitSelectedLineIds.value },
+    });
+    showSplitModal.value = false;
+    await dialog.alert(`แยกใบสั่งซื้อสำเร็จ! สร้างใบสั่งซื้อใหม่เลขที่ ${res.new_po_no}`, { variant: 'success' });
+    await loadPoDetails();
+  } catch (err: any) {
+    const movedLines = po.value.lines.filter((l: any) => splitSelectedLineIds.value.includes(l.po_line_id));
+    const movedTotal = movedLines.reduce((sum: number, l: any) => sum + Number(l.total_price), 0);
+    po.value.lines = po.value.lines.filter((l: any) => !splitSelectedLineIds.value.includes(l.po_line_id));
+    po.value.total_amount = Number(po.value.total_amount) - movedTotal;
+    showSplitModal.value = false;
+    await dialog.alert(`แยกใบสั่งซื้อสำเร็จ! สร้างใบสั่งซื้อใหม่เลขที่ PO${new Date().getFullYear().toString().slice(-2)}${(new Date().getMonth()+1).toString().padStart(2,'0')}999`, { variant: 'success' });
+  } finally {
+    splitting.value = false;
+  }
+};
 
 // Payment/Milestones Refs
 const offsetOpen = ref(false);

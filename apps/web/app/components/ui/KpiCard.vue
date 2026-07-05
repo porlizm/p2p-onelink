@@ -62,16 +62,18 @@ defineProps<Props>();
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-5) var(--space-6);
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-surface-bg);
+  backdrop-filter: blur(var(--glass-surface-blur)) saturate(115%);
+  -webkit-backdrop-filter: blur(var(--glass-surface-blur)) saturate(115%);
+  border: 1px solid var(--glass-surface-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--elevation-card);
-  transition: box-shadow var(--transition-slow), border-color var(--transition-slow);
+  box-shadow: var(--glass-surface-shadow);
+  transition: box-shadow var(--transition-slow), transform var(--transition-slow);
 }
 
 .kpi-card:hover {
-  box-shadow: var(--shadow-3);
-  border-color: var(--border-default);
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.08), 0 12px 32px -8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
 }
 
 /* Header */

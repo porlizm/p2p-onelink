@@ -24,6 +24,15 @@ export class Stock {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   qty_onhand: number;
 
+  @Column({ type: 'varchar', length: 100, default: 'MAIN' })
+  warehouse: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  location: string | null;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, nullable: true })
+  min_stock_level: number | null;
+
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   last_sync_at: Date;
 }

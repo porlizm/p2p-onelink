@@ -66,4 +66,12 @@ export class CreateRfqDto {
   @IsString()
   @IsOptional()
   shortlist_approver_id?: string;
+
+  @IsString()
+  @IsOptional()
+  pr_id?: string;
+
+  @IsString()
+  @IsOptional()
+  sourcing_method?: string;
 }

@@ -80,4 +80,7 @@ export class PurchaseOrder {
 
   @OneToMany(() => PurchaseOrderLine, (line) => line.po, { cascade: true })
   lines: PurchaseOrderLine[];
+
+  @Column({ type: 'uuid', nullable: true })
+  split_from_po_id: string | null;
 }

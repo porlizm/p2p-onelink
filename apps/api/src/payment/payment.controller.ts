@@ -61,13 +61,19 @@ export class PaymentController {
     return this.paymentService.approveProposal(id);
   }
 
-  // 5. Generate Bank File
-  @Post('payment/proposal/:id/generate-bank-file')
-  async generateBankFile(@Param('id') id: string) {
-    return this.paymentService.generateBankFile(id);
+  // 5. Send an approved proposal to the e-Payment interface (handoff only — no bank file/transfer execution here)
+  @Post('payment/proposal/:id/send-to-interface')
+  async sendProposalToInterface(@Param('id') id: string) {
+    return this.paymentService.sendProposalToInterface(id);
   }
 
-  // 5.1 Fetch generated bank files
+  // 5.1 External e-Payment system reports the batch result back
+  @Post('payment/proposal/:id/interface-callback')
+  async paymentInterfaceCallback(@Param('id') id: string, @Body('status') status: 'Success' | 'Failed') {
+    return this.paymentService.paymentInterfaceCallback(id, status);
+  }
+
+  // 5.2 Fetch sent interface batches
   @Get('payment/bank-files')
   async getBankFiles() {
     return this.paymentService.getBankFiles();

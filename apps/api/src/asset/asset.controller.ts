@@ -31,4 +31,17 @@ export class AssetController {
   async allocateAsset(@Param('id') id: string, @Body() dto: DistributeAssetDto) {
     return await this.assetService.allocateAsset(id, dto);
   }
+
+  @Post(':id/dispose')
+  async disposeAsset(
+    @Param('id') id: string,
+    @Body() dto: { disposal_type: 'Sold' | 'Scrapped'; reason: string; amount?: number },
+  ) {
+    return await this.assetService.disposeAsset(id, dto);
+  }
+
+  @Post(':id/transfer')
+  async transferAsset(@Param('id') id: string, @Body() dto: { to_bu_id: string; reason?: string }) {
+    return await this.assetService.transferAsset(id, dto);
+  }
 }

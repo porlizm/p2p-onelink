@@ -1,9 +1,10 @@
 <template>
   <div class="app-shell">
-    <!-- Ambient glowing backgrounds for glassmorphism -->
-    <div class="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#009245]/8 blur-[120px] pointer-events-none z-0"></div>
-    <div class="fixed top-1/2 -right-40 w-96 h-96 rounded-full bg-[#39B54A]/8 blur-[120px] pointer-events-none z-0"></div>
-    <div class="fixed -bottom-40 left-1/3 w-96 h-96 rounded-full bg-[#002266]/6 blur-[120px] pointer-events-none z-0"></div>
+    <!-- Ambient glowing backgrounds for glassmorphism — negative z-index so they
+         always paint behind the sidebar/topbar/content regardless of stacking order -->
+    <div class="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#009245]/8 blur-[120px] pointer-events-none -z-10"></div>
+    <div class="fixed top-1/2 -right-40 w-96 h-96 rounded-full bg-[#39B54A]/8 blur-[120px] pointer-events-none -z-10"></div>
+    <div class="fixed -bottom-40 left-1/3 w-96 h-96 rounded-full bg-[#002266]/6 blur-[120px] pointer-events-none -z-10"></div>
 
     <!-- ================================================================ -->
     <!-- Sidebar                                                           -->
@@ -109,6 +110,15 @@
                 >
                   <span class="sidebar__sub-dot" aria-hidden="true" />
                   <span class="sidebar__sub-label">อนุมัติแค็ตตาล็อก</span>
+                </NuxtLink>
+
+                <NuxtLink
+                  to="/vendors/messages"
+                  class="sidebar__sub-item"
+                  :class="{ 'sidebar__sub-item--active': route.path.startsWith('/vendors/messages') }"
+                >
+                  <span class="sidebar__sub-dot" aria-hidden="true" />
+                  <span class="sidebar__sub-label">ศูนย์การสื่อสารกับคู่ค้า</span>
                 </NuxtLink>
               </div>
             </Transition>
@@ -242,6 +252,7 @@ const moduleNameMap: Record<string, string> = {
   '/vendors/evaluation': 'Vendor Evaluation',
   '/vendors/contracts': 'Contract Management',
   '/vendors/catalog-approval': 'Catalog Approval',
+  '/vendors/messages': 'Vendor Communication Center',
   '/vendors': 'Vendor',
   '/catalog': 'Catalog',
   '/pr': 'Purchase Requisition',
@@ -251,6 +262,8 @@ const moduleNameMap: Record<string, string> = {
   '/approval': 'Approval Inbox',
   '/finance': 'Accounting & e-Payment',
   '/admin/assets': 'Asset Management',
+  '/admin/planning': 'Procurement Planning',
+  '/admin/evaluation-templates': 'Evaluation Master',
   '/admin': 'Settings',
 };
 
@@ -305,6 +318,7 @@ const icons = {
   banknotes: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>`,
   cube: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>`,
   settings: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 17.66l-1.41 1.41M2 12h2M20 12h2M17.66 5.34l-1.41 1.41M4.93 18.07l-1.41-1.41M12 2v2M12 20v2"/></svg>`,
+  calendar: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>`,
 };
 
 const mainMenus: { title: string; path: string; svgIcon: string; badge?: string }[] = [
@@ -317,9 +331,11 @@ const vendorSubItems = [
   { label: 'ประเมินผลผู้ค้า',   path: '/vendors/evaluation' },
   { label: 'สัญญาจัดซื้อ',     path: '/vendors/contracts' },
   { label: 'อนุมัติแค็ตตาล็อก', path: '/vendors/catalog-approval' },
+  { label: 'ศูนย์การสื่อสารกับคู่ค้า', path: '/vendors/messages' },
 ];
 
 const procureMenus = [
+  { title: 'แผนจัดซื้อ (Planning)',  path: '/admin/planning', svgIcon: icons.calendar },
   { title: 'รายการสินค้า (Catalog)', path: '/catalog',   svgIcon: icons.catalog },
   { title: 'ใบขอซื้อ (PR)',          path: '/pr',        svgIcon: icons.fileText },
   { title: 'ประกวดราคา (Bidding)',   path: '/bidding',   svgIcon: icons.trophy },
@@ -331,6 +347,7 @@ const procureMenus = [
 const adminMenus = [
   { title: 'การบัญชี (AP)',    path: '/finance',       svgIcon: icons.banknotes },
   { title: 'บริหารสินทรัพย์', path: '/admin/assets',  svgIcon: icons.cube },
+  { title: 'มาตรฐานเกณฑ์ประเมิน', path: '/admin/evaluation-templates', svgIcon: icons.checkBadge },
   { title: 'ตั้งค่าระบบ',     path: '/admin',         svgIcon: icons.settings },
 ];
 
@@ -794,11 +811,12 @@ const breadcrumb = computed(() => {
 .topbar__logout-label { display: none; }
 @media (min-width: 640px) { .topbar__logout-label { display: inline; } }
 
-/* Main content */
+/* Main content — left transparent so the ambient blobs read through
+   softly behind the light-glass cards instead of being fully masked */
 .main-content {
   flex: 1; overflow-y: auto;
   padding: var(--space-6);
-  background-color: var(--bg-subtle);
+  background-color: transparent;
 }
 
 /* ================================================================

@@ -4,6 +4,7 @@ import { PoService } from './po.service';
 import { PoController } from './po.controller';
 import { PurchaseOrder } from '../database/entities/purchase-order.entity';
 import { PurchaseOrderLine } from '../database/entities/purchase-order-line.entity';
+import { ApprovalModule } from '../approval/approval.module';
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { PurchaseOrderLine } from '../database/entities/purchase-order-line.enti
       PurchaseOrder,
       PurchaseOrderLine,
     ]),
+    ApprovalModule,
   ],
   providers: [PoService],
   controllers: [PoController],

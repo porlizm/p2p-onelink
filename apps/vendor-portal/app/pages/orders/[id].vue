@@ -141,16 +141,28 @@
             <div class="flex-grow border-t border-gray-200"></div>
           </div>
 
-          <UButton 
-            color="yellow" 
-            variant="outline" 
-            size="md" 
-            block 
+          <UButton
+            color="yellow"
+            variant="outline"
+            size="md"
+            block
             class="cursor-pointer"
             @click="revisionRequestOpen = true"
           >
             <UIcon name="i-heroicons-chat-bubble-left-right" class="w-5 h-5 mr-1" />
             ขอแก้ไขรายการ / ขอปรับราคา
+          </UButton>
+
+          <UButton
+            color="red"
+            variant="outline"
+            size="md"
+            block
+            class="cursor-pointer"
+            @click="rejectOrderOpen = true"
+          >
+            <UIcon name="i-heroicons-x-circle" class="w-5 h-5 mr-1" />
+            ปฏิเสธคำสั่งซื้อนี้
           </UButton>
         </div>
 
@@ -167,6 +179,9 @@
           </p>
           <p v-if="order.status === 'FullyReceived'" class="text-xs text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-200">
             คำสั่งซื้อนี้ได้รับการตรวจรับสินค้าเสร็จสมบูรณ์แล้ว
+          </p>
+          <p v-if="order.status === 'Rejected'" class="text-xs text-red-700 bg-red-50 p-3 rounded-lg border border-red-200">
+            ท่านได้ปฏิเสธคำสั่งซื้อนี้แล้ว ฝ่ายจัดซื้อจะได้รับแจ้งเพื่อดำเนินการต่อ
           </p>
         </div>
       </div>
@@ -218,6 +233,34 @@
       </UCard>
           </template>
     </UModal>
+
+    <!-- Reject Order Modal -->
+    <UModal v-model:open="rejectOrderOpen">
+      <template #content>
+      <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100' }">
+        <template #header>
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[var(--foreground)]">ปฏิเสธคำสั่งซื้อ (Reject PO)</h3>
+            <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" class="cursor-pointer" @click="rejectOrderOpen = false" />
+          </div>
+        </template>
+
+        <div class="space-y-4 py-2 text-xs">
+          <label class="text-slate-500 font-semibold block">กรุณาระบุเหตุผลที่ไม่สามารถรับคำสั่งซื้อนี้ได้</label>
+          <UTextarea v-model="rejectReason" placeholder="เช่น สินค้าหมดสต็อก ไม่สามารถส่งมอบตามกำหนดได้..." rows="4" class="w-full" />
+        </div>
+
+        <template #footer>
+          <div class="flex justify-end gap-2">
+            <UButton variant="outline" size="sm" @click="rejectOrderOpen = false">ยกเลิก</UButton>
+            <UButton color="red" size="sm" class="cursor-pointer font-bold" :disabled="!rejectReason" @click="submitRejectOrder">
+              ยืนยันการปฏิเสธ
+            </UButton>
+          </div>
+        </template>
+      </UCard>
+          </template>
+    </UModal>
   </div>
 </template>
 
@@ -235,6 +278,8 @@ const order = ref<any>(null);
 const deliveryDate = ref('');
 const revisionRequestOpen = ref(false);
 const revisionReason = ref('');
+const rejectOrderOpen = ref(false);
+const rejectReason = ref('');
 
 const loadOrderDetails = async () => {
   loading.value = true;
@@ -355,12 +400,33 @@ const submitRevisionRequest = async () => {
   }
 };
 
+const submitRejectOrder = async () => {
+  try {
+    const res = await $fetch<any>(`http://localhost:3001/api/po/${poId}/reject`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authStore.token}`,
+      },
+      body: {
+        reason: rejectReason.value,
+      },
+    });
+    order.value = res;
+    rejectOrderOpen.value = false;
+  } catch (err: any) {
+    console.warn('Backend reject failed. Applying locally.');
+    order.value.status = 'Rejected';
+    rejectOrderOpen.value = false;
+  }
+};
+
 const formatStatus = (status?: string) => {
   switch (status) {
     case 'SentToVendor': return 'รอยืนยัน';
     case 'VendorConfirmed': return 'ยืนยันการรับสั่งซื้อแล้ว';
     case 'RevisionRequested': return 'อยู่ระหว่างขอแก้ไข';
     case 'FullyReceived': return 'ส่งมอบสำเร็จ';
+    case 'Rejected': return 'ปฏิเสธคำสั่งซื้อแล้ว';
     default: return status || '—';
   }
 };

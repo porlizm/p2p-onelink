@@ -29,6 +29,13 @@ export class CreatePrLineDto {
   @IsString()
   @IsOptional()
   quotation_url?: string;
+
+  @IsOptional()
+  is_requirement_based?: boolean;
+
+  @IsString()
+  @IsOptional()
+  scope_of_work?: string;
 }
 
 export class CreatePrDto {

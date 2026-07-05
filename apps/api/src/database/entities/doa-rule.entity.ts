@@ -27,4 +27,10 @@ export class DOARule {
 
   @Column({ type: 'varchar', length: 100 })
   approver_role: string;
+
+  @Column({ type: 'int', default: 48 })
+  sla_hours: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  escalate_to_role: string | null;
 }

@@ -11,6 +11,10 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99"/></svg>
           รีเฟรชข้อมูล
         </button>
+        <button class="btn-outline" @click="showRequestModal = true">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 12h3.75M9 15h3.75M9 18h3.75M3.75 4.5v15c0 .621.504 1.125 1.125 1.125h13.5c.621 0 1.125-.504 1.125-1.125V6.108c0-.298-.119-.583-.33-.795l-2.983-2.983a1.125 1.125 0 00-.795-.33H4.875C4.254 2 3.75 2.504 3.75 3.125Z"/></svg>
+          ขอทำสัญญาใหม่ (Request)
+        </button>
         <button class="btn-primary" @click="showCreateModal = true">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
           ร่างสัญญาใหม่ (Draft Contract)
@@ -166,6 +170,11 @@
               </td>
               <td class="px-6 py-4">
                 <div class="ctr-actions">
+                  <!-- Requested → เริ่มร่างสัญญา -->
+                  <button v-if="c.status === 'Requested'" class="action-btn action-btn--review" @click="startDraftFromRequest(c.contract_id)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                    เริ่มร่างสัญญา
+                  </button>
                   <!-- Draft → ส่งอนุมัติ -->
                   <button v-if="c.status === 'Draft'" class="action-btn action-btn--review" @click="submitForApproval(c.contract_id)">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
@@ -251,6 +260,55 @@
         </table>
       </div>
     </div>
+
+    <!-- Contract Request Modal (US-0701) -->
+    <UModal v-model:open="showRequestModal" prevent-close :ui="{ content: 'max-w-lg' }">
+      <template #content>
+      <div class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+          <h3 class="font-bold text-slate-800 text-sm">ขอทำสัญญาใหม่ (Contract Request)</h3>
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showRequestModal = false" />
+        </div>
+        <p class="text-[11px] text-slate-500">ยื่นคำขอเบื้องต้นเพื่อให้ฝ่ายจัดซื้อ/กฎหมายพิจารณาก่อนเริ่มร่างสัญญาจริง</p>
+
+        <div class="space-y-4 text-xs">
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">คู่ค้า / Vendor</label>
+            <USelect v-model="reqVendorId" :options="vendorOptions" class="w-full" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">ชื่อสัญญา / วัตถุประสงค์</label>
+            <UInput v-model="reqTitle" placeholder="เช่น ขอทำสัญญาจ้างบำรุงรักษาระบบเครือข่าย..." />
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-slate-600 font-semibold mb-1">วันที่คาดว่าจะเริ่มสัญญา</label>
+              <UInput v-model="reqStartDate" type="date" />
+            </div>
+            <div>
+              <label class="block text-slate-600 font-semibold mb-1">วันที่คาดว่าจะสิ้นสุด</label>
+              <UInput v-model="reqEndDate" type="date" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">วงเงินโดยประมาณ (THB)</label>
+            <UInput v-model.number="reqAmount" type="number" placeholder="เช่น 500000" />
+          </div>
+          <div>
+            <label class="block text-slate-600 font-semibold mb-1">เหตุผล / ความจำเป็นทางธุรกิจ</label>
+            <UTextarea v-model="reqReason" placeholder="ระบุเหตุผลที่ต้องการทำสัญญานี้..." :rows="2" />
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t pt-4">
+          <UButton @click="showRequestModal = false" variant="ghost" color="neutral">ยกเลิก</UButton>
+          <UButton color="primary" :loading="submitting" class="px-5 cursor-pointer font-bold" @click="submitContractRequest">
+            ส่งคำขอทำสัญญา
+          </UButton>
+        </div>
+      </div>
+          </template>
+    </UModal>
 
     <!-- Create Agreement Modal -->
     <UModal v-model:open="showCreateModal" prevent-close :ui="{ content: 'max-w-xl' }">
@@ -536,6 +594,50 @@
             </div>
           </div>
 
+          <!-- Milestone / Obligation Tracking (US-0707) -->
+          <div class="border rounded-xl p-4 bg-[#fafbfc]/50 space-y-3">
+            <div class="font-bold text-slate-800 flex items-center justify-between">
+              <span>งวดงานและข้อผูกพันตามสัญญา (Obligation & Milestone Tracking)</span>
+            </div>
+            <div class="space-y-2">
+              <div
+                v-for="ms in milestones"
+                :key="ms.milestone_id"
+                class="flex items-center justify-between p-2.5 rounded-lg border text-[11px]"
+                :class="ms.status === 'Delivered' ? 'bg-green-50 border-green-200' : ms.status === 'Delayed' ? 'bg-red-50 border-red-200' : 'bg-white border-slate-200'"
+              >
+                <div>
+                  <div class="font-bold text-slate-800">{{ ms.title }}</div>
+                  <div class="text-[10px] text-slate-400">ครบกำหนด: {{ formatDate(ms.due_date) }} | มูลค่า: {{ formatCurrency(ms.amount) }}</div>
+                </div>
+                <div class="flex items-center gap-1.5">
+                  <span
+                    class="px-2 py-0.5 rounded-full text-[9px] font-bold"
+                    :class="ms.status === 'Delivered' ? 'bg-green-100 text-green-800' : ms.status === 'Delayed' ? 'bg-red-100 text-red-800' : 'bg-slate-100 text-slate-600'"
+                  >
+                    {{ ms.status === 'Delivered' ? 'ส่งมอบแล้ว' : ms.status === 'Delayed' ? 'ล่าช้า' : 'รอดำเนินการ' }}
+                  </span>
+                  <template v-if="ms.status === 'Pending'">
+                    <button class="action-btn action-btn--view" @click="updateMilestoneStatus(ms, 'Delivered')">ส่งมอบแล้ว</button>
+                    <button class="action-btn action-btn--danger" @click="updateMilestoneStatus(ms, 'Delayed')">ล่าช้า</button>
+                  </template>
+                </div>
+              </div>
+              <div v-if="milestones.length === 0" class="text-center py-4 text-[10px] text-slate-400">
+                ยังไม่มีการกำหนดงวดงาน/milestone สำหรับสัญญานี้
+              </div>
+            </div>
+
+            <div class="border-t pt-3 grid grid-cols-4 gap-2 items-end">
+              <UInput v-model="newMilestoneTitle" placeholder="ชื่องวดงาน..." class="col-span-2" size="xs" />
+              <UInput v-model="newMilestoneDueDate" type="date" size="xs" />
+              <UInput v-model.number="newMilestoneAmount" type="number" placeholder="มูลค่า" size="xs" />
+            </div>
+            <UButton size="xs" color="primary" variant="outline" class="cursor-pointer font-bold w-full" @click="addMilestone">
+              + เพิ่มงวดงาน
+            </UButton>
+          </div>
+
           <!-- Digital Signature Details -->
           <div class="bg-indigo-50/50 p-4 border border-indigo-100 rounded-xl space-y-4">
             <div class="font-bold text-indigo-900 flex items-center gap-1">
@@ -625,13 +727,29 @@ const vendorsList = ref<any[]>([]);
 const showCreateModal = ref(false);
 const showAmendModal = ref(false);
 const showDetailDrawer = ref(false);
+const showRequestModal = ref(false);
 const submitting = ref(false);
 const activeContract = ref<any | null>(null);
 const amendTargetContract = ref<any | null>(null);
 
+// Contract Request (US-0701)
+const reqVendorId = ref('');
+const reqTitle = ref('');
+const reqStartDate = ref(new Date().toISOString().split('T')[0]);
+const reqEndDate = ref(new Date(Date.now() + 86400000 * 365).toISOString().split('T')[0]);
+const reqAmount = ref<number>(0);
+const reqReason = ref('');
+
+// Contract Milestones (US-0707)
+const milestones = ref<any[]>([]);
+const newMilestoneTitle = ref('');
+const newMilestoneDueDate = ref('');
+const newMilestoneAmount = ref<number>(0);
+
 // Filter configs
 const statusFilters = [
   { val: 'All', label: 'ทั้งหมด' },
+  { val: 'Requested', label: 'ขอทำสัญญา (รอเริ่มร่าง)' },
   { val: 'Signed', label: 'ใช้งานหลัก (ลงนามแล้ว)' },
   { val: 'PendingSignature', label: 'รอลงนามร่วม' },
   { val: 'PendingApproval', label: 'รออนุมัติภายใน' },
@@ -900,6 +1018,131 @@ const totalContractsAmount = computed(() => {
 const viewAgreementDetail = (c: any) => {
   activeContract.value = c;
   showDetailDrawer.value = true;
+  loadMilestones(c.contract_id);
+};
+
+// ── US-0701: Contract Request ──
+const submitContractRequest = async () => {
+  if (!reqVendorId.value || !reqTitle.value || !reqAmount.value || !reqReason.value.trim()) {
+    await dialog.alert('กรุณากรอกข้อมูลให้ครบถ้วน', { variant: 'danger' });
+    return;
+  }
+  submitting.value = true;
+  const payload = {
+    vendor_id: reqVendorId.value,
+    title: reqTitle.value,
+    start_date: reqStartDate.value,
+    end_date: reqEndDate.value,
+    total_amount: reqAmount.value,
+    request_reason: reqReason.value,
+    requested_by: authStore.user?.userId,
+  };
+  try {
+    await $fetch('http://localhost:3001/api/contract/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authStore.token}` },
+      body: payload,
+    });
+    await dialog.alert('ส่งคำขอทำสัญญาเรียบร้อยแล้ว รอฝ่ายจัดซื้อ/กฎหมายพิจารณาเริ่มร่างสัญญา', { variant: 'success' });
+    showRequestModal.value = false;
+    await loadData();
+  } catch (err) {
+    contracts.value.unshift({
+      contract_id: `con_req_${Date.now()}`,
+      contract_no: `CNT-REQ-${Math.floor(Math.random() * 9000) + 1000}`,
+      title: reqTitle.value,
+      vendor: vendorsList.value.find(v => v.vendor_id === reqVendorId.value),
+      total_amount: reqAmount.value,
+      remaining_amount: reqAmount.value,
+      start_date: reqStartDate.value,
+      end_date: reqEndDate.value,
+      request_reason: reqReason.value,
+      status: 'Requested',
+      contract_class: 'Original',
+      version_no: 1,
+      signatures: {},
+    });
+    showRequestModal.value = false;
+    await dialog.alert('ส่งคำขอทำสัญญาเรียบร้อยแล้ว รอฝ่ายจัดซื้อ/กฎหมายพิจารณาเริ่มร่างสัญญา', { variant: 'success' });
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const startDraftFromRequest = async (id: string) => {
+  const ok = await dialog.confirm('ยืนยันเริ่มร่างสัญญาจากคำขอนี้ใช่หรือไม่?', { variant: 'warning' });
+  if (!ok) return;
+  try {
+    await $fetch(`http://localhost:3001/api/contract/${id}/start-draft`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    await dialog.alert('เริ่มร่างสัญญาเรียบร้อยแล้ว', { variant: 'success' });
+    await loadData();
+  } catch (err) {
+    const c = contracts.value.find(item => item.contract_id === id);
+    if (c) {
+      c.status = 'Draft';
+      c.contract_no = `CNT-2026-${Math.floor(Math.random() * 9000) + 1000}`;
+    }
+    await dialog.alert('เริ่มร่างสัญญาเรียบร้อยแล้ว', { variant: 'success' });
+  }
+};
+
+// ── US-0707: Contract Milestone Tracking ──
+const loadMilestones = async (contractId: string) => {
+  try {
+    milestones.value = await $fetch<any[]>(`http://localhost:3001/api/contract/${contractId}/milestones`, {
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+  } catch (err) {
+    milestones.value = [];
+  }
+  newMilestoneTitle.value = '';
+  newMilestoneDueDate.value = '';
+  newMilestoneAmount.value = 0;
+};
+
+const addMilestone = async () => {
+  if (!activeContract.value || !newMilestoneTitle.value || !newMilestoneDueDate.value) {
+    await dialog.alert('กรุณากรอกชื่องวดงานและวันครบกำหนด', { variant: 'danger' });
+    return;
+  }
+  const payload = {
+    title: newMilestoneTitle.value,
+    due_date: newMilestoneDueDate.value,
+    amount: newMilestoneAmount.value,
+  };
+  try {
+    await $fetch(`http://localhost:3001/api/contract/${activeContract.value.contract_id}/milestones`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authStore.token}` },
+      body: payload,
+    });
+    await loadMilestones(activeContract.value.contract_id);
+  } catch (err) {
+    milestones.value.push({
+      milestone_id: `ms_${Date.now()}`,
+      ...payload,
+      status: 'Pending',
+    });
+    newMilestoneTitle.value = '';
+    newMilestoneDueDate.value = '';
+    newMilestoneAmount.value = 0;
+  }
+};
+
+const updateMilestoneStatus = async (milestone: any, status: 'Delivered' | 'Delayed') => {
+  try {
+    await $fetch(`http://localhost:3001/api/contract/milestone/${milestone.milestone_id}/status`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authStore.token}` },
+      body: { status },
+    });
+  } catch (err) {
+    // fall through to local update below
+  }
+  milestone.status = status;
 };
 
 // Create Contract Action

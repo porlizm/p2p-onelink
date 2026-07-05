@@ -69,6 +69,15 @@
   --shadow-sm: 0 1px 2px rgba(0, 34, 102, 0.04);
   --shadow-md: 0 4px 6px -1px rgba(0, 34, 102, 0.06), 0 2px 4px -2px rgba(0, 34, 102, 0.04);
   --shadow-lg: 0 10px 15px -3px rgba(0, 34, 102, 0.08), 0 4px 6px -4px rgba(0, 34, 102, 0.04);
+
+  /* Light-glass tokens — Vendor Portal (blue-tinted, matches --primary) */
+  --glass-chrome-bg:      rgba(255, 255, 255, 0.6);
+  --glass-chrome-border:  rgba(0, 34, 102, 0.06);
+  --glass-chrome-blur:    16px;
+  --glass-surface-bg:     rgba(255, 255, 255, 0.74);
+  --glass-surface-border: rgba(0, 34, 102, 0.08);
+  --glass-surface-blur:   10px;
+  --glass-surface-shadow: 0 1px 3px rgba(0, 34, 102, 0.05), 0 8px 24px -4px rgba(0, 34, 102, 0.08);
 }
 
 html {
@@ -83,4 +92,36 @@ body {
   padding: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   Light Glassmorphism Retrofit — system-wide (Vendor Portal)
+   Same technique as the internal web app: every page already builds cards
+   with the plain "bg-white + border + rounded-*" combo, so retrofit that
+   combo globally instead of touching each page. Tables stay flat & opaque
+   for legibility; everything else reads as light glass, minimal-first.
+   ========================================================================== */
+.bg-white.border.rounded-xl,
+.bg-white.border.rounded-2xl,
+.bg-white.border.rounded-lg,
+.bg-white.border.rounded-\[var\(--radius\)\] {
+  background: var(--glass-surface-bg) !important;
+  backdrop-filter: blur(var(--glass-surface-blur)) saturate(115%);
+  -webkit-backdrop-filter: blur(var(--glass-surface-blur)) saturate(115%);
+  border-color: var(--glass-surface-border) !important;
+  box-shadow: var(--glass-surface-shadow) !important;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+/* Cards that directly wrap a data table stay flat & fully opaque */
+.bg-white.border.rounded-xl:has(table),
+.bg-white.border.rounded-2xl:has(table) {
+  background: #ffffff !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.bg-white.border.rounded-xl:not(:has(table)):hover,
+.bg-white.border.rounded-2xl:not(:has(table)):hover {
+  box-shadow: 0 4px 16px -2px rgba(0, 34, 102, 0.08), 0 12px 32px -8px rgba(0, 34, 102, 0.08) !important;
 }

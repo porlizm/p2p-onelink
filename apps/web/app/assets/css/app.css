@@ -178,15 +178,6 @@ hr {
   --ui-bg-muted:     #fafbfc;
 }
 
-/* ── Global Table Cleanup ──
-   Force all tables that use Tailwind bg-white/border wrappers to look consistent */
-.bg-white.border.rounded-xl,
-.bg-white.border.rounded-2xl,
-.bg-white.border.rounded-lg {
-  border-color: #e9ecef !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
-}
-
 /* ── Global thead cleanup — all table headers same style ── */
 thead tr {
   background: #fafbfc !important;
@@ -207,3 +198,45 @@ tbody tr:hover {
 .border-b.pb-4 {
   border-color: #eff1f5 !important;
 }
+
+/* ==========================================================================
+   Light Glassmorphism Retrofit — system-wide
+   Every page still builds cards/panels/toolbars with the plain Tailwind
+   "bg-white + border + rounded-*" combo. Rather than touching every page,
+   retrofit that exact combo here so the whole app reads as one consistent
+   "light glass, minimal-first" system without changing any markup.
+   Tables/inputs are deliberately excluded — dense data stays flat & crisp.
+   ========================================================================== */
+.bg-white.border.rounded-xl,
+.bg-white.border.rounded-2xl,
+.bg-white.border.rounded-lg,
+.bg-white.border.rounded-md,
+.bg-white.border.rounded-3xl,
+.bg-white.border.rounded-\[var\(--radius\)\] {
+  background: var(--glass-surface-bg) !important;
+  backdrop-filter: blur(var(--glass-surface-blur)) saturate(115%);
+  -webkit-backdrop-filter: blur(var(--glass-surface-blur)) saturate(115%);
+  border-color: var(--glass-surface-border) !important;
+  box-shadow: var(--glass-surface-shadow) !important;
+  transition: box-shadow var(--transition-base), transform var(--transition-base);
+}
+
+/* KPI / stat cards get a gentle lift on hover — the one "interesting" touch,
+   kept small so it still reads as formal rather than playful. Large table
+   wrappers opt out — a shadow pop across an entire data grid feels jumpy. */
+.bg-white.border.rounded-xl:not(:has(table)):hover,
+.bg-white.border.rounded-2xl:not(:has(table)):hover {
+  box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.08), 0 12px 32px -8px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* A card that directly wraps a data table opts back out of the blur —
+   dense rows need a flat, fully opaque background to stay legible.
+   (.ds-table-wrap / .table-card are already flat by design — untouched.) */
+.bg-white.border.rounded-xl:has(table),
+.bg-white.border.rounded-2xl:has(table),
+.bg-white.border.rounded-lg:has(table) {
+  background: var(--bg-elevated) !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+

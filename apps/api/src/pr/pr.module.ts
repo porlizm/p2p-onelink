@@ -5,6 +5,7 @@ import { PrController } from './pr.controller';
 import { PurchaseRequisition } from '../database/entities/purchase-requisition.entity';
 import { PurchaseRequisitionLine } from '../database/entities/purchase-requisition-line.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
+import { ApprovalModule } from '../approval/approval.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { CostCenter } from '../database/entities/cost-center.entity';
       PurchaseRequisitionLine,
       CostCenter,
     ]),
+    ApprovalModule,
   ],
   providers: [PrService],
   controllers: [PrController],

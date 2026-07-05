@@ -223,12 +223,15 @@ export class PaymentService {
     return this.proposalRepo.save(proposal);
   }
 
-  // 5. Generate Bank File
-  async generateBankFile(proposalId: string) {
+  // 5. Send an approved Payment Proposal to the e-Payment interface.
+  // Per the doc's scope note, this system only hands off PO/GR/Vendor/Amount/Due Date and later receives a
+  // status back — it does NOT generate an executable bank-transfer file or move money itself. That belongs
+  // to the external e-Payment / banking system, outside this phase's scope.
+  async sendProposalToInterface(proposalId: string) {
     const proposal = await this.proposalRepo.findOne({ where: { proposal_id: proposalId } });
     if (!proposal) throw new NotFoundException('Proposal not found');
     if (proposal.status !== 'Approved') {
-      throw new BadRequestException('Proposal ต้องได้รับการอนุมัติจาก Finance Manager ก่อน Generate Bank File');
+      throw new BadRequestException('Proposal ต้องได้รับการอนุมัติจาก Finance Manager ก่อนส่งไปยัง e-Payment Interface');
     }
 
     const requests = await this.prRepo.find({
@@ -236,50 +239,93 @@ export class PaymentService {
       relations: ['vendor', 'invoice'],
     });
 
-    // Generate CSV file content
-    let csv = 'PaymentRequestNo,VendorName,TaxID,InvoiceNo,Amount,DueDate,PayeeName,PayeeBank,PayeeAccount\n';
-    for (const r of requests) {
-      const payeeName = r.alternative_payee_name || r.vendor?.vendor_name || 'N/A';
-      const payeeBank = r.alternative_payee_bank || 'N/A';
-      const payeeAccount = r.alternative_payee_account || 'N/A';
-      csv += `${r.payment_request_no},"${r.vendor?.vendor_name || 'N/A'}",${r.vendor?.tax_id || 'N/A'},${r.invoice?.invoice_no || 'N/A'},${r.amount},${r.due_date},"${payeeName}","${payeeBank}",${payeeAccount}\n`;
-    }
+    // Interface payload: identifying/amount data only — no bank account or routing details, since we are
+    // not the ones producing a transferable bank file.
+    const interfacePayload = requests.map((r) => ({
+      payment_request_no: r.payment_request_no,
+      vendor_name: r.vendor?.vendor_name || 'N/A',
+      invoice_no: r.invoice?.invoice_no || 'N/A',
+      amount: r.amount,
+      due_date: r.due_date,
+    }));
 
-    const fileName = `BANK_TRANSFER_${proposal.proposal_no}_${new Date().toISOString().slice(0, 10)}.csv`;
-
-    const bankFile = this.bankFileRepo.create({
-      file_name: fileName,
+    const batchName = `EPAYMENT_BATCH_${proposal.proposal_no}_${new Date().toISOString().slice(0, 10)}`;
+    const batchRecord = this.bankFileRepo.create({
+      file_name: batchName,
       proposal_id: proposalId,
-      file_content: csv,
-      status: 'Success',
+      file_content: JSON.stringify(interfacePayload, null, 2),
+      status: 'Sent',
     });
+    const savedBatch = await this.bankFileRepo.save(batchRecord);
 
-    const savedFile = await this.bankFileRepo.save(bankFile);
-
-    // Update proposal status
-    proposal.status = 'Generated';
+    proposal.status = 'SentToInterface';
     await this.proposalRepo.save(proposal);
 
-    // Update all requests to Paid status
     for (const r of requests) {
-      r.status = 'Paid';
+      r.status = 'SentToInterface';
+      await this.prRepo.save(r);
+    }
+
+    await this.logRepo.save(
+      this.logRepo.create({
+        target_system: 'External_ePayment_Gateway',
+        doc_type: 'PaymentProposalBatch',
+        doc_id: proposalId,
+        request_payload: { requests: interfacePayload },
+        response_payload: { gateway_status: 'PROCESSING' },
+        status: 'Success',
+        retry_count: 0,
+      }),
+    );
+
+    return savedBatch;
+  }
+
+  // 5.1 Interface callback — the external e-Payment system reports back whether the batch was paid.
+  // This is the only place PaymentRequest/budget actually finalize to Paid; nothing in this module
+  // executes a transfer itself.
+  async paymentInterfaceCallback(proposalId: string, status: 'Success' | 'Failed') {
+    const proposal = await this.proposalRepo.findOne({ where: { proposal_id: proposalId } });
+    if (!proposal) throw new NotFoundException('Proposal not found');
+    if (proposal.status !== 'SentToInterface') {
+      throw new BadRequestException(`Proposal นี้ยังไม่ได้ถูกส่งไปยัง e-Payment Interface (สถานะปัจจุบัน ${proposal.status})`);
+    }
+
+    const requests = await this.prRepo.find({ where: { proposal_id: proposalId } });
+    proposal.status = status === 'Success' ? 'Paid' : 'Failed';
+    await this.proposalRepo.save(proposal);
+
+    for (const r of requests) {
+      r.status = status === 'Success' ? 'Paid' : 'Failed';
       await this.prRepo.save(r);
 
-      // Trigger budget used update
-      const cc = await this.ccRepo.findOne({ where: { cost_center_id: r.cost_center_id } });
-      if (cc) {
-        cc.budget_used_amount = Number(cc.budget_used_amount) + Number(r.amount);
-        if (Number(cc.budget_reserved_amount) >= Number(r.amount)) {
-          cc.budget_reserved_amount = Number(cc.budget_reserved_amount) - Number(r.amount);
+      if (status === 'Success') {
+        const cc = await this.ccRepo.findOne({ where: { cost_center_id: r.cost_center_id } });
+        if (cc) {
+          cc.budget_used_amount = Number(cc.budget_used_amount) + Number(r.amount);
+          if (Number(cc.budget_reserved_amount) >= Number(r.amount)) {
+            cc.budget_reserved_amount = Number(cc.budget_reserved_amount) - Number(r.amount);
+          }
+          await this.ccRepo.save(cc);
         }
-        await this.ccRepo.save(cc);
       }
     }
 
-    return savedFile;
+    await this.logRepo.save(
+      this.logRepo.create({
+        target_system: 'External_ePayment_Gateway',
+        doc_type: 'PaymentProposalCallback',
+        doc_id: proposalId,
+        response_payload: { status },
+        status: status === 'Success' ? 'Success' : 'Failed',
+        retry_count: 0,
+      }),
+    );
+
+    return proposal;
   }
 
-  // 5.1 Fetch generated bank files
+  // 5.2 Fetch sent interface batches (no longer literal downloadable bank-transfer files)
   async getBankFiles() {
     return this.bankFileRepo.find({ order: { created_at: 'DESC' } });
   }

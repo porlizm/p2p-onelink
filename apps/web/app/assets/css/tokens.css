@@ -363,12 +363,20 @@
   --color-primary-800: var(--color-green-800);
   --color-primary-900: var(--color-green-900);
 
-  /* Glassmorphism Tokens - Light Mode */
+  /* Glassmorphism Tokens - Light Mode (chrome: sidebar/topbar, sits over ambient blobs) */
   --glass-bg: rgba(255, 255, 255, 0.45);
   --glass-border: rgba(255, 255, 255, 0.3);
   --glass-border-inner: rgba(255, 255, 255, 0.6);
   --glass-blur: 16px;
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+
+  /* Light-glass Surface Tokens — content cards/panels/modals.
+     Higher opacity than --glass-bg so dense text/tables stay easy to read;
+     the blur is just enough to read as "glass", not a visual effect. */
+  --glass-surface-bg:     rgba(255, 255, 255, 0.72);
+  --glass-surface-border: rgba(233, 236, 239, 0.8);
+  --glass-surface-blur:   10px;
+  --glass-surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 8px 24px -4px rgba(0, 0, 0, 0.06);
 }
 
 /* ==========================================================================
@@ -382,6 +390,11 @@
   --glass-border-inner: rgba(255, 255, 255, 0.15);
   --glass-blur: 16px;
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25);
+
+  --glass-surface-bg:     rgba(31, 41, 55, 0.72);
+  --glass-surface-border: rgba(255, 255, 255, 0.1);
+  --glass-surface-blur:   10px;
+  --glass-surface-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 8px 24px -4px rgba(0, 0, 0, 0.35);
 
   --bg-base:     #111827;
   --bg-subtle:   #0D1117;

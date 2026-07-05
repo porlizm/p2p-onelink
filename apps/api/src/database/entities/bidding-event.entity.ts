@@ -1,8 +1,9 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from 'typeorm';
-import { BiddingStatus } from '@p2p/shared';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
+import { BiddingStatus, SourcingMethod } from '@p2p/shared';
 import { RfqItem } from './rfq-item.entity';
 import { RfqVendor } from './rfq-vendor.entity';
 import { BidQuotation } from './bid-quotation.entity';
+import { PurchaseRequisition } from './purchase-requisition.entity';
 
 @Entity('bidding_event')
 export class BiddingEvent {
@@ -66,6 +67,19 @@ export class BiddingEvent {
 
   @Column({ type: 'timestamp' })
   close_date: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  pr_id: string | null;
+
+  @ManyToOne(() => PurchaseRequisition, { nullable: true })
+  @JoinColumn({ name: 'pr_id' })
+  pr: PurchaseRequisition | null;
+
+  @Column({ type: 'varchar', length: 20, default: SourcingMethod.RFQ })
+  sourcing_method: SourcingMethod;
+
+  @Column({ type: 'uuid', nullable: true })
+  awarded_by: string | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;

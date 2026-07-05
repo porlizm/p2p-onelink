@@ -60,7 +60,19 @@ export class Asset {
   po: PurchaseOrder | null;
 
   @Column({ type: 'varchar', length: 50, default: 'In Stock' })
-  status: string; // 'In Stock' | 'Distributed' | 'Rented' | 'Scrapped'
+  status: string; // 'In Stock' | 'Distributed' | 'Rented' | 'Sold' | 'Scrapped'
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  disposal_type: string | null; // 'Sold' | 'Scrapped'
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  disposal_reason: string | null;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  disposal_amount: number | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  disposed_at: Date | null;
 
   @CreateDateColumn({ type: 'timestamp' })
   created_at: Date;

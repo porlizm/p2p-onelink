@@ -43,7 +43,7 @@
         :class="activeTab === 'proposals' ? 'border-[var(--primary)] text-[var(--primary)]' : 'border-transparent text-slate-400 hover:text-slate-600'"
         @click="activeTab = 'proposals'"
       >
-        Payment Request → Proposal → Bank File
+        Payment Request → Proposal → e-Payment Interface
       </button>
     </div>
 
@@ -154,13 +154,17 @@
                 <td class="px-6 py-4 text-center">
                   <span
                     class="px-2 py-0.5 rounded-full text-[10px] font-bold border"
-                    :class="p.status === 'Generated' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : p.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
+                    :class="p.status === 'SentToInterface' ? 'bg-cyan-50 text-cyan-700 border-cyan-200' : p.status === 'Approved' ? 'bg-green-50 text-green-700 border-green-200' : p.status === 'Paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'"
                   >{{ p.status }}</span>
                 </td>
                 <td class="px-6 py-4 text-center">
                   <button v-if="p.status === 'Pending'" class="action-btn action-btn--review" @click="approveProposal(p)">อนุมัติ (Finance Manager)</button>
-                  <button v-else-if="p.status === 'Approved'" class="action-btn action-btn--compare" @click="genBankFile(p)">Generate Bank File</button>
-                  <span v-else class="text-xs text-slate-400">สร้างไฟล์แล้ว</span>
+                  <button v-else-if="p.status === 'Approved'" class="action-btn action-btn--compare" @click="sendToInterface(p)">ส่งไปยัง e-Payment Interface</button>
+                  <template v-else-if="p.status === 'SentToInterface'">
+                    <button class="action-btn action-btn--view mr-1" @click="interfaceCallback(p, 'Success')">จำลองจ่ายสำเร็จ</button>
+                    <button class="action-btn action-btn--danger" @click="interfaceCallback(p, 'Failed')">จำลองจ่ายล้มเหลว</button>
+                  </template>
+                  <span v-else class="text-xs text-slate-400">{{ p.status }}</span>
                 </td>
               </tr>
               <tr v-if="proposals.length === 0">
@@ -171,16 +175,15 @@
         </div>
       </div>
 
-      <!-- 4. Generated bank files -->
+      <!-- 4. e-Payment interface batches sent (handoff only — no downloadable bank-transfer file; execution happens outside this system) -->
       <div class="bg-white border border-[#e9ecef] rounded-xl shadow-[var(--shadow-sm)] overflow-hidden">
-        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">4. ไฟล์ธนาคาร (Bank Files)</div>
+        <div class="p-4 border-b border-[#eff1f5] font-bold text-slate-700">4. ชุดข้อมูลที่ส่งไปยัง e-Payment Interface</div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
             <thead>
               <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
-                <th class="px-6 py-3.5">ชื่อไฟล์</th>
+                <th class="px-6 py-3.5">ชื่อชุดข้อมูล</th>
                 <th class="px-6 py-3.5 text-center">สถานะ</th>
-                <th class="px-6 py-3.5 text-center">ดาวน์โหลด</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#eff1f5]">
@@ -189,12 +192,9 @@
                 <td class="px-6 py-4 text-center">
                   <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-green-100 text-green-800">{{ f.status }}</span>
                 </td>
-                <td class="px-6 py-4 text-center">
-                  <button class="action-btn action-btn--view" @click="downloadBankFile(f)">ดาวน์โหลด</button>
-                </td>
               </tr>
               <tr v-if="bankFiles.length === 0">
-                <td colspan="3" class="text-center py-8 text-xs text-[var(--muted-foreground)]">ยังไม่มีไฟล์ธนาคาร</td>
+                <td colspan="2" class="text-center py-8 text-xs text-[var(--muted-foreground)]">ยังไม่มีชุดข้อมูลที่ส่งไปยัง Interface</td>
               </tr>
             </tbody>
           </table>
@@ -627,27 +627,30 @@ const approveProposal = async (p: any) => {
   }
 };
 
-const genBankFile = async (p: any) => {
+const sendToInterface = async (p: any) => {
   try {
-    await $fetch(`http://localhost:3001/api/payment/proposal/${p.proposal_id}/generate-bank-file`, {
+    await $fetch(`http://localhost:3001/api/payment/proposal/${p.proposal_id}/send-to-interface`, {
       method: 'POST',
       headers: authHeaders(),
     });
-    await dialog.alert(`สร้าง Bank File สำหรับ ${p.proposal_no} สำเร็จ`, { variant: 'success' });
+    await dialog.alert(`ส่งชุดข้อมูล ${p.proposal_no} ไปยัง e-Payment Interface แล้ว`, { variant: 'success' });
     await Promise.all([loadProposals(), loadBankFiles(), loadPaymentRequests()]);
   } catch (err: any) {
-    await dialog.alert(err?.data?.message || 'ไม่สามารถสร้าง Bank File ได้', { variant: 'danger' });
+    await dialog.alert(err?.data?.message || 'ไม่สามารถส่งไปยัง e-Payment Interface ได้', { variant: 'danger' });
   }
 };
 
-const downloadBankFile = (f: any) => {
-  const blob = new Blob([f.file_content || ''], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = f.file_name;
-  a.click();
-  URL.revokeObjectURL(url);
+const interfaceCallback = async (p: any, status: 'Success' | 'Failed') => {
+  try {
+    await $fetch(`http://localhost:3001/api/payment/proposal/${p.proposal_id}/interface-callback`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: { status },
+    });
+    await Promise.all([loadProposals(), loadPaymentRequests()]);
+  } catch (err: any) {
+    await dialog.alert(err?.data?.message || 'ไม่สามารถบันทึกผลจาก Interface ได้', { variant: 'danger' });
+  }
 };
 
 // Security Warning modal data

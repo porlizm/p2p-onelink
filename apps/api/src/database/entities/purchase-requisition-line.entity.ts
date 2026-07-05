@@ -46,4 +46,10 @@ export class PurchaseRequisitionLine {
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   quotation_url: string | null;
+
+  @Column({ type: 'boolean', default: false })
+  is_requirement_based: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  scope_of_work: string | null;
 }

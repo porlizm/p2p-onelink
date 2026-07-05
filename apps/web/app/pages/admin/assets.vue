@@ -125,9 +125,9 @@
         </div>
         <div>
           <label class="text-[10px] text-slate-400 font-semibold block mb-1">สถานะ</label>
-          <USelect 
+          <USelect
             v-model="filterStatus"
-            :options="['All', 'In Stock', 'Distributed', 'Rented', 'Scrapped']"
+            :options="['All', 'In Stock', 'Distributed', 'Rented', 'Sold', 'Scrapped']"
             size="sm"
           />
         </div>
@@ -182,37 +182,58 @@
               <td class="px-6 py-5text-center text-indigo-600 font-extrabold">{{ formatQuantity(asset.distributed_qty) }}</td>
               <td class="px-6 py-5text-center font-bold text-emerald-600">{{ formatQuantity(asset.remaining_qty) }}</td>
               <td class="px-6 py-4">
-                <span 
+                <span
                   class="px-2 py-0.5 rounded-full text-[10px] font-bold"
                   :class="[
                     asset.status === 'In Stock' ? 'bg-emerald-100 text-emerald-800' :
                     asset.status === 'Distributed' ? 'bg-blue-100 text-blue-800' :
                     asset.status === 'Rented' ? 'bg-orange-100 text-orange-800' :
+                    asset.status === 'Sold' ? 'bg-purple-100 text-purple-800' :
                     'bg-red-100 text-red-800'
                   ]"
                 >
-                  {{ asset.status === 'In Stock' ? 'พร้อมใช้งาน' : asset.status === 'Distributed' ? 'ส่งมอบแล้ว' : asset.status === 'Rented' ? 'ให้เช่าทั้งหมด' : asset.status }}
+                  {{ asset.status === 'In Stock' ? 'พร้อมใช้งาน' : asset.status === 'Distributed' ? 'ส่งมอบแล้ว' : asset.status === 'Rented' ? 'ให้เช่าทั้งหมด' : asset.status === 'Sold' ? 'จำหน่ายแล้ว' : asset.status === 'Scrapped' ? 'ตัดจำหน่าย' : asset.status }}
                 </span>
               </td>
-              <td class="px-6 py-5text-right space-x-2">
-                <UButton 
-                  size="xs" 
-                  variant="outline" 
+              <td class="px-6 py-5text-right space-x-2 whitespace-nowrap">
+                <UButton
+                  size="xs"
+                  variant="outline"
                   color="neutral"
                   class="cursor-pointer"
                   @click="openDetails(asset.asset_id)"
                 >
                   ดูรายละเอียด
                 </UButton>
-                <UButton 
-                  v-if="asset.remaining_qty > 0"
-                  size="xs" 
-                  color="primary" 
-                  class="cursor-pointer font-bold"
-                  @click="openAllocateForm(asset)"
-                >
-                  จัดสรร/ให้เช่า
-                </UButton>
+                <template v-if="asset.status !== 'Sold' && asset.status !== 'Scrapped'">
+                  <UButton
+                    v-if="asset.remaining_qty > 0"
+                    size="xs"
+                    color="primary"
+                    class="cursor-pointer font-bold"
+                    @click="openAllocateForm(asset)"
+                  >
+                    จัดสรร/ให้เช่า
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    color="info"
+                    class="cursor-pointer font-bold"
+                    @click="openTransferForm(asset)"
+                  >
+                    โอนย้าย BU
+                  </UButton>
+                  <UButton
+                    size="xs"
+                    variant="outline"
+                    color="error"
+                    class="cursor-pointer font-bold"
+                    @click="openDisposeForm(asset)"
+                  >
+                    จำหน่าย/ตัดจำหน่าย
+                  </UButton>
+                </template>
               </td>
             </tr>
             <tr v-if="filteredAssets.length === 0">
@@ -431,6 +452,70 @@
           </template>
     </UModal>
 
+    <!-- MODAL: TRANSFER OWNERSHIP BETWEEN BU -->
+    <UModal v-model:open="showTransferModal">
+      <template #content>
+      <div class="p-6 space-y-4" v-if="transferTarget">
+        <div class="flex items-center justify-between border-b pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">โอนย้ายกรรมสิทธิ์สินทรัพย์ข้าม BU</h3>
+            <span class="text-xs text-slate-500">สินทรัพย์: {{ transferTarget.asset_name }} (เจ้าของปัจจุบัน: {{ transferTarget.owner_bu?.bu_name || '-' }})</span>
+          </div>
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showTransferModal = false" />
+        </div>
+
+        <form @submit.prevent="submitTransfer" class="space-y-4 text-xs">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">โอนกรรมสิทธิ์ให้ Business Unit ปลายทาง</label>
+            <USelect v-model="transferForm.to_bu_id" :options="buOptions" class="w-full" />
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">เหตุผลการโอนย้าย</label>
+            <UTextarea v-model="transferForm.reason" placeholder="เช่น ปรับโครงสร้างหน่วยงาน, ย้ายทีมงานผู้ใช้งานหลัก..." :rows="2" class="w-full" />
+          </div>
+          <div class="flex justify-end pt-3 gap-2 border-t">
+            <UButton type="button" variant="outline" color="neutral" class="cursor-pointer" @click="showTransferModal = false">ยกเลิก</UButton>
+            <UButton type="submit" color="primary" class="cursor-pointer font-bold" :loading="submitting">ยืนยันการโอนย้าย</UButton>
+          </div>
+        </form>
+      </div>
+          </template>
+    </UModal>
+
+    <!-- MODAL: SALE / DISPOSAL -->
+    <UModal v-model:open="showDisposeModal">
+      <template #content>
+      <div class="p-6 space-y-4" v-if="disposeTarget">
+        <div class="flex items-center justify-between border-b pb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-800">จำหน่าย / ตัดจำหน่ายสินทรัพย์</h3>
+            <span class="text-xs text-slate-500">สินทรัพย์: {{ disposeTarget.asset_name }}</span>
+          </div>
+          <UButton color="neutral" variant="ghost" icon="i-heroicons-x-mark" @click="showDisposeModal = false" />
+        </div>
+
+        <form @submit.prevent="submitDispose" class="space-y-4 text-xs">
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">ประเภทการดำเนินการ</label>
+            <USelect v-model="disposeForm.disposal_type" :options="['Sold', 'Scrapped']" class="w-full" />
+          </div>
+          <div v-if="disposeForm.disposal_type === 'Sold'">
+            <label class="font-bold text-slate-700 block mb-1">มูลค่าที่ขายได้ (THB)</label>
+            <UInput v-model.number="disposeForm.amount" type="number" min="0" class="w-full" placeholder="ระบุราคาขาย" />
+          </div>
+          <div>
+            <label class="font-bold text-slate-700 block mb-1">เหตุผล</label>
+            <UTextarea v-model="disposeForm.reason" placeholder="เช่น ครุภัณฑ์หมดอายุการใช้งาน, ชำรุดเกินซ่อม, ขายให้บริษัทภายนอก..." :rows="2" class="w-full" required />
+          </div>
+          <div class="flex justify-end pt-3 gap-2 border-t">
+            <UButton type="button" variant="outline" color="neutral" class="cursor-pointer" @click="showDisposeModal = false">ยกเลิก</UButton>
+            <UButton type="submit" color="error" class="cursor-pointer font-bold" :loading="submitting">ยืนยัน{{ disposeForm.disposal_type === 'Sold' ? 'การจำหน่าย' : 'การตัดจำหน่าย' }}</UButton>
+          </div>
+        </form>
+      </div>
+          </template>
+    </UModal>
+
     <!-- MODAL 3: MANUAL ACQUISITION REGISTER -->
     <UModal v-model:open="showCreateModal">
       <template #content>
@@ -566,12 +651,16 @@ const filterStatus = ref('All');
 const showDetailsModal = ref(false);
 const showAllocateModal = ref(false);
 const showCreateModal = ref(false);
+const showTransferModal = ref(false);
+const showDisposeModal = ref(false);
 const submitting = ref(false);
 
 // Core Data
 const assets = ref<any[]>([]);
 const selectedAsset = ref<any>(null);
 const allocateTarget = ref<any>(null);
+const transferTarget = ref<any>(null);
+const disposeTarget = ref<any>(null);
 const stats = ref({
   totalAssets: 0,
   totalVal: 0,
@@ -596,6 +685,17 @@ const allocForm = ref({
   rental_rate: 500,
   start_date: new Date().toISOString().split('T')[0],
   end_date: '',
+});
+
+const transferForm = ref({
+  to_bu_id: '00000002-0000-0000-0000-000000000001',
+  reason: '',
+});
+
+const disposeForm = ref({
+  disposal_type: 'Sold' as 'Sold' | 'Scrapped',
+  amount: 0,
+  reason: '',
 });
 
 const createForm = ref({
@@ -657,7 +757,73 @@ const openAllocateForm = (asset: any) => {
   showAllocateModal.value = true;
 };
 
+const openTransferForm = (asset: any) => {
+  transferTarget.value = asset;
+  transferForm.value = { to_bu_id: '00000002-0000-0000-0000-000000000001', reason: '' };
+  showTransferModal.value = true;
+};
+
+const openDisposeForm = (asset: any) => {
+  disposeTarget.value = asset;
+  disposeForm.value = { disposal_type: 'Sold', amount: 0, reason: '' };
+  showDisposeModal.value = true;
+};
+
 // Submissions
+const submitTransfer = async () => {
+  if (!transferTarget.value) return;
+  submitting.value = true;
+  try {
+    await $fetch(`http://localhost:3001/api/asset/${transferTarget.value.asset_id}/transfer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authStore.token}` },
+      body: transferForm.value,
+    });
+    showTransferModal.value = false;
+    await loadData();
+    await dialog.alert('โอนย้ายกรรมสิทธิ์สินทรัพย์เรียบร้อยแล้ว!', { variant: 'success' });
+  } catch (err: any) {
+    const buLabel = buOptions.find(b => b.value === transferForm.value.to_bu_id)?.label || '-';
+    const asset = assets.value.find(a => a.asset_id === transferTarget.value.asset_id);
+    if (asset) {
+      asset.owner_bu_id = transferForm.value.to_bu_id;
+      asset.owner_bu = { bu_name: buLabel };
+    }
+    showTransferModal.value = false;
+    await dialog.alert('โอนย้ายกรรมสิทธิ์สินทรัพย์เรียบร้อยแล้ว!', { variant: 'success' });
+  } finally {
+    submitting.value = false;
+  }
+};
+
+const submitDispose = async () => {
+  if (!disposeTarget.value) return;
+  if (!disposeForm.value.reason.trim()) {
+    await dialog.alert('กรุณาระบุเหตุผลก่อนดำเนินการ', { variant: 'danger' });
+    return;
+  }
+  submitting.value = true;
+  try {
+    await $fetch(`http://localhost:3001/api/asset/${disposeTarget.value.asset_id}/dispose`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authStore.token}` },
+      body: disposeForm.value,
+    });
+    showDisposeModal.value = false;
+    await loadData();
+    await dialog.alert(`บันทึกการ${disposeForm.value.disposal_type === 'Sold' ? 'จำหน่าย' : 'ตัดจำหน่าย'}สินทรัพย์เรียบร้อยแล้ว!`, { variant: 'success' });
+  } catch (err: any) {
+    const asset = assets.value.find(a => a.asset_id === disposeTarget.value.asset_id);
+    if (asset) {
+      asset.status = disposeForm.value.disposal_type;
+    }
+    showDisposeModal.value = false;
+    await dialog.alert(`บันทึกการ${disposeForm.value.disposal_type === 'Sold' ? 'จำหน่าย' : 'ตัดจำหน่าย'}สินทรัพย์เรียบร้อยแล้ว!`, { variant: 'success' });
+  } finally {
+    submitting.value = false;
+  }
+};
+
 const submitAllocation = async () => {
   if (!allocateTarget.value) return;
   submitting.value = true;

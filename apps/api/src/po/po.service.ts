@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like } from 'typeorm';
 import { PurchaseOrder } from '../database/entities/purchase-order.entity';
@@ -7,22 +7,32 @@ import { PurchaseRequisition } from '../database/entities/purchase-requisition.e
 import { PurchaseRequisitionLine } from '../database/entities/purchase-requisition-line.entity';
 import { ItemPrice } from '../database/entities/item-price.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
-import { ConfirmPoDto, RequestRevisionDto, RevisePoDto } from './dto/po.dto';
-import { PurchaseOrderStatus, PurchaseRequisitionStatus } from '@p2p/shared';
+import { ConfirmPoDto, RequestRevisionDto, RevisePoDto, RejectPoDto } from './dto/po.dto';
+import { PurchaseOrderStatus, PurchaseRequisitionStatus, ApprovalDecision } from '@p2p/shared';
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { PurchaseContract } from '../database/entities/purchase-contract.entity';
 import { Notification } from '../database/entities/notification.entity';
+import { ApprovalService } from '../approval/approval.service';
 
 @Injectable()
-export class PoService {
+export class PoService implements OnModuleInit {
   constructor(
     private dataSource: DataSource,
     @InjectRepository(PurchaseOrder)
     private poRepo: Repository<PurchaseOrder>,
+    private approvalService: ApprovalService,
   ) {}
 
+  onModuleInit() {
+    this.approvalService.registerHandler('PurchaseOrder', {
+      onApprove: (poId, decidedBy) => this.handleApproved(poId, decidedBy),
+      onReject: (poId, reason, decidedBy) => this.handleRejected(poId, reason, decidedBy),
+      onRevise: (poId, reason, decidedBy) => this.handleReviseRequested(poId, reason, decidedBy),
+    });
+  }
+
   async convertPrToPo(prId: string, userId: string, overrideVendorId?: string) {
-    return await this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       // 1. Fetch PR with lines
       const pr = await manager.getRepository(PurchaseRequisition).findOne({
         where: { pr_id: prId },
@@ -93,13 +103,13 @@ export class PoService {
         }
       ];
 
-      // 4. Create PO Header
+      // 4. Create PO Header — starts Pending Approval; only reaches SentToVendor once the DOA route (below) clears.
       const po = manager.getRepository(PurchaseOrder).create({
         po_no: poNo,
         pr_id: pr.pr_id,
         vendor_id: vendorId,
         company_id: pr.company_id,
-        status: PurchaseOrderStatus.SENT_TO_VENDOR,
+        status: PurchaseOrderStatus.PENDING_APPROVAL,
         total_amount: pr.total_amount,
         revision_no: 0,
         estimated_delivery_date: null,
@@ -159,11 +169,16 @@ export class PoService {
       pr.status = PurchaseRequisitionStatus.CONVERTED_TO_PO;
       await manager.getRepository(PurchaseRequisition).save(pr);
 
-      return {
-        ...savedPo,
-        lines: poLines,
-      };
+      return { po: savedPo, lines: poLines, companyId: pr.company_id, totalAmount };
     });
+
+    // DOA-driven approval routing happens after the PO itself is durably committed (same reasoning as PR).
+    await this.approvalService.initiateRoute('PurchaseOrder', result.po.po_id, result.companyId, result.totalAmount);
+
+    return {
+      ...result.po,
+      lines: result.lines,
+    };
   }
 
   async listPOs(userId: string) {
@@ -184,6 +199,64 @@ export class PoService {
     }
 
     return po;
+  }
+
+  // ── US-0309: PO Split by vendor/line ──
+  async splitPO(poId: string, lineIds: string[], newVendorId?: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const po = await manager.getRepository(PurchaseOrder).findOne({
+        where: { po_id: poId },
+        relations: ['lines'],
+      });
+      if (!po) throw new NotFoundException('ไม่พบเอกสาร PO');
+      if (!lineIds || lineIds.length === 0) {
+        throw new BadRequestException('กรุณาเลือกอย่างน้อย 1 รายการเพื่อแยกใบสั่งซื้อ');
+      }
+      if (lineIds.length >= po.lines.length) {
+        throw new BadRequestException('ต้องเหลืออย่างน้อย 1 รายการในใบสั่งซื้อเดิม');
+      }
+
+      const linesToMove = po.lines.filter((l) => lineIds.includes(l.po_line_id));
+      if (linesToMove.length !== lineIds.length) {
+        throw new BadRequestException('พบรายการที่ไม่ตรงกับใบสั่งซื้อนี้');
+      }
+
+      const now = new Date();
+      const yy = now.getFullYear().toString().slice(-2);
+      const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+      const prefix = `PO${yy}${mm}`;
+      const count = await manager.getRepository(PurchaseOrder).count({
+        where: { po_no: Like(`${prefix}%`) },
+      });
+      const newPoNo = `${prefix}${(count + 1).toString().padStart(3, '0')}`;
+
+      const movedTotal = linesToMove.reduce((sum, l) => sum + Number(l.total_price), 0);
+
+      const newPo = manager.getRepository(PurchaseOrder).create({
+        po_no: newPoNo,
+        pr_id: po.pr_id,
+        vendor_id: newVendorId || po.vendor_id,
+        company_id: po.company_id,
+        status: po.status,
+        total_amount: movedTotal,
+        revision_no: 0,
+        estimated_delivery_date: po.estimated_delivery_date,
+        payment_milestones: po.payment_milestones,
+        contract_id: po.contract_id,
+        split_from_po_id: po.po_id,
+      });
+      const savedNewPo = await manager.getRepository(PurchaseOrder).save(newPo);
+
+      for (const line of linesToMove) {
+        line.po_id = savedNewPo.po_id;
+        await manager.getRepository(PurchaseOrderLine).save(line);
+      }
+
+      po.total_amount = Number(po.total_amount) - movedTotal;
+      await manager.getRepository(PurchaseOrder).save(po);
+
+      return { original_po_id: po.po_id, new_po_id: savedNewPo.po_id, new_po_no: newPoNo };
+    });
   }
 
   async listVendorPOs(vendorId: string) {
@@ -217,6 +290,35 @@ export class PoService {
     po.status = PurchaseOrderStatus.REVISION_REQUESTED;
 
     return await this.poRepo.save(po);
+  }
+
+  async rejectByVendor(poId: string, vendorId: string, dto: RejectPoDto) {
+    return await this.dataSource.transaction(async (manager) => {
+      const po = await manager.getRepository(PurchaseOrder).findOne({ where: { po_id: poId } });
+      if (!po) {
+        throw new NotFoundException('ไม่พบเอกสาร PO');
+      }
+      if (po.status !== PurchaseOrderStatus.SENT_TO_VENDOR) {
+        throw new BadRequestException(`ไม่สามารถปฏิเสธได้เนื่องจากเอกสารอยู่ในสถานะ ${po.status}`);
+      }
+
+      const beforeValue = { status: po.status };
+      po.status = PurchaseOrderStatus.REJECTED;
+      const saved = await manager.getRepository(PurchaseOrder).save(po);
+
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: vendorId,
+        action: 'VENDOR_REJECT_PO',
+        entity_type: 'PurchaseOrder',
+        entity_id: poId,
+        before_value_json: beforeValue,
+        after_value_json: { status: po.status, reason: dto.reason },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+
+      return saved;
+    });
   }
 
   async revisePO(poId: string, dto: RevisePoDto, userId: string) {
@@ -372,29 +474,36 @@ export class PoService {
     return await this.poRepo.save(po);
   }
 
-  async approvePO(poId: string, userId: string) {
+  /** Legacy single-shot endpoints: resolve the caller's active Approval Task and decide it via the workflow engine. */
+  async approvePO(poId: string, userId: string, userRoles: string[]) {
+    const task = await this.approvalService.findMyPendingTaskForDocument('PurchaseOrder', poId, userId, userRoles);
+    await this.approvalService.decide(task.task_id, userId, userRoles, ApprovalDecision.APPROVE);
+    return this.poRepo.findOne({ where: { po_id: poId } });
+  }
+
+  async rejectPO(poId: string, userId: string, userRoles: string[], reason: string) {
+    const task = await this.approvalService.findMyPendingTaskForDocument('PurchaseOrder', poId, userId, userRoles);
+    await this.approvalService.decide(task.task_id, userId, userRoles, ApprovalDecision.REJECT, reason);
+    return this.poRepo.findOne({ where: { po_id: poId } });
+  }
+
+  async returnPOForRevise(poId: string, userId: string, userRoles: string[], reason: string) {
+    const task = await this.approvalService.findMyPendingTaskForDocument('PurchaseOrder', poId, userId, userRoles);
+    await this.approvalService.decide(task.task_id, userId, userRoles, ApprovalDecision.REVISE, reason);
+    return this.poRepo.findOne({ where: { po_id: poId } });
+  }
+
+  private async handleApproved(poId: string, decidedBy: string) {
     return await this.dataSource.transaction(async (manager) => {
-      const po = await manager.getRepository(PurchaseOrder).findOne({
-        where: { po_id: poId },
-      });
-
-      if (!po) {
-        throw new NotFoundException('ไม่พบเอกสาร PO');
-      }
-
-      if (
-        po.status !== PurchaseOrderStatus.PENDING_APPROVAL &&
-        po.status !== PurchaseOrderStatus.AUTO_GENERATED
-      ) {
-        throw new BadRequestException(`ไม่สามารถอนุมัติได้เนื่องจากเอกสารอยู่ในสถานะ ${po.status}`);
-      }
+      const po = await manager.getRepository(PurchaseOrder).findOne({ where: { po_id: poId } });
+      if (!po) return;
 
       const beforeValue = { status: po.status };
-      po.status = PurchaseOrderStatus.APPROVED;
-      const saved = await manager.getRepository(PurchaseOrder).save(po);
+      po.status = PurchaseOrderStatus.SENT_TO_VENDOR;
+      await manager.getRepository(PurchaseOrder).save(po);
 
       const audit = manager.getRepository(AuditLog).create({
-        user_id: userId,
+        user_id: decidedBy,
         action: 'APPROVE_PO',
         entity_type: 'PurchaseOrder',
         entity_id: poId,
@@ -403,32 +512,42 @@ export class PoService {
         timestamp: new Date(),
       });
       await manager.save(audit);
-
-      return saved;
     });
   }
 
-  async rejectPO(poId: string, userId: string) {
+  private async handleReviseRequested(poId: string, reason: string, decidedBy: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const po = await manager.getRepository(PurchaseOrder).findOne({ where: { po_id: poId } });
+      if (!po) return;
+
+      const beforeValue = { status: po.status };
+      po.status = PurchaseOrderStatus.REVISION_REQUESTED;
+      await manager.getRepository(PurchaseOrder).save(po);
+
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: decidedBy,
+        action: 'RETURN_FOR_REVISE_PO',
+        entity_type: 'PurchaseOrder',
+        entity_id: poId,
+        before_value_json: beforeValue,
+        after_value_json: { status: po.status, reason },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+    });
+  }
+
+  private async handleRejected(poId: string, reason: string, decidedBy: string) {
     return await this.dataSource.transaction(async (manager) => {
       const po = await manager.getRepository(PurchaseOrder).findOne({
         where: { po_id: poId },
         relations: ['lines', 'pr', 'pr.lines'],
       });
-
-      if (!po) {
-        throw new NotFoundException('ไม่พบเอกสาร PO');
-      }
-
-      if (
-        po.status !== PurchaseOrderStatus.PENDING_APPROVAL &&
-        po.status !== PurchaseOrderStatus.SENT_TO_VENDOR
-      ) {
-        throw new BadRequestException(`ไม่สามารถปฏิเสธได้เนื่องจากเอกสารอยู่ในสถานะ ${po.status}`);
-      }
+      if (!po) return;
 
       const beforeValue = { status: po.status };
       po.status = PurchaseOrderStatus.REJECTED;
-      const saved = await manager.getRepository(PurchaseOrder).save(po);
+      await manager.getRepository(PurchaseOrder).save(po);
 
       // Release reserved budget for the PO (unreceived portion)
       const ccDiffs: { [ccId: string]: number } = {};
@@ -461,7 +580,7 @@ export class PoService {
 
           // Log in Audit Trail
           const auditCC = manager.getRepository(AuditLog).create({
-            user_id: userId,
+            user_id: decidedBy,
             action: 'RELEASE_BUDGET_PO_REJECT',
             entity_type: 'CostCenter',
             entity_id: ccId,
@@ -487,17 +606,15 @@ export class PoService {
 
       // Create PO Audit Log
       const audit = manager.getRepository(AuditLog).create({
-        user_id: userId,
+        user_id: decidedBy,
         action: 'REJECT_PO',
         entity_type: 'PurchaseOrder',
         entity_id: poId,
         before_value_json: beforeValue,
-        after_value_json: { status: po.status },
+        after_value_json: { status: po.status, reason },
         timestamp: new Date(),
       });
       await manager.save(audit);
-
-      return saved;
     });
   }
 

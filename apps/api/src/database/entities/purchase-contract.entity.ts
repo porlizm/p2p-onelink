@@ -56,7 +56,13 @@ export class PurchaseContract {
   contract_class: string; // 'Original', 'Amendment', 'Addendum'
 
   @Column({ type: 'varchar', length: 50, default: 'Draft' })
-  status: string; // 'Draft', 'PendingApproval', 'Approved', 'PendingSignature', 'Signed', 'Rejected', 'Expired', 'Superceded'
+  status: string; // 'Requested', 'Draft', 'PendingApproval', 'Approved', 'PendingSignature', 'Signed', 'Rejected', 'Expired', 'Superceded'
+
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  request_reason: string | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  requested_by: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   document_url: string;

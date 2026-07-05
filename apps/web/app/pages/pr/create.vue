@@ -235,6 +235,23 @@
                       </div>
                     </div>
                   </div>
+
+                  <!-- Requirement-Based PR toggle (US-0303) -->
+                  <div v-if="item.is_custom" class="pt-1">
+                    <label class="flex items-center gap-2 text-[11px] font-semibold text-slate-600 cursor-pointer">
+                      <input type="checkbox" v-model="item.is_requirement_based" class="w-3.5 h-3.5 rounded" />
+                      เป็นรายการบริการตามขอบเขตงาน (Requirement-Based / TOR)
+                    </label>
+                    <div v-if="item.is_requirement_based" class="mt-2">
+                      <label class="text-[10px] text-[var(--muted-foreground)] block mb-1">ขอบเขตงาน / TOR (Scope of Work) *</label>
+                      <UTextarea
+                        v-model="item.scope_of_work"
+                        placeholder="ระบุขอบเขตงาน ผลงานส่งมอบ (Deliverables) และเงื่อนไขการยอมรับงาน..."
+                        :rows="2"
+                        size="xs"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <!-- Delete Item button -->
@@ -560,6 +577,7 @@ const hasRequiredFieldIssues = computed(() => {
   return cartStore.items.some((item) => {
     if (!item.cost_center_id) return true;
     if (item.is_custom && (!item.item_name || !item.unit_price)) return true;
+    if (item.is_requirement_based && !item.scope_of_work?.trim()) return true;
     return false;
   });
 });
@@ -588,6 +606,8 @@ const submitPR = async () => {
       unit_price: item.unit_price,
       cost_center_id: item.cost_center_id,
       quotation_url: item.quotation_url || undefined,
+      is_requirement_based: item.is_requirement_based || undefined,
+      scope_of_work: item.scope_of_work || undefined,
     })),
   };
 

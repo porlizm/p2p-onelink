@@ -36,14 +36,26 @@ export class PrController {
 
   @Patch(':id/approve')
   async approve(@Param('id') id: string, @Req() req: any) {
-    const { userId } = req.user;
-    return this.prService.approvePR(id, userId);
+    const { userId, roles, role } = req.user;
+    return this.prService.approvePR(id, userId, roles && roles.length ? roles : [role]);
   }
 
   @Patch(':id/reject')
-  async reject(@Param('id') id: string, @Req() req: any) {
+  async reject(@Param('id') id: string, @Body() body: { reason: string }, @Req() req: any) {
+    const { userId, roles, role } = req.user;
+    return this.prService.rejectPR(id, userId, roles && roles.length ? roles : [role], body.reason);
+  }
+
+  @Patch(':id/revise')
+  async revise(@Param('id') id: string, @Body() body: { reason: string }, @Req() req: any) {
+    const { userId, roles, role } = req.user;
+    return this.prService.revisePR(id, userId, roles && roles.length ? roles : [role], body.reason);
+  }
+
+  @Patch(':id/resubmit')
+  async resubmit(@Param('id') id: string, @Req() req: any) {
     const { userId } = req.user;
-    return this.prService.rejectPR(id, userId);
+    return this.prService.resubmitPR(id, userId);
   }
 
   @Patch(':id/cancel')

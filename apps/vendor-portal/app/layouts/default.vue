@@ -1,7 +1,13 @@
 <template>
-  <div class="flex flex-col h-screen w-screen overflow-hidden bg-[var(--background)] font-sans text-[var(--foreground)]">
+  <div class="relative flex flex-col h-screen w-screen overflow-hidden bg-[var(--background)] font-sans text-[var(--foreground)]">
+    <!-- Ambient glowing backgrounds for glassmorphism — negative z-index so they
+         always paint behind the header/content regardless of stacking order -->
+    <div class="fixed -top-40 -left-40 w-96 h-96 rounded-full bg-[#0054FF]/8 blur-[120px] pointer-events-none -z-10"></div>
+    <div class="fixed top-1/3 -right-40 w-96 h-96 rounded-full bg-[#34D399]/8 blur-[120px] pointer-events-none -z-10"></div>
+    <div class="fixed -bottom-40 left-1/3 w-96 h-96 rounded-full bg-[#002266]/6 blur-[120px] pointer-events-none -z-10"></div>
+
     <!-- Topbar Centric Layout for Vendor Portal -->
-    <header class="flex items-center justify-between h-16 bg-[var(--sidebar)] border-b border-[var(--border)] px-6 z-10 shadow-[var(--shadow-sm)]">
+    <header class="flex items-center justify-between h-16 bg-[var(--glass-chrome-bg)] backdrop-blur-[16px] saturate-[1.2] border-b border-[var(--glass-chrome-border)] px-6 z-10 shadow-[var(--shadow-sm)]">
       <div class="flex items-center gap-6">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-lg bg-[var(--primary)] flex items-center justify-center text-white font-bold text-lg shadow-[var(--shadow-sm)]">
@@ -72,8 +78,8 @@
       </NuxtLink>
     </div>
 
-    <!-- Main Content Area -->
-    <main class="flex-1 overflow-y-auto p-6 bg-[var(--background)]">
+    <!-- Main Content Area — transparent so ambient blobs read through softly -->
+    <main class="flex-1 overflow-y-auto p-6">
       <slot />
     </main>
   </div>
@@ -97,6 +103,7 @@ const navItems = [
   { title: 'ใบสั่งซื้อ (PO)', path: '/orders', icon: 'i-heroicons-shopping-bag-20-solid' },
   { title: 'ใบกำกับภาษี (Invoice)', path: '/invoices', icon: 'i-heroicons-document-text-20-solid' },
   { title: 'สัญญา (Contracts)', path: '/contracts', icon: 'i-heroicons-document-duplicate-20-solid' },
+  { title: 'ข้อความจาก SCGJWD', path: '/messages', icon: 'i-heroicons-chat-bubble-left-right-20-solid' },
   { title: 'อัปโหลด Catalog', path: '/catalog/upload', icon: 'i-heroicons-cloud-arrow-up-20-solid' },
   { title: 'ข้อมูลบริษัท', path: '/profile', icon: 'i-heroicons-building-office-20-solid' },
 ];

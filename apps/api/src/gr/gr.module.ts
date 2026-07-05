@@ -8,6 +8,7 @@ import { GoodsReceiptAttachment } from '../database/entities/gr-attachment.entit
 import { Stock } from '../database/entities/stock.entity';
 import { Claim } from '../database/entities/claim.entity';
 import { ReturnNote } from '../database/entities/return-note.entity';
+import { StockModule } from '../stock/stock.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ReturnNote } from '../database/entities/return-note.entity';
       Claim,
       ReturnNote,
     ]),
+    StockModule,
   ],
   providers: [GrService],
   controllers: [GrController],

@@ -15,12 +15,12 @@ export class GoodsReceiptLine {
   @JoinColumn({ name: 'gr_id' })
   gr: GoodsReceipt;
 
-  @Column({ type: 'uuid' })
-  po_line_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  po_line_id: string | null;
 
-  @ManyToOne(() => PurchaseOrderLine)
+  @ManyToOne(() => PurchaseOrderLine, { nullable: true })
   @JoinColumn({ name: 'po_line_id' })
-  po_line: PurchaseOrderLine;
+  po_line: PurchaseOrderLine | null;
 
   @Column({ type: 'uuid', nullable: true })
   item_id: string | null;
@@ -29,7 +29,10 @@ export class GoodsReceiptLine {
   @JoinColumn({ name: 'item_id' })
   item: Item | null;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2 })
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  item_name: string | null;
+
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   qty_ordered: number;
 
   @Column({ type: 'decimal', precision: 15, scale: 2 })
@@ -38,8 +41,11 @@ export class GoodsReceiptLine {
   @Column({ type: 'decimal', precision: 5, scale: 2, default: 5.0 })
   tolerance_percent: number;
 
-  @Column({ type: 'decimal', precision: 15, scale: 2 })
+  @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   variance_qty: number;
+
+  @Column({ type: 'boolean', default: false })
+  requires_qc: boolean;
 
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   qc_passed_qty: number;
@@ -47,7 +53,7 @@ export class GoodsReceiptLine {
   @Column({ type: 'decimal', precision: 15, scale: 2, default: 0 })
   qc_failed_qty: number;
 
-  @Column({ type: 'varchar', length: 50, default: 'Passed' }) // 'Passed', 'Failed', 'Partial'
+  @Column({ type: 'varchar', length: 50, default: 'Passed' }) // 'Pending', 'Passed', 'Failed', 'Partial'
   qc_status: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
@@ -55,4 +61,13 @@ export class GoodsReceiptLine {
 
   @Column({ type: 'text', nullable: true })
   qc_remarks: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  lot_no: string | null;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  serial_no: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  expiry_date: Date | null;
 }

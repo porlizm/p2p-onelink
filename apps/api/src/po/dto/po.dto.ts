@@ -27,6 +27,12 @@ export class RequestRevisionDto {
   reason: string;
 }
 
+export class RejectPoDto {
+  @IsString()
+  @IsNotEmpty()
+  reason: string;
+}
+
 export class RevisePoLineDto {
   @IsString()
   @IsNotEmpty()

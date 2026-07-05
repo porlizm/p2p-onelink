@@ -25,11 +25,29 @@ export enum PurchaseRequisitionStatus {
   DRAFT = 'Draft',
   BUDGET_CHECKED = 'BudgetChecked',
   PENDING_APPROVAL = 'PendingApproval',
+  REVISE_REQUIRED = 'ReviseRequired',
+  RESUBMITTED = 'Resubmitted',
   APPROVED = 'Approved',
   REJECTED = 'Rejected',
   BLOCKED_OVER_BUDGET = 'BlockedOverBudget',
   CONVERTED_TO_PO = 'ConvertedToPO',
   CANCELLED = 'Cancelled',
+}
+
+// Approval Task Status (generic approval workflow engine, used across PR/PO/RFQ Award)
+export enum ApprovalTaskStatus {
+  PENDING = 'Pending',
+  APPROVED = 'Approved',
+  REJECTED = 'Rejected',
+  REVISE_REQUESTED = 'ReviseRequested',
+  SKIPPED = 'Skipped',
+}
+
+// Decision a caller can make on an Approval Task
+export enum ApprovalDecision {
+  APPROVE = 'Approve',
+  REJECT = 'Reject',
+  REVISE = 'Revise',
 }
 
 // Bidding Status
@@ -39,9 +57,18 @@ export enum BiddingStatus {
   OPEN_FOR_QUOTATION = 'OpenForQuotation',
   CLOSED = 'Closed',
   UNDER_EVALUATION = 'UnderEvaluation',
+  PENDING_AWARD_APPROVAL = 'PendingAwardApproval',
   AWARDED = 'Awarded',
   NO_AWARD = 'NoAward',
   REJECTED = 'Rejected',
+  RETURNED_FOR_REVISE = 'ReturnedForRevise',
+}
+
+// RFQ Sourcing Method (chosen by Buyer before/at RFQ creation)
+export enum SourcingMethod {
+  DIRECT_PO = 'DirectPO',
+  RFQ = 'RFQ',
+  E_BIDDING = 'eBidding',
 }
 
 // Bid Quotation Status
@@ -71,13 +98,20 @@ export enum PurchaseOrderStatus {
 
 // Goods Receipt Status
 export enum GoodsReceiptStatus {
+  DRAFT = 'Draft',
+  PENDING_VALIDATION = 'PendingValidation',
   PENDING_RECEIPT = 'PendingReceipt',
+  PENDING_QC = 'PendingQC',
+  QC_PASSED = 'QCPassed',
+  QC_PARTIAL_PASSED = 'QCPartialPassed',
+  QC_FAILED = 'QCFailed',
   PARTIAL_RECEIPT = 'PartialReceipt',
   FULL_RECEIPT = 'FullReceipt',
   SERVICE_ACCEPTED = 'ServiceAccepted',
   SCORED = 'Scored',
   CLAIM_RAISED = 'ClaimRaised',
   CLOSED = 'Closed',
+  CANCELLED = 'Cancelled',
 }
 
 // Claim Status
@@ -117,7 +151,7 @@ export enum PaymentRequestStatus {
   CONFIRMED = 'Confirmed',
   IN_PAYMENT_PROPOSAL = 'InPaymentProposal',
   ON_HOLD = 'OnHold',
-  BANK_FILE_GENERATED = 'BankFileGenerated',
+  SENT_TO_INTERFACE = 'SentToInterface',
   PAID = 'Paid',
   FAILED = 'Failed',
   REJECTED = 'Rejected',
@@ -156,6 +190,27 @@ export enum IntegrationLogStatus {
   SUCCESS = 'Success',
   FAILED = 'Failed',
   RETRYING = 'Retrying',
+}
+
+// Stock Movement Type
+export enum StockMovementType {
+  GR = 'GR',
+  RETURN = 'Return',
+  TRANSFER = 'Transfer',
+  ADJUSTMENT = 'Adjustment',
+  WRITE_OFF = 'WriteOff',
+}
+
+// Stock Movement / Adjustment Record Status
+export enum StockRecordStatus {
+  DRAFT = 'Draft',
+  PENDING_APPROVAL = 'PendingApproval',
+  POSTED = 'Posted',
+  PENDING_PUT_AWAY = 'PendingPutAway',
+  RECONCILED = 'Reconciled',
+  CLOSED = 'Closed',
+  MISMATCH = 'Mismatch',
+  CANCELLED = 'Cancelled',
 }
 
 export interface UserProfile {

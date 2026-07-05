@@ -22,6 +22,12 @@
       {{ errorMsg }}
     </div>
 
+    <!-- PR Consolidation Banner (US-0309) -->
+    <div v-if="consolidatedFromPrNos" class="flex items-center gap-2 p-3 bg-indigo-50 border border-indigo-200 rounded-xl text-xs text-indigo-800">
+      <UIcon name="i-heroicons-squares-plus" class="w-4 h-4 shrink-0" />
+      <span>สร้าง RFQ นี้จากการรวมใบขอซื้อ (Consolidated PR): <strong>{{ consolidatedFromPrNos }}</strong> — รายการสินค้าถูกดึงมาให้อัตโนมัติแล้ว</span>
+    </div>
+
     <form @submit.prevent="submitRFQ" class="rfq-create__grid">
       <!-- MAIN COLUMN -->
       <div class="space-y-5">
@@ -376,6 +382,9 @@ const itemTypes = ref<any[]>([]);
 const items = ref<any[]>([
   { item_name: 'โน้ตบุ๊คสำหรับงานสำนักงาน 14 นิ้ว', item_type: 'Goods', quantity: 30, uom: 'เครื่อง' }
 ]);
+
+// PR Consolidation (US-0309): pre-fill items from multiple selected PRs
+const consolidatedFromPrNos = ref('');
 const vendors = ref<any[]>([]);
 const selectedVendors = ref<string[]>([]);
 const committeeCandidates = ref<any[]>([]);
@@ -533,6 +542,26 @@ onMounted(() => {
   loadVendors();
   loadItemTypes();
   loadCommitteeCandidates();
+
+  const consolidatedRaw = sessionStorage.getItem('consolidated_rfq_items');
+  if (consolidatedRaw) {
+    try {
+      const consolidated = JSON.parse(consolidatedRaw);
+      if (Array.isArray(consolidated) && consolidated.length > 0) {
+        items.value = consolidated.map((c: any) => ({
+          item_name: c.item_name,
+          item_type: c.item_type || 'Goods',
+          quantity: c.quantity,
+          uom: c.uom,
+        }));
+        consolidatedFromPrNos.value = sessionStorage.getItem('consolidated_pr_nos') || '';
+      }
+    } catch (err) {
+      // ignore malformed data
+    }
+    sessionStorage.removeItem('consolidated_rfq_items');
+    sessionStorage.removeItem('consolidated_pr_nos');
+  }
 });
 </script>
 

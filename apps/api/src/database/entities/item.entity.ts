@@ -28,6 +28,9 @@ export class Item {
   @Column({ type: 'varchar', length: 50, default: 'Active' })
   status: string;
 
+  @Column({ type: 'boolean', default: false })
+  requires_qc: boolean;
+
   @OneToMany(() => ItemCompanyMapping, (mapping) => mapping.item)
   company_mappings: ItemCompanyMapping[];
 

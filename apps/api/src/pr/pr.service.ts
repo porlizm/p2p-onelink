@@ -1,32 +1,42 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Like } from 'typeorm';
 import { PurchaseRequisition } from '../database/entities/purchase-requisition.entity';
 import { PurchaseRequisitionLine } from '../database/entities/purchase-requisition-line.entity';
 import { CostCenter } from '../database/entities/cost-center.entity';
 import { CreatePrDto } from './dto/create-pr.dto';
-import { PurchaseRequisitionStatus } from '@p2p/shared';
+import { PurchaseRequisitionStatus, ApprovalDecision } from '@p2p/shared';
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { PurchaseContract } from '../database/entities/purchase-contract.entity';
 import { AnnualPlan } from '../database/entities/annual-plan.entity';
 import { Item } from '../database/entities/item.entity';
+import { ApprovalService } from '../approval/approval.service';
 
 @Injectable()
-export class PrService {
+export class PrService implements OnModuleInit {
   constructor(
     private dataSource: DataSource,
     @InjectRepository(PurchaseRequisition)
     private prRepo: Repository<PurchaseRequisition>,
     @InjectRepository(CostCenter)
     private ccRepo: Repository<CostCenter>,
+    private approvalService: ApprovalService,
   ) {}
+
+  onModuleInit() {
+    this.approvalService.registerHandler('PurchaseRequisition', {
+      onApprove: (prId, decidedBy) => this.handleApproved(prId, decidedBy),
+      onReject: (prId, reason, decidedBy) => this.handleRejected(prId, reason, decidedBy),
+      onRevise: (prId, reason, decidedBy) => this.handleReviseRequired(prId, reason, decidedBy),
+    });
+  }
 
   async createPR(createPrDto: CreatePrDto, userId: string, companyId: string) {
     if (!createPrDto.lines || createPrDto.lines.length === 0) {
       throw new BadRequestException('PR must have at least one line item');
     }
 
-    return await this.dataSource.transaction(async (manager) => {
+    const result = await this.dataSource.transaction(async (manager) => {
       // 1. Generate PR No
       const now = new Date();
       const yy = now.getFullYear().toString().slice(-2);
@@ -116,22 +126,6 @@ export class PrService {
         }
       }
 
-      // Determine approver role based on DOA and overrun escalation
-      let approverRole = 'Manager';
-      if (isBudgetOverrun && status === PurchaseRequisitionStatus.PENDING_APPROVAL) {
-        if (totalAmount <= 100000) {
-          approverRole = 'CFO';
-        } else {
-          approverRole = 'VP';
-        }
-      } else {
-        if (totalAmount <= 50000) {
-          approverRole = 'Manager';
-        } else {
-          approverRole = 'SeniorManager';
-        }
-      }
-
       // Check Unplanned Purchase (Planning Control)
       let isUnplanned = false;
       const currentYear = new Date().getFullYear();
@@ -189,7 +183,7 @@ export class PrService {
         description: createPrDto.description,
         is_budget_overrun: isBudgetOverrun,
         is_unplanned: isUnplanned,
-        approver_role: approverRole,
+        approver_role: null,
         contract_id: createPrDto.contract_id || null,
       });
 
@@ -208,6 +202,8 @@ export class PrService {
           total_price: lineTotal,
           cost_center_id: line.cost_center_id,
           quotation_url: line.quotation_url || null,
+          is_requirement_based: line.is_requirement_based || false,
+          scope_of_work: line.scope_of_work || null,
         });
       });
 
@@ -222,11 +218,21 @@ export class PrService {
         }
       }
 
-      return {
-        ...savedPr,
-        lines: prLines,
-      };
+      return { pr: savedPr, lines: prLines, totalAmount, status };
     });
+
+    // DOA-driven approval routing happens after the PR itself is durably committed, so a missing
+    // DOA rule blocks the workflow (per the doc) rather than losing the PR the requester just created.
+    if (result.status === PurchaseRequisitionStatus.PENDING_APPROVAL) {
+      const tasks = await this.approvalService.initiateRoute('PurchaseRequisition', result.pr.pr_id, companyId, result.totalAmount);
+      result.pr.approver_role = tasks.map((t) => t.approver_role).join(' / ');
+      await this.prRepo.save(result.pr);
+    }
+
+    return {
+      ...result.pr,
+      lines: result.lines,
+    };
   }
 
   async listPRs(userId: string) {
@@ -254,28 +260,55 @@ export class PrService {
     return this.ccRepo.find();
   }
 
-  async approvePR(prId: string, userId: string) {
+  /** Legacy single-shot endpoint: resolves the caller's active Approval Task and decides it via the workflow engine. */
+  async approvePR(prId: string, userId: string, userRoles: string[]) {
+    const task = await this.approvalService.findMyPendingTaskForDocument('PurchaseRequisition', prId, userId, userRoles);
+    await this.approvalService.decide(task.task_id, userId, userRoles, ApprovalDecision.APPROVE);
+    return this.prRepo.findOne({ where: { pr_id: prId }, relations: ['lines'] });
+  }
+
+  async rejectPR(prId: string, userId: string, userRoles: string[], reason: string) {
+    const task = await this.approvalService.findMyPendingTaskForDocument('PurchaseRequisition', prId, userId, userRoles);
+    await this.approvalService.decide(task.task_id, userId, userRoles, ApprovalDecision.REJECT, reason);
+    return this.prRepo.findOne({ where: { pr_id: prId }, relations: ['lines'] });
+  }
+
+  async revisePR(prId: string, userId: string, userRoles: string[], reason: string) {
+    const task = await this.approvalService.findMyPendingTaskForDocument('PurchaseRequisition', prId, userId, userRoles);
+    await this.approvalService.decide(task.task_id, userId, userRoles, ApprovalDecision.REVISE, reason);
+    return this.prRepo.findOne({ where: { pr_id: prId }, relations: ['lines'] });
+  }
+
+  /** Requester resubmits a PR that came back with Revise Required — re-enters DOA routing (no line edits in this pass). */
+  async resubmitPR(prId: string, userId: string) {
+    const pr = await this.prRepo.findOne({ where: { pr_id: prId, requester_id: userId } });
+    if (!pr) {
+      throw new NotFoundException('ไม่พบเอกสาร PR');
+    }
+    if (pr.status !== PurchaseRequisitionStatus.REVISE_REQUIRED) {
+      throw new BadRequestException(`ไม่สามารถส่งใหม่ได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status}`);
+    }
+
+    pr.status = PurchaseRequisitionStatus.RESUBMITTED;
+    await this.prRepo.save(pr);
+
+    const tasks = await this.approvalService.initiateRoute('PurchaseRequisition', pr.pr_id, pr.company_id, Number(pr.total_amount));
+    pr.status = PurchaseRequisitionStatus.PENDING_APPROVAL;
+    pr.approver_role = tasks.map((t) => t.approver_role).join(' / ');
+    return this.prRepo.save(pr);
+  }
+
+  private async handleApproved(prId: string, decidedBy: string) {
     return await this.dataSource.transaction(async (manager) => {
-      const pr = await manager.getRepository(PurchaseRequisition).findOne({
-        where: { pr_id: prId },
-        relations: ['lines'],
-      });
-
-      if (!pr) {
-        throw new NotFoundException('ไม่พบเอกสาร PR');
-      }
-
-      if (pr.status !== PurchaseRequisitionStatus.PENDING_APPROVAL) {
-        throw new BadRequestException(`ไม่สามารถอนุมัติได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status}`);
-      }
+      const pr = await manager.getRepository(PurchaseRequisition).findOne({ where: { pr_id: prId } });
+      if (!pr) return;
 
       const beforeValue = { status: pr.status };
       pr.status = PurchaseRequisitionStatus.APPROVED;
-      const saved = await manager.getRepository(PurchaseRequisition).save(pr);
+      await manager.getRepository(PurchaseRequisition).save(pr);
 
-      // Create Audit Log
       const audit = manager.getRepository(AuditLog).create({
-        user_id: userId,
+        user_id: decidedBy,
         action: 'APPROVE_PR',
         entity_type: 'PurchaseRequisition',
         entity_id: prId,
@@ -284,29 +317,42 @@ export class PrService {
         timestamp: new Date(),
       });
       await manager.save(audit);
-
-      return saved;
     });
   }
 
-  async rejectPR(prId: string, userId: string) {
+  private async handleReviseRequired(prId: string, reason: string, decidedBy: string) {
+    return await this.dataSource.transaction(async (manager) => {
+      const pr = await manager.getRepository(PurchaseRequisition).findOne({ where: { pr_id: prId } });
+      if (!pr) return;
+
+      const beforeValue = { status: pr.status };
+      pr.status = PurchaseRequisitionStatus.REVISE_REQUIRED;
+      await manager.getRepository(PurchaseRequisition).save(pr);
+
+      const audit = manager.getRepository(AuditLog).create({
+        user_id: decidedBy,
+        action: 'REVISE_REQUIRED_PR',
+        entity_type: 'PurchaseRequisition',
+        entity_id: prId,
+        before_value_json: beforeValue,
+        after_value_json: { status: pr.status, reason },
+        timestamp: new Date(),
+      });
+      await manager.save(audit);
+    });
+  }
+
+  private async handleRejected(prId: string, reason: string, decidedBy: string) {
     return await this.dataSource.transaction(async (manager) => {
       const pr = await manager.getRepository(PurchaseRequisition).findOne({
         where: { pr_id: prId },
         relations: ['lines'],
       });
-
-      if (!pr) {
-        throw new NotFoundException('ไม่พบเอกสาร PR');
-      }
-
-      if (pr.status !== PurchaseRequisitionStatus.PENDING_APPROVAL) {
-        throw new BadRequestException(`ไม่สามารถปฏิเสธได้เนื่องจากเอกสารอยู่ในสถานะ ${pr.status}`);
-      }
+      if (!pr) return;
 
       const beforeValue = { status: pr.status };
       pr.status = PurchaseRequisitionStatus.REJECTED;
-      const saved = await manager.getRepository(PurchaseRequisition).save(pr);
+      await manager.getRepository(PurchaseRequisition).save(pr);
 
       // Release reserved budget
       const ccTotals: { [ccId: string]: number } = {};
@@ -325,9 +371,8 @@ export class PrService {
           costCenter.budget_reserved_amount = Math.max(0, oldReserved - amountToRelease);
           await manager.getRepository(CostCenter).save(costCenter);
 
-          // Log budget change in Audit Trail
           const auditCC = manager.getRepository(AuditLog).create({
-            user_id: userId,
+            user_id: decidedBy,
             action: 'RELEASE_BUDGET_PR_REJECT',
             entity_type: 'CostCenter',
             entity_id: ccId,
@@ -380,19 +425,16 @@ export class PrService {
         }
       }
 
-      // Create PR Audit Log
       const audit = manager.getRepository(AuditLog).create({
-        user_id: userId,
+        user_id: decidedBy,
         action: 'REJECT_PR',
         entity_type: 'PurchaseRequisition',
         entity_id: prId,
         before_value_json: beforeValue,
-        after_value_json: { status: pr.status },
+        after_value_json: { status: pr.status, reason },
         timestamp: new Date(),
       });
       await manager.save(audit);
-
-      return saved;
     });
   }
 
@@ -506,4 +548,3 @@ export class PrService {
     });
   }
 }
-

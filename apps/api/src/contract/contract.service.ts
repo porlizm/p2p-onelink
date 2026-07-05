@@ -6,6 +6,7 @@ import { Vendor } from '../database/entities/vendor.entity';
 import { PurchaseOrder } from '../database/entities/purchase-order.entity';
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { Notification } from '../database/entities/notification.entity';
+import { ContractMilestone } from '../database/entities/contract-milestone.entity';
 
 @Injectable()
 export class ContractService {
@@ -20,6 +21,8 @@ export class ContractService {
     private readonly auditRepo: Repository<AuditLog>,
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
+    @InjectRepository(ContractMilestone)
+    private readonly milestoneRepo: Repository<ContractMilestone>,
   ) {}
 
   async createContract(body: {
@@ -280,5 +283,78 @@ export class ContractService {
       triggered_alerts_count: alertLogs.length,
       logged_emails: alertLogs,
     };
+  }
+
+  // ── US-0701: Contract Request (pre-draft business request) ──
+  async requestContract(body: {
+    vendor_id: string;
+    title: string;
+    start_date: string;
+    end_date: string;
+    total_amount: number;
+    request_reason: string;
+    requested_by?: string;
+  }) {
+    const vendor = await this.vendorRepo.findOne({ where: { vendor_id: body.vendor_id } });
+    if (!vendor) throw new NotFoundException('Vendor not found');
+
+    const contractNo = `CNT-REQ-${Math.floor(Math.random() * 9000) + 1000}`;
+    const contract = this.contractRepo.create({
+      contract_no: contractNo,
+      vendor_id: body.vendor_id,
+      title: body.title,
+      start_date: new Date(body.start_date),
+      end_date: new Date(body.end_date),
+      total_amount: body.total_amount,
+      remaining_amount: body.total_amount,
+      status: 'Requested',
+      request_reason: body.request_reason,
+      requested_by: body.requested_by || null,
+      signatures: {},
+      version_no: 1,
+      contract_class: 'Original',
+    });
+
+    return this.contractRepo.save(contract);
+  }
+
+  async startDraftFromRequest(id: string) {
+    const contract = await this.contractRepo.findOne({ where: { contract_id: id } });
+    if (!contract) throw new NotFoundException('ไม่พบคำขอทำสัญญา');
+    if (contract.status !== 'Requested') {
+      throw new BadRequestException('คำขอนี้ไม่อยู่ในสถานะรอเริ่มร่างสัญญา');
+    }
+    contract.status = 'Draft';
+    contract.contract_no = `CNT-2026-${Math.floor(Math.random() * 9000) + 1000}`;
+    return this.contractRepo.save(contract);
+  }
+
+  // ── US-0707: Contract Obligation and Milestone Tracking ──
+  async getMilestones(contractId: string) {
+    return this.milestoneRepo.find({
+      where: { contract_id: contractId },
+      order: { due_date: 'ASC' },
+    });
+  }
+
+  async createMilestone(contractId: string, body: { title: string; due_date: string; amount: number }) {
+    const contract = await this.contractRepo.findOne({ where: { contract_id: contractId } });
+    if (!contract) throw new NotFoundException('ไม่พบสัญญาที่ระบุ');
+
+    const milestone = this.milestoneRepo.create({
+      contract_id: contractId,
+      title: body.title,
+      due_date: new Date(body.due_date),
+      amount: body.amount,
+      status: 'Pending',
+    });
+    return this.milestoneRepo.save(milestone);
+  }
+
+  async updateMilestoneStatus(milestoneId: string, status: 'Pending' | 'Delivered' | 'Delayed') {
+    const milestone = await this.milestoneRepo.findOne({ where: { milestone_id: milestoneId } });
+    if (!milestone) throw new NotFoundException('ไม่พบ Milestone ที่ระบุ');
+    milestone.status = status;
+    return this.milestoneRepo.save(milestone);
   }
 }

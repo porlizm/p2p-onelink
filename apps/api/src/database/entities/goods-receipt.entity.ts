@@ -13,12 +13,15 @@ export class GoodsReceipt {
   @Column({ type: 'varchar', length: 50, unique: true })
   gr_no: string;
 
-  @Column({ type: 'uuid' })
-  po_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  po_id: string | null;
 
-  @ManyToOne(() => PurchaseOrder)
+  @ManyToOne(() => PurchaseOrder, { nullable: true })
   @JoinColumn({ name: 'po_id' })
-  po: PurchaseOrder;
+  po: PurchaseOrder | null;
+
+  @Column({ type: 'boolean', default: false })
+  pending_match: boolean;
 
   @Column({ type: 'varchar', length: 50 })
   receive_type: string;

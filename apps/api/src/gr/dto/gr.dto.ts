@@ -3,30 +3,39 @@ import { Type } from 'class-transformer';
 
 export class CreateGrLineDto {
   @IsUUID()
-  po_line_id: string;
+  @IsOptional()
+  po_line_id?: string;
+
+  @IsString()
+  @IsOptional()
+  item_id?: string;
+
+  @IsString()
+  @IsOptional()
+  item_name?: string;
 
   @IsNumber()
   qty_received: number;
 
-  @IsNumber()
+  @IsBoolean()
   @IsOptional()
-  qc_passed_qty?: number;
-
-  @IsNumber()
-  @IsOptional()
-  qc_failed_qty?: number;
+  over_receipt_approved?: boolean;
 
   @IsString()
   @IsOptional()
-  qc_status?: string;
+  lot_no?: string;
+
+  @IsString()
+  @IsOptional()
+  serial_no?: string;
+
+  @IsString()
+  @IsOptional()
+  expiry_date?: string;
 
   @IsString()
   @IsOptional()
   bin_location?: string;
-
-  @IsString()
-  @IsOptional()
-  qc_remarks?: string;
 }
 
 export class CreateGrAttachmentDto {
@@ -39,7 +48,8 @@ export class CreateGrAttachmentDto {
 
 export class CreateGrDto {
   @IsUUID()
-  po_id: string;
+  @IsOptional()
+  po_id?: string;
 
   @IsString()
   receive_type: string;
@@ -77,4 +87,44 @@ export class CreateClaimDto {
   @IsString()
   @IsOptional()
   return_reason?: string;
+}
+
+export class MatchGrLineDto {
+  @IsUUID()
+  gr_line_id: string;
+
+  @IsUUID()
+  po_line_id: string;
+}
+
+export class MatchGrToPoDto {
+  @IsUUID()
+  po_id: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MatchGrLineDto)
+  lines: MatchGrLineDto[];
+}
+
+export class QcLineDecisionDto {
+  @IsUUID()
+  gr_line_id: string;
+
+  @IsNumber()
+  qc_passed_qty: number;
+
+  @IsNumber()
+  qc_failed_qty: number;
+
+  @IsString()
+  @IsOptional()
+  qc_remarks?: string;
+}
+
+export class QcDecisionDto {
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => QcLineDecisionDto)
+  lines: QcLineDecisionDto[];
 }

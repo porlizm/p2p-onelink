@@ -55,3 +55,8 @@ export * from './annual-plan.entity';
 export * from './demand-collection.entity';
 export * from './contract-milestone.entity';
 export * from './asset-maintenance.entity';
+export * from './evaluation-template.entity';
+export * from './vendor-message.entity';
+export * from './approval-task.entity';
+export * from './approval-delegation.entity';
+export * from './stock-movement.entity';

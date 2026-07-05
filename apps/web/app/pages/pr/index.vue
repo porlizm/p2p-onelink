@@ -87,11 +87,24 @@
         </div>
       </div>
 
+      <!-- PR Consolidation Toolbar (US-0309) -->
+      <div v-if="selectedPrIds.length > 0" class="flex items-center justify-between bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3">
+        <span class="text-xs font-semibold text-indigo-800">เลือกแล้ว {{ selectedPrIds.length }} ใบขอซื้อ — รวมเข้าโครงการประกวดราคาเดียวกัน</span>
+        <div class="flex items-center gap-2">
+          <button class="action-btn action-btn--neutral" @click="selectedPrIds = []">ล้างการเลือก</button>
+          <button class="action-btn action-btn--review" @click="consolidateToRfq">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5v15m7.5-7.5h-15"/></svg>
+            รวมเป็น RFQ เดียว (Consolidate)
+          </button>
+        </div>
+      </div>
+
       <!-- PR List Table -->
       <div class="overflow-x-auto">
         <table class="w-full text-left border-collapse">
           <thead>
             <tr class="bg-[#fafbfc] border-b border-[#eff1f5] text-xs font-semibold text-[var(--muted-foreground)] uppercase">
+              <th class="px-4 py-3.5"></th>
               <th class="px-6 py-3.5">เลขที่ใบขอซื้อ</th>
               <th class="px-6 py-3.5">วันที่ขอซื้อ</th>
               <th class="px-6 py-3.5">รายละเอียดการสั่งจัดหา</th>
@@ -102,12 +115,22 @@
           </thead>
           <tbody class="divide-y divide-[#eff1f5] text-sm">
             <tr v-for="pr in filteredPrs" :key="pr.pr_id" class="hover:bg-[#f8fffe] transition">
+              <td class="px-4 py-5 text-center">
+                <input
+                  v-if="pr.status === 'Approved'"
+                  type="checkbox"
+                  :value="pr.pr_id"
+                  v-model="selectedPrIds"
+                  class="w-3.5 h-3.5"
+                />
+              </td>
               <td class="px-6 py-5 font-bold text-[var(--primary)]">{{ pr.pr_no }}</td>
               <td class="px-6 py-5 text-xs text-slate-500">{{ formatDate(pr.created_at) }}</td>
               <td class="px-6 py-5">
                 <div class="font-medium text-[var(--foreground)] line-clamp-1 max-w-sm">{{ pr.description || 'จัดซื้อทั่วไป' }}</div>
-                <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5">
-                  {{ pr.lines?.length || 0 }} รายการขอซื้อ
+                <div class="text-[10px] text-[var(--muted-foreground)] mt-0.5 flex items-center gap-1.5">
+                  <span>{{ pr.lines?.length || 0 }} รายการขอซื้อ</span>
+                  <span v-if="pr.is_unplanned" class="px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-700">⚠️ นอกแผนงบประมาณ</span>
                 </div>
               </td>
               <td class="px-6 py-5 text-right font-extrabold text-[var(--foreground)]">
@@ -129,6 +152,13 @@
                   <button class="action-btn action-btn--view mr-1" @click="quickApprovePr(pr)">อนุมัติด่วน</button>
                   <button class="action-btn action-btn--danger" @click="rejectPr(pr)">ปฏิเสธ</button>
                 </template>
+
+                <!-- ReviseRequired -->
+                <button
+                  v-else-if="pr.status === 'ReviseRequired'"
+                  class="action-btn action-btn--compare"
+                  @click="resubmitPr(pr)"
+                >แก้ไขและส่งใหม่</button>
 
                 <!-- Rejected -->
                 <button
@@ -174,7 +204,7 @@
               </td>
             </tr>
             <tr v-if="filteredPrs.length === 0">
-              <td colspan="6" class="text-center py-10 text-xs text-[var(--muted-foreground)]">
+              <td colspan="7" class="text-center py-10 text-xs text-[var(--muted-foreground)]">
                 ไม่พบประวัติรายการใบขอซื้อ
               </td>
             </tr>
@@ -243,7 +273,13 @@
             <tbody class="divide-y divide-[#f8f9fa]">
               <tr v-for="line in activePr?.lines" :key="line.line_id" class="hover:bg-[#f8fffe] transition-colors">
                 <td class="px-4 py-3.5">
-                  <div class="text-sm font-semibold text-slate-800">{{ line.item_name }}</div>
+                  <div class="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                    {{ line.item_name }}
+                    <span v-if="line.is_requirement_based" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200">TOR</span>
+                  </div>
+                  <div v-if="line.is_requirement_based && line.scope_of_work" class="text-[10px] text-slate-500 mt-1 italic">
+                    ขอบเขตงาน: {{ line.scope_of_work }}
+                  </div>
                   <div class="flex items-center gap-2 mt-1">
                     <span class="text-[10px] text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">{{ line.cost_center?.cc_name || 'N/A' }}</span>
                     <a v-if="line.quotation_url" :href="line.quotation_url" target="_blank"
@@ -312,6 +348,28 @@ const prList = ref<any[]>([]);
 
 const detailsOpen = ref(false);
 const activePr = ref<any>(null);
+
+// PR Consolidation to RFQ (US-0309)
+const selectedPrIds = ref<string[]>([]);
+const consolidateToRfq = async () => {
+  const selectedPrs = prList.value.filter((p) => selectedPrIds.value.includes(p.pr_id));
+  const consolidatedItems = selectedPrs.flatMap((pr) =>
+    (pr.lines || []).map((line: any) => ({
+      item_name: line.item_name,
+      item_type: line.item_id ? 'Goods' : 'Service',
+      quantity: line.quantity,
+      uom: line.uom,
+      source_pr_no: pr.pr_no,
+    }))
+  );
+  if (consolidatedItems.length === 0) {
+    await dialog.alert('ใบขอซื้อที่เลือกไม่มีรายการสินค้า', { variant: 'danger' });
+    return;
+  }
+  sessionStorage.setItem('consolidated_rfq_items', JSON.stringify(consolidatedItems));
+  sessionStorage.setItem('consolidated_pr_nos', selectedPrs.map((p) => p.pr_no).join(', '));
+  navigateTo('/bidding/create');
+};
 
 const loadPrs = async () => {
   try {
@@ -581,6 +639,24 @@ const viewRejectionReason = async (pr: any) => {
   await dialog.alert(pr.rejection_reason || 'ไม่ผ่านงบประมาณที่กำหนด กรุณาปรับลดรายการ', { variant: 'warning', title: 'เหตุผลที่ไม่ผ่านการอนุมัติ' });
 };
 
+const resubmitPr = async (pr: any) => {
+  if (!(await dialog.confirm(`ยืนยันส่งใบขอซื้อ ${pr.pr_no} กลับเข้าสู่กระบวนการอนุมัติอีกครั้ง?`, { variant: 'warning' }))) {
+    return;
+  }
+  try {
+    await $fetch(`http://localhost:3001/api/pr/${pr.pr_id}/resubmit`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${authStore.token}` },
+    });
+    await dialog.alert(`ส่งใบขอซื้อ ${pr.pr_no} เข้าสู่การอนุมัติใหม่เรียบร้อยแล้ว`, { variant: 'success' });
+    await loadPrs();
+  } catch (err) {
+    console.warn('Backend resubmit failed, using demo resubmit.');
+    pr.status = 'PendingApproval';
+    await dialog.alert(`ส่งใบขอซื้อ ${pr.pr_no} เข้าสู่การอนุมัติใหม่เรียบร้อยแล้ว`, { variant: 'success' });
+  }
+};
+
 const requestBudgetException = async (pr: any) => {
   await dialog.alert(`ส่งคำขอยกเว้นงบประมาณ ${pr.pr_no} ไปยัง CFO แล้ว`, { variant: 'success' });
 };
@@ -607,6 +683,8 @@ const formatStatus = (status?: string) => {
     case 'BlockedOverBudget': return 'ถูกบล็อก (เกินงบฯ)';
     case 'Approved': return 'อนุมัติแล้ว';
     case 'ConvertedToPO': return 'ออก PO แล้ว';
+    case 'ReviseRequired': return 'ส่งกลับให้แก้ไข';
+    case 'Resubmitted': return 'ส่งใหม่แล้ว';
     case 'Rejected': return 'ปฏิเสธ';
     case 'Cancelled': return 'ยกเลิก';
     default: return status || '—';

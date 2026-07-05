@@ -20,6 +20,10 @@ import { NotificationModule } from './notification/notification.module';
 import { AssetModule } from './asset/asset.module';
 import { PlanningModule } from './planning/planning.module';
 import { AiAuditModule } from './ai/ai-audit.module';
+import { EvaluationTemplateModule } from './evaluation-template/evaluation-template.module';
+import { VendorMessageModule } from './vendor-message/vendor-message.module';
+import { ApprovalModule } from './approval/approval.module';
+import { StockModule } from './stock/stock.module';
 
 
 
@@ -45,12 +49,14 @@ import { AiAuditModule } from './ai/ai-audit.module';
       }),
     }),
     AuthModule,
+    ApprovalModule,
     VendorModule,
     PrModule,
     CatalogModule,
     BiddingModule,
     PoModule,
     GrModule,
+    StockModule,
     InvoiceModule,
     PaymentModule,
     ContractModule,
@@ -60,6 +66,8 @@ import { AiAuditModule } from './ai/ai-audit.module';
     AssetModule,
     PlanningModule,
     AiAuditModule,
+    EvaluationTemplateModule,
+    VendorMessageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

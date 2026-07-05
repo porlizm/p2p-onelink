@@ -81,4 +81,47 @@ export class ContractController {
     const days = simulateDays ? Number(simulateDays) : undefined;
     return this.contractService.checkContractExpirations(days);
   }
+
+  // ── US-0701: Contract Request ──
+  @Post('contract/request')
+  async requestContract(
+    @Body() body: {
+      vendor_id: string;
+      title: string;
+      start_date: string;
+      end_date: string;
+      total_amount: number;
+      request_reason: string;
+      requested_by?: string;
+    },
+  ) {
+    return this.contractService.requestContract(body);
+  }
+
+  @Post('contract/:id/start-draft')
+  async startDraftFromRequest(@Param('id') id: string) {
+    return this.contractService.startDraftFromRequest(id);
+  }
+
+  // ── US-0707: Contract Milestone Tracking ──
+  @Get('contract/:id/milestones')
+  async getMilestones(@Param('id') id: string) {
+    return this.contractService.getMilestones(id);
+  }
+
+  @Post('contract/:id/milestones')
+  async createMilestone(
+    @Param('id') id: string,
+    @Body() body: { title: string; due_date: string; amount: number },
+  ) {
+    return this.contractService.createMilestone(id, body);
+  }
+
+  @Post('contract/milestone/:milestoneId/status')
+  async updateMilestoneStatus(
+    @Param('milestoneId') milestoneId: string,
+    @Body('status') status: 'Pending' | 'Delivered' | 'Delayed',
+  ) {
+    return this.contractService.updateMilestoneStatus(milestoneId, status);
+  }
 }

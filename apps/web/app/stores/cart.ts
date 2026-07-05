@@ -10,6 +10,8 @@ export interface CartItem {
   cost_center_id: string;
   quotation_url?: string;
   is_custom: boolean;
+  is_requirement_based?: boolean;
+  scope_of_work?: string;
 }
 
 export const useCartStore = defineStore('cart', {

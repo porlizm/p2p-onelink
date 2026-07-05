@@ -130,6 +130,55 @@ export class AssetService {
     });
   }
 
+  async disposeAsset(assetId: string, dto: { disposal_type: 'Sold' | 'Scrapped'; reason: string; amount?: number }) {
+    const asset = await this.assetRepo.findOne({ where: { asset_id: assetId } });
+    if (!asset) {
+      throw new NotFoundException('ไม่พบสินทรัพย์ที่ระบุ');
+    }
+    if (asset.status === 'Sold' || asset.status === 'Scrapped') {
+      throw new BadRequestException('สินทรัพย์นี้ถูกจำหน่าย/ตัดจำหน่ายไปแล้ว');
+    }
+    asset.status = dto.disposal_type;
+    asset.disposal_type = dto.disposal_type;
+    asset.disposal_reason = dto.reason;
+    asset.disposal_amount = dto.amount ?? null;
+    asset.disposed_at = new Date();
+    return await this.assetRepo.save(asset);
+  }
+
+  async transferAsset(assetId: string, dto: { to_bu_id: string; reason?: string }) {
+    return await this.dataSource.transaction(async (manager) => {
+      const asset = await manager.getRepository(Asset).findOne({
+        where: { asset_id: assetId },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!asset) {
+        throw new NotFoundException('ไม่พบสินทรัพย์ที่ระบุ');
+      }
+      if (asset.status === 'Sold' || asset.status === 'Scrapped') {
+        throw new BadRequestException('ไม่สามารถโอนย้ายสินทรัพย์ที่จำหน่าย/ตัดจำหน่ายไปแล้ว');
+      }
+
+      const fromBuId = asset.owner_bu_id;
+      asset.owner_bu_id = dto.to_bu_id;
+      await manager.getRepository(Asset).save(asset);
+
+      const transferLog = manager.getRepository(AssetAllocation).create({
+        asset_id: asset.asset_id,
+        to_bu_id: dto.to_bu_id,
+        allocated_qty: asset.total_qty,
+        allocation_type: 'Transfer',
+        rental_rate: 0,
+        start_date: new Date(),
+        end_date: null,
+        status: 'Completed',
+      });
+      await manager.getRepository(AssetAllocation).save(transferLog);
+
+      return { ...asset, from_bu_id: fromBuId };
+    });
+  }
+
   async getDashboardStats() {
     const assets = await this.assetRepo.find();
     const allocations = await this.allocationRepo.find({
